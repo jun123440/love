@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>给郑灵</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#fff5f0}
+body{
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",sans-serif;
+  -webkit-tap-highlight-color:rgba(0,0,0,0);-webkit-user-select:none;
+}
+
+/* floating shapes */
+@keyframes f1{0%{transform:translate(0,0) rotate(0)}100%{transform:translate(30px,-80px) rotate(360deg)}}
+@keyframes f2{0%{transform:translate(0,0) rotate(0)}100%{transform:translate(-40px,-60px) rotate(-360deg)}}
+@keyframes f3{0%{transform:translate(0,0) rotate(0)}100%{transform:translate(20px,-100px) rotate(180deg)}}
+@keyframes f4{0%{transform:translate(0,0) rotate(0)}100%{transform:translate(-25px,-70px) rotate(-180deg)}}
+
+.floater{
+  position:absolute;border-radius:50%;opacity:.15;pointer-events:none;
+  animation-iteration-count:infinite;animation-timing-function:linear;
+}
+.floater:nth-child(1){width:40px;height:40px;background:#ff6b6b;top:70%;left:15%;animation:f1 8s infinite}
+.floater:nth-child(2){width:30px;height:30px;background:#4ecdc4;top:65%;left:75%;animation:f2 10s infinite}
+.floater:nth-child(3){width:50px;height:50px;background:#ffe66d;top:75%;left:50%;animation:f3 9s infinite}
+.floater:nth-child(4){width:24px;height:24px;background:#a29bfe;top:60%;left:30%;animation:f4 11s infinite}
+.floater:nth-child(5){width:20px;height:20px;background:#fd79a8;top:80%;left:60%;animation:f2 7s infinite}
+.floater:nth-child(6){width:36px;height:36px;background:#00cec9;top:55%;left:85%;animation:f1 12s infinite}
+.floater:nth-child(7){width:16px;height:16px;background:#fab1a0;top:68%;left:40%;animation:f3 8.5s infinite}
+
+/* sparkle dots */
+@keyframes sparkle{0%,100%{opacity:0}50%{opacity:.7}}
+.dot{
+  position:absolute;width:3px;height:3px;background:#ffd700;border-radius:50%;
+  animation:sparkle 2s ease-in-out infinite;pointer-events:none
+}
+.dot:nth-child(8){top:12%;left:22%;animation-delay:0s}
+.dot:nth-child(9){top:8%;left:68%;animation-delay:.4s}
+.dot:nth-child(10){top:18%;left:45%;animation-delay:.8s}
+.dot:nth-child(11){top:5%;left:80%;animation-delay:1.2s}
+.dot:nth-child(12){top:15%;left:10%;animation-delay:1.6s}
+
+/* main wrap */
+#wrap{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  display:-webkit-box;display:-webkit-flex;display:flex;
+  -webkit-box-orient:vertical;-webkit-flex-direction:column;flex-direction:column;
+  -webkit-box-align:center;-webkit-align-items:center;align-items:center;
+  -webkit-box-pack:center;-webkit-justify-content:center;justify-content:center;
+  padding:20px 16px;
+}
+
+/* card */
+.card{
+  background:#fff;border-radius:18px;padding:16px 22px;margin:8px 0;
+  box-shadow:0 2px 16px rgba(0,0,0,.05);
+  text-align:center;max-width:86%;color:#333;font-size:1.05rem;
+  line-height:1.6;letter-spacing:.03em;
+  display:none;opacity:0;
+  -webkit-transition:opacity .4s;transition:opacity .4s;
+}
+.card.show{display:block}
+.card.in{opacity:1}
+.card .e{font-size:2rem;margin-bottom:2px}
+.card .t{font-size:1.3rem;font-weight:700;color:#222;margin-bottom:4px}
+.card .b{color:#555}
+.card .r{color:#ff6b6b;font-weight:600}
+.card.big .t{font-size:1.8rem;color:#ff5c5c}
+.card .s{font-size:.9rem;color:#aaa;margin-top:6px;letter-spacing:.04em}
+
+/* glow pulse */
+@keyframes pulse{0%,100%{box-shadow:0 2px 20px rgba(255,90,90,.1)}50%{box-shadow:0 4px 32px rgba(255,90,90,.22)}}
+.card.glow{animation:pulse 2.5s ease-in-out infinite}
+
+/* tap hint */
+#hint{
+  position:absolute;bottom:40px;left:50%;transform:translateX(-50%);
+  color:rgba(0,0,0,.22);font-size:.8rem;letter-spacing:.04em;pointer-events:none;
+}
+</style>
+</head>
+<body>
+
+<!-- floating bg shapes -->
+<div class="floater"></div><div class="floater"></div><div class="floater"></div>
+<div class="floater"></div><div class="floater"></div><div class="floater"></div>
+<div class="floater"></div>
+<div class="dot"></div><div class="dot"></div><div class="dot"></div>
+<div class="dot"></div><div class="dot"></div>
+
+<div id="wrap"></div>
+<div id="hint">轻触屏幕继续</div>
+
+<script>
+(function(){
+  var cards=[
+    {e:"👋",t:"郑灵",b:"",c:""},
+    {e:"☀️",t:"有些话",b:"想跟你说很久了",c:""},
+    {e:"",t:"认识你之后",b:"每天都变得<span class='r'>不一样</span>了",c:""},
+    {e:"",t:"跟你一起的时候",b:"时间总是特别快",c:""},
+    {e:"",t:"你笑起来",b:"比夏天的橘子汽水还清爽",c:""},
+    {e:"✨",t:"你这个人",b:"好看又有趣<br>性格也超好",c:""},
+    {e:"",t:"所以……",b:"",c:"big"},
+    {e:"❤️",t:"我喜欢你",b:"",c:"big glow"},
+    {e:"",t:"",b:"—— 蒋文俊",c:""}
+  ];
+
+  var wrap=document.getElementById("wrap");
+  var idx=-1;
+  var hint=document.getElementById("hint");
+
+  function next(){
+    idx++;
+    if(idx>=cards.length)return;
+    var c=cards[idx];
+    var d=document.createElement("div");
+    d.className="card"+(c.c?" "+c.c:"");
+    var h="";
+    if(c.e)h+='<div class="e">'+c.e+'</div>';
+    if(c.t)h+='<div class="t">'+c.t+'</div>';
+    if(c.b)h+='<div class="b">'+c.b+'</div>';
+    d.innerHTML=h;
+    wrap.appendChild(d);
+    d.classList.add("show");
+    setTimeout(function(){d.classList.add("in")},30);
+
+    if(idx===6)setTimeout(next,1200);
+    if(idx===7){
+      setTimeout(next,1800);
+      setTimeout(function(){hint.style.opacity="0"},2000);
+    }
+  }
+
+  document.addEventListener("click",function(){next()});
+  document.addEventListener("touchstart",function(e){
+    e.preventDefault();next();
+  },{passive:false});
+
+  setTimeout(function(){next()},500);
+})();
+</script>
+</body>
+</html>
