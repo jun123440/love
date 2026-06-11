@@ -243,11 +243,13 @@ function anyLine(ch){
 function genPoem(name){
   if(!name||!name.trim())return[];
   name=name.trim();
-  // Check for dedicated poem
-  if(SP[name]){
-    const lines=SP[name];
-    const cs=[...name];
-    return lines.map((ln,i)=>({ch:cs[i%cs.length],line:ln,real:true}));
+  // Dedicated poem: check chars match
+  for(const k of Object.keys(SP)){
+    if(k.split('').every((c,j)=>c===Array.from(name)[j])){
+      const lines=SP[k];
+      const cs=[...name];
+      return lines.map((ln,i)=>({ch:cs[i%cs.length],line:ln,real:true}));
+    }
   }
   const chars=[...name];
   const all=[];
