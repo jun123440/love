@@ -58,7 +58,7 @@ body{font-family:-apple-system,'Segoe UI',system-ui,sans-serif;background:#08080
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
-import { mergeBufferGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
 
 const $=id=>document.getElementById(id);
 
@@ -101,16 +101,24 @@ function buildTube(rings, seg) {
   return g;
 }
 
-// Body cross-section profiles: [y, rx, rz, label]
-// High density — rings every 0.02-0.05 units
-function genProfile() {
-  const S=28; // segments per ring
-  const geos=[];
+// Body cross-section profiles — returns array of [rings, material]
+function genProfile(cSkin,cCloth,cPants,cShoe) {
+  const S=28;
+  const skin=new THREE.MeshStandardMaterial({color:cSkin,roughness:0.3,metalness:0});
+  const top=new THREE.MeshStandardMaterial({color:cCloth,roughness:0.5,metalness:0.02});
+  const pants=new THREE.MeshStandardMaterial({color:cPants,roughness:0.6,metalness:0});
+  const shoe=new THREE.MeshStandardMaterial({color:cShoe,roughness:0.7,metalness:0});
 
   function sec(y,rx,rz,dx=0,dz=0){return {y,rx,rz,dx,dz}}
+  function part(rings,mat,dx=0,dz=0){
+    const off=rings.map(s=>buildRing(s.y,s.rx,s.rz,S,s.dx+dx,s.dz+dz));
+    return new THREE.Mesh(buildTube(off,S),mat);
+  }
 
-  // ── Torso ─────────────────────────────────────
-  const torso=[
+  const meshes=[];
+
+  // Torso
+  const tR=[
     sec(0.76,0.13,0.10),sec(0.78,0.14,0.10),sec(0.80,0.14,0.11),
     sec(0.82,0.14,0.11),sec(0.84,0.14,0.10),sec(0.86,0.14,0.10),
     sec(0.88,0.14,0.10),sec(0.90,0.14,0.10),sec(0.92,0.14,0.10),
@@ -126,51 +134,54 @@ function genProfile() {
     sec(1.48,0.15,0.11),sec(1.50,0.13,0.10),sec(1.52,0.11,0.09),
     sec(1.54,0.10,0.08),sec(1.56,0.09,0.07),
   ];
-  geos.push(buildTube(torso.map(s=>buildRing(s.y,s.rx,s.rz,S,s.dx,s.dz)),S));
+  const torso=part(tR,top);torso.castShadow=true;meshes.push(torso);
 
-  // ── Left Leg ──────────────────────────────────
-  const leg=[
-    sec(0.74,0.10,0.08,-0.09),sec(0.70,0.10,0.08,-0.09),
-    sec(0.66,0.09,0.08,-0.09),sec(0.62,0.09,0.07,-0.09),
-    sec(0.58,0.09,0.07,-0.09),sec(0.54,0.08,0.07,-0.09),
-    sec(0.50,0.08,0.07,-0.09),sec(0.46,0.08,0.06,-0.09),
-    sec(0.42,0.07,0.06,-0.09),sec(0.38,0.07,0.06,-0.09),
-    sec(0.34,0.07,0.05,-0.09),sec(0.30,0.06,0.05,-0.09),
-    sec(0.26,0.06,0.05,-0.09),sec(0.22,0.06,0.05,-0.09),
-    sec(0.18,0.05,0.04,-0.09),sec(0.14,0.05,0.04,-0.09),
-    sec(0.10,0.05,0.04,-0.09),sec(0.07,0.04,0.04,-0.09),
-    sec(0.04,0.04,0.03,-0.09),sec(0.02,0.04,0.03,-0.09),
-    sec(0.01,0.05,0.03,-0.09),
+  // Legs
+  const lR=[
+    sec(0.74,0.10,0.08),sec(0.70,0.10,0.08),sec(0.66,0.09,0.08),
+    sec(0.62,0.09,0.07),sec(0.58,0.09,0.07),sec(0.54,0.08,0.07),
+    sec(0.50,0.08,0.07),sec(0.46,0.08,0.06),sec(0.42,0.07,0.06),
+    sec(0.38,0.07,0.06),sec(0.34,0.07,0.05),sec(0.30,0.06,0.05),
+    sec(0.26,0.06,0.05),sec(0.22,0.06,0.05),sec(0.18,0.05,0.04),
+    sec(0.14,0.05,0.04),sec(0.10,0.05,0.04),sec(0.07,0.04,0.04),
+    sec(0.04,0.04,0.03),sec(0.02,0.04,0.03),sec(0.01,0.05,0.03),
   ];
-  geos.push(buildTube(leg.map(s=>buildRing(s.y,s.rx,s.rz,S,s.dx,s.dz)),S));
+  const lL=part(lR,pants,-0.09);lL.castShadow=true;meshes.push(lL);
+  const lR2=part(lR,pants,0.09);lR2.castShadow=true;meshes.push(lR2);
 
-  // ── Right Leg ─────────────────────────────────
-  geos.push(buildTube(leg.map(s=>buildRing(s.y,s.rx,s.rz,S,0.09,s.dz)),S));
+  // Lower legs (skin)
+  const sR=lR.filter(({y})=>y<0.38);
+  meshes.push(part(sR,skin,-0.09));meshes.push(part(sR,skin,0.09));
 
-  // ── Left Arm ──────────────────────────────────
-  const arm=[
-    sec(0.02,0.06,0.06,-0.26),sec(-0.02,0.06,0.05,-0.27),
-    sec(-0.06,0.05,0.05,-0.28),sec(-0.10,0.05,0.05,-0.29),
-    sec(-0.14,0.05,0.05,-0.30),sec(-0.18,0.05,0.04,-0.31),
-    sec(-0.22,0.04,0.04,-0.31),sec(-0.26,0.04,0.04,-0.31),
-    sec(-0.30,0.04,0.04,-0.31),sec(-0.34,0.04,0.04,-0.31),
-    sec(-0.38,0.04,0.03,-0.31),sec(-0.42,0.03,0.03,-0.30),
-    sec(-0.45,0.03,0.03,-0.30),
+  // Feet
+  const fR=[sec(0.01,0.05,0.03),sec(-0.01,0.06,0.04),sec(-0.02,0.04,0.02)];
+  meshes.push(part(fR,shoe,-0.09));meshes.push(part(fR,shoe,0.09));
+
+  // Arms
+  const aR=[
+    sec(0.02,0.06,0.06),sec(-0.02,0.06,0.05),sec(-0.06,0.05,0.05),
+    sec(-0.10,0.05,0.05),sec(-0.14,0.05,0.05),sec(-0.18,0.05,0.04),
+    sec(-0.22,0.04,0.04),sec(-0.26,0.04,0.04),sec(-0.30,0.04,0.04),
+    sec(-0.34,0.04,0.04),sec(-0.38,0.04,0.03),sec(-0.42,0.03,0.03),
+    sec(-0.45,0.03,0.03),
   ];
-  geos.push(buildTube(arm.map(s=>buildRing(s.y,s.rx,s.rz,S,s.dx,s.dz)),S));
+  meshes.push(part(aR,skin,-0.24));meshes.push(part(aR,skin,0.24));
 
-  // ── Right Arm ─────────────────────────────────
-  geos.push(buildTube(arm.map(s=>buildRing(s.y,s.rx,s.rz,S,0.26,s.dz)),S));
+  // Upper arms (clothed)
+  const cR=aR.filter(({y})=>y>-0.22);
+  meshes.push(part(cR,top,-0.24));meshes.push(part(cR,top,0.24));
 
-  // ── Neck ──────────────────────────────────────
-  const neck=[
-    sec(1.56,0.09,0.07),sec(1.58,0.08,0.07),sec(1.60,0.08,0.07),
-    sec(1.62,0.08,0.07),sec(1.64,0.07,0.06),
-  ];
-  geos.push(buildTube(neck.map(s=>buildRing(s.y,s.rx,s.rz,S,s.dx,s.dz)),S));
+  // Neck
+  const nR=[sec(1.56,0.09,0.07),sec(1.58,0.08,0.07),sec(1.60,0.08,0.07),sec(1.62,0.08,0.07),sec(1.64,0.07,0.06)];
+  meshes.push(part(nR,skin));
 
-  // Merge all body meshes
-  return mergeBufferGeometries(geos, false);
+  // Shoulder joints
+  for(const s of[-1,1]){
+    const sh=new THREE.Mesh(new THREE.SphereGeometry(0.07,14,14),top);
+    sh.position.set(s*0.24,1.44,0);meshes.push(sh);
+  }
+
+  return meshes;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -299,55 +310,21 @@ function buildAvatar(img) {
   const cSkin=(skin[0]<<16)|(skin[1]<<8)|skin[2];
   const cHair=(hair[0]<<16)|(hair[1]<<8)|hair[2];
   const cCloth=(bright(cloth[0])<<16)|(bright(cloth[1])<<8)|bright(cloth[2]);
-  const cPants=0x2a2a44,cShoe=0x0e0e1e;
 
   const group=new THREE.Group();
 
-  // ── Body (high-poly merged mesh) ──
-  const bodyMesh=genProfile();
-  const bodyM=new THREE.MeshStandardMaterial({color:cCloth,roughness:0.5,metalness:0.02});
-  const body=new THREE.Mesh(bodyMesh,bodyM);
-  body.castShadow=true;group.add(body);
+  // Body parts (all meshes with proper materials)
+  const parts=genProfile(cSkin,cCloth,0x2a2a44,0x0e0e1e);
+  for(const p of parts)group.add(p);
 
-  // ── Skin parts (neck, arms overlap) ──
-  // Skin overlay for neck and exposed arms
-  const neckIdx=bodyMesh.attributes.position.count-((4*29)+5); // approximate
-  // Use a separate skin-tone mesh overlaid
-  const skinM=new THREE.MeshStandardMaterial({color:cSkin,roughness:0.3,metalness:0.0});
-
-  // Lower legs (skin visible)
-  const llProf=[];
-  for(let y=0.02;y<=0.38;y+=0.03)llProf.push({y,rx:0.04+0.015*(1-y/0.38),rz:0.03+0.012*(1-y/0.38),dx:0,dz:0});
-  const llGeo=buildTube(llProf.map(s=>buildRing(s.y,s.rx,s.rz,24,s.dx,s.dz)),24);
-  const llL=new THREE.Mesh(llGeo,skinM);llL.position.x=-0.09;group.add(llL);
-  const llR=new THREE.Mesh(llGeo,skinM);llR.position.x=0.09;group.add(llR);
-
-  // Forearms (skin visible)
-  const faProf=[];
-  for(let y=-0.42;y<=0.0;y+=0.03)faProf.push({y,rx:0.038-0.008*(y+0.42)/0.42,rz:0.038-0.008*(y+0.42)/0.42,dx:0,dz:0});
-  const faGeo=buildTube(faProf.map(s=>buildRing(s.y,s.rx,s.rz,20,s.dx,s.dz)),20);
-  const faL=new THREE.Mesh(faGeo,skinM);faL.position.set(-0.26,-0.02,0);group.add(faL);
-  const faR=new THREE.Mesh(faGeo,skinM);faR.position.set(0.26,-0.02,0);group.add(faR);
-
-  // ── Head ──
-  const headM=new THREE.MeshStandardMaterial({
-    map:makeHeadTex(img),roughness:0.22,metalness:0.0
-  });
+  // Head
+  const headM=new THREE.MeshStandardMaterial({map:makeHeadTex(img),roughness:0.22,metalness:0});
   const head=new THREE.Mesh(buildHead(),headM);
-  head.position.y=1.58;head.castShadow=true;
-  group.add(head);
+  head.position.y=1.58;head.castShadow=true;group.add(head);
 
-  // ── Hair ──
-  const hM=new THREE.MeshStandardMaterial({color:cHair,roughness:0.85,metalness:0.0});
-  const hairM=new THREE.Mesh(buildHair(),hM);
-  group.add(hairM);
-
-  // ── Joint spheres for smooth transitions ──
-  const jM=new THREE.MeshStandardMaterial({color:cCloth,roughness:0.5,metalness:0.02});
-  for(const s of[-1,1]){
-    const sh=new THREE.Mesh(new THREE.SphereGeometry(0.07,14,14),jM);
-    sh.position.set(s*0.24,1.44,0);group.add(sh);
-  }
+  // Hair
+  const hM=new THREE.MeshStandardMaterial({color:cHair,roughness:0.85,metalness:0});
+  group.add(new THREE.Mesh(buildHair(),hM));
 
   return group;
 }
