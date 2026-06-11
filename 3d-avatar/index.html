@@ -14,6 +14,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:#111;colo
 #cam-box video{width:100%;height:100%;object-fit:cover;display:block}
 .oval{position:absolute;top:50%;left:50%;width:48%;height:54%;transform:translate(-50%,-54%);border:2px solid rgba(255,255,255,.25);border-radius:50%;pointer-events:none}
 .hint-text{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:11px;color:rgba(255,255,255,.45);background:rgba(0,0,0,.55);padding:4px 12px;border-radius:14px;pointer-events:none}
+#debug{position:fixed;top:6px;right:8px;font-size:10px;color:rgba(255,255,255,.35);background:rgba(0,0,0,.5);padding:3px 8px;border-radius:6px;z-index:300;max-width:200px;word-break:break-all}
 .btn-row{margin-top:18px;display:flex;gap:12px}
 .btn{padding:12px 26px;border:none;border-radius:50px;font-size:15px;font-weight:600;cursor:pointer;transition:opacity .2s;letter-spacing:.5px}
 .btn:active{opacity:.7}
@@ -58,11 +59,14 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:#111;colo
 
 <div id="loading"><div class="ld-spin"></div><p>生成中...</p></div>
 <div id="toast"></div>
+<div id="debug">加载中...</div>
 
 <!-- === 摄像头脚本（零依赖，立即执行）=== -->
 <script>
 (function(){
 var stream=null, facing='user';
+
+function log(m){var e=document.getElementById('debug');if(e)e.textContent=m}
 
 function toast(m){var e=document.getElementById('toast');e.textContent=m;e.classList.add('show');setTimeout(function(){e.classList.remove('show')},3000)}
 function showPage(id){var ps=document.querySelectorAll('.page');for(var i=0;i<ps.length;i++)ps[i].classList.remove('show');document.getElementById(id).classList.add('show')}
@@ -71,7 +75,7 @@ function loading(on){document.getElementById('loading').classList.toggle('show',
 async function startCam(face){
   var v=document.getElementById('v'),btn=document.getElementById('cap-btn');
   if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}
-  btn.disabled=true;btn.textContent='启动中...';
+  btn.disabled=true;btn.textContent='启动中...';log('摄像头启动中...');
   try{
     stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:face,width:{ideal:640},height:{ideal:480}}});
     facing=face;
@@ -80,8 +84,11 @@ async function startCam(face){
       if(v.readyState>=2)r();else v.addEventListener('loadeddata',r,{once:true})
     });
     await v.play();
+    window._camReady=true;
     btn.disabled=false;btn.textContent='拍摄';
+    log('摄像头就绪 | 3D:'+(window._threeReady?'已加载':'加载中'));
   }catch(e){
+    log('摄像头错误: '+e.message);
     if(face!=='user'){startCam('user');return}
     btn.disabled=false;btn.textContent='重试';toast('请允许摄像头权限')
   }
@@ -191,14 +198,17 @@ function buildAvatar(img,w,h){
 <script>
 // 轮询等待 THREE 就绪
 (function checkThree(){
+  var e=document.getElementById('debug');
   if(window.THREE){
     initScene();
     window._threeReady=true;
+    if(e)e.textContent='3D就绪 | 摄像头:'+(window._camReady?'就绪':'...');
     return;
   }
   if(!window._threeLoadStart)window._threeLoadStart=Date.now();
-  if(Date.now()-window._threeLoadStart>15000)return; // 超时放弃
-  setTimeout(checkThree,200);
+  if(Date.now()-window._threeLoadStart>15000){if(e)e.textContent='3D加载超时';return}
+  if(e)e.textContent='3D引擎加载中...('+Math.floor((Date.now()-(window._threeLoadStart||0))/1000)+'s)';
+  setTimeout(checkThree,500);
 })();
 
 function initScene(){
