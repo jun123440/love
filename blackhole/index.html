@@ -96,7 +96,7 @@
   <div class="glow-circle"><div class="dark-core"></div></div>
   <h2>请在浏览器中打开</h2>
   <p>微信内置浏览器无法完美展示<br/>3D黑洞模型效果</p>
-  <button class="copy-btn" onclick="copyAndOpen()">复制链接并打开浏览器</button>
+  <button class="copy-btn" id="copyBtn">复制链接并打开浏览器</button>
   <div style="display:flex;gap:16px;margin-top:16px;">
     <div class="tip-row"><span class="dot"></span> 点击右上角</div>
     <div class="tip-row"><span class="dot"></span> 选择「在浏览器中打开」</div>
@@ -125,11 +125,11 @@ if (isWeChat) {
   document.getElementById('wechat-overlay').classList.add('active');
   document.getElementById('loading').classList.add('hidden');
 }
-window.copyAndOpen = () => {
+const copyAndOpen = () => {
   const url = window.location.href;
   if (navigator.clipboard) {
     navigator.clipboard.writeText(url).then(() => {
-      alert('链接已复制！请在系统浏览器中粘贴打开');
+      alert('\u94FE\u63A5\u5DF2\u590D\u5236\uFF01\u8BF7\u5728\u7CFB\u7EDF\u6D4F\u89C8\u5668\u4E2D\u7C98\u8D34\u6253\u5F00');
     });
   } else {
     const ta = document.createElement('textarea');
@@ -137,10 +137,12 @@ window.copyAndOpen = () => {
     document.body.appendChild(ta); ta.select();
     document.execCommand('copy');
     document.body.removeChild(ta);
-    alert('链接已复制！请在系统浏览器中粘贴打开');
+    alert('\u94FE\u63A5\u5DF2\u590D\u5236\uFF01\u8BF7\u5728\u7CFB\u7EDF\u6D4F\u89C8\u5668\u4E2D\u7C98\u8D34\u6253\u5F00');
   }
   window.location.href = 'https://' + window.location.host + window.location.pathname;
 };
+const copyBtn = document.getElementById('copyBtn');
+if (copyBtn) copyBtn.addEventListener('click', copyAndOpen);
 
 const container = document.body;
 const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false, powerPreference:'high-performance' });
