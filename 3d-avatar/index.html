@@ -35,9 +35,6 @@ body{font-family:-apple-system,'Segoe UI',system-ui,sans-serif;background:#08080
 .spinner{width:44px;height:44px;border:2.5px solid rgba(255,255,255,.04);border-top-color:#4a7cff;border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 #loading-overlay p{margin-top:16px;font-size:14px;color:rgba(255,255,255,.55)}
-#processing-bar{margin-top:14px;width:200px;height:2px;background:rgba(255,255,255,.06);overflow:hidden}
-#processing-bar::after{content:'';display:block;width:40%;height:100%;background:linear-gradient(90deg,#4a7cff,#6c5ce7);animation:bar-load 1.2s ease-in-out infinite}
-@keyframes bar-load{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}
 #error-toast{position:fixed;bottom:36px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(255,50,50,.12);backdrop-filter:blur(12px);border:1px solid rgba(255,50,50,.2);padding:12px 24px;border-radius:10px;font-size:13px;color:#ff6b6b;z-index:200;transition:transform .35s ease;white-space:nowrap}
 #error-toast.show{transform:translateX(-50%) translateY(0)}
 .status-tag{position:absolute;top:12px;right:12px;font-size:11px;padding:4px 10px;border-radius:8px;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);color:rgba(255,255,255,.4);pointer-events:none}
@@ -48,16 +45,16 @@ body{font-family:-apple-system,'Segoe UI',system-ui,sans-serif;background:#08080
 <div id="camera-view" class="view">
   <div id="camera-container" class="mirror"><video id="video" autoplay playsinline muted></video>
     <div id="capture-overlay"><div class="face-guide"></div><div class="guide-hint">正面面向镜头</div></div>
-    <div class="status-tag" id="status-tag">就绪</div></div>
+    <div class="status-tag" id="status-tag"></div></div>
   <div class="btn-group">
     <button id="camera-toggle" class="btn btn-toggle" title="切换摄像头">
       <svg viewBox="0 0 24 24"><path d="M20 4h-3.17L15 2H9L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 3c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6 2.69-6 6-6zm0 2c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/></svg>
       翻转
     </button>
-    <button id="capture-btn" class="btn btn-primary">● 捕捉重建</button>
+    <button id="capture-btn" class="btn btn-primary">启动摄像头</button>
   </div>
 </div>
-<div id="loading-overlay" class="hidden"><div class="spinner"></div><p id="load-text">正在重建 3D 模型</p><div id="processing-bar"></div></div>
+<div id="loading-overlay" class="hidden"><div class="spinner"></div><p id="load-text">正在重建 3D 模型</p></div>
 <div id="model-view" class="view hidden">
   <div id="three-container"></div>
   <div class="model-hint">拖动旋转 · 滚轮缩放</div>
@@ -68,6 +65,7 @@ body{font-family:-apple-system,'Segoe UI',system-ui,sans-serif;background:#08080
 </div>
 <div id="error-toast"></div>
 
+<script async crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js"></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
@@ -75,7 +73,104 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 const $=id=>document.getElementById(id);
 
-function buildParametricHead(faceTex){
+let cameraFacing='user', videoStream=null;
+let faceLandmarks=null, mediapipeReady=false, fmInstance=null;
+
+function delaunayTriangulation(points) {
+  const n=points.length; if(n<3) return [];
+  const pts=points.map(p=>[p[0],p[1]]);
+  let mnX=Infinity,mxX=-Infinity,mnY=Infinity,mxY=-Infinity;
+  for(const p of pts){if(p[0]<mnX)mnX=p[0];if(p[0]>mxX)mxX=p[0];if(p[1]<mnY)mnY=p[1];if(p[1]>mxY)mxY=p[1]}
+  const dx=mxX-mnX||1,dy=mxY-mnY||1,supR=Math.max(dx,dy)*20;
+  pts.push([mnX-supR,mnY-supR],[mxX+supR,mnY-supR],[(mnX+mxX)/2,mxY+supR]);
+  const superA=n,superB=n+1,superC=n+2;
+  let tris=[{a:superA,b:superB,c:superC}];
+  for(let i=0;i<n;i++){
+    const p=pts[i],bad=[];
+    for(let j=tris.length-1;j>=0;j--){
+      const t=tris[j],ax=pts[t.a][0]-p[0],ay=pts[t.a][1]-p[1],bx=pts[t.b][0]-p[0],by=pts[t.b][1]-p[1],cx=pts[t.c][0]-p[0],cy=pts[t.c][1]-p[1];
+      const d=2*(ax*(by-cy)+bx*(cy-ay)+cx*(ay-by));
+      if(d===0){tris.splice(j,1);continue}
+      const ux=((ax*ax+ay*ay)*(by-cy)+(bx*bx+by*by)*(cy-ay)+(cx*cx+cy*cy)*(ay-by))/d;
+      const uy=((ax*ax+ay*ay)*(cx-bx)+(bx*bx+by*by)*(ax-cx)+(cx*cx+cy*cy)*(bx-ax))/d;
+      if((ax-ux)*(ax-ux)+(ay-uy)*(ay-uy)<ux*ux+uy*uy){bad.push(j)}
+    }
+    const edges=[];
+    for(let j=bad.length-1;j>=0;j--){
+      const idx=bad[j],t=tris[idx];
+      edges.push(t.a,t.b,t.b,t.c,t.c,t.a);
+      tris.splice(idx,1);
+    }
+    for(let j=0;j<edges.length;j+=2){
+      let dup=false;
+      for(let k=j+2;k<edges.length;k+=2){
+        if((edges[j]===edges[k]&&edges[j+1]===edges[k+1])||(edges[j]===edges[k+1]&&edges[j+1]===edges[k])){
+          dup=true;edges.splice(k,2);break
+        }
+      }
+      if(!dup) tris.push({a:edges[j],b:edges[j+1],c:i});
+    }
+  }
+  const out=[];
+  for(const t of tris){
+    if(t.a<n&&t.b<n&&t.c<n) out.push(t.a,t.b,t.c);
+  }
+  return out;
+}
+
+function subdivideMesh(verts, idx) {
+  const edgeMap=new Map();
+  function mid(a,b){
+    const key=a<b?`${a}-${b}`:`${b}-${a}`;
+    if(edgeMap.has(key)) return edgeMap.get(key);
+    const mi=verts.length/3;
+    verts.push((verts[a*3]+verts[b*3])/2,(verts[a*3+1]+verts[b*3+1])/2,(verts[a*3+2]+verts[b*3+2])/2);
+    edgeMap.set(key,mi);
+    return mi;
+  }
+  const newIdx=[];
+  for(let i=0;i<idx.length;i+=3){
+    const a=idx[i],b=idx[i+1],c=idx[i+2];
+    const ab=mid(a,b),bc=mid(b,c),ca=mid(c,a);
+    newIdx.push(a,ab,ca,ab,b,bc,ca,bc,c,ab,bc,ca);
+  }
+  return newIdx;
+}
+
+function buildFaceMesh(landmarks, imgW, imgH) {
+  const n=landmarks.length;
+  const verts=new Float32Array(n*3), uvs=new Float32Array(n*2);
+
+  let mnX=Infinity,mxX=-Infinity,mnY=Infinity,mxY=-Infinity;
+  for(const lm of landmarks){if(lm.x<mnX)mnX=lm.x;if(lm.x>mxX)mxX=lm.x;if(lm.y<mnY)mnY=lm.y;if(lm.y>mxY)mxY=lm.y}
+  const cX=(mnX+mxX)/2,cY=(mnY+mxY)/2,sX=(mxX-mnX)||0.5,sY=(mxY-mnY)||0.5;
+  const tW=0.44,tH=0.58,scaleX=tW/sX,scaleY=tH/sY;
+
+  for(let i=0;i<n;i++){
+    const x=(landmarks[i].x-cX)*scaleX;
+    const y=-(landmarks[i].y-cY)*scaleY;
+    const z=(landmarks[i].z||0)*0.08;
+    verts[i*3]=x;
+    verts[i*3+1]=y+1.64;
+    verts[i*3+2]=z+0.03;
+    uvs[i*2]=landmarks[i].x;
+    uvs[i*2+1]=landmarks[i].y;
+  }
+
+  const pts=[];
+  for(let i=0;i<n;i++) pts.push([verts[i*3],verts[i*3+1]]);
+  let triList=delaunayTriangulation(pts);
+  for(let lvl=0;lvl<2;lvl++) triList=subdivideMesh(verts,triList);
+
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(verts,3));
+  geo.setAttribute('uv',new THREE.BufferAttribute(uvs,2));
+  geo.setIndex(triList);
+  geo.computeVertexNormals();
+  return new THREE.Mesh(geo, new THREE.MeshStandardMaterial({map:null, roughness:.18, metalness:0}));
+}
+
+function buildParametricHead(){
   const RX=0.21,RY=0.25,RZ=0.21,CU=96,CV=72;
   const verts=[],uvs=[],idx=[];
   for(let j=0;j<=CV;j++){
@@ -102,8 +197,7 @@ function buildParametricHead(faceTex){
       const earR=Math.exp(-Math.pow((theta-.70)*5,2)-Math.pow(phi-1.23,2)*50)*.048;
       const nW=Math.exp(-Math.pow((theta-.65)*4.5,2)-Math.pow(phi*8,2))*(-.006);
       const dz=nose+nB+eSoc+eBal+cheek+chin+jaw+brow+lipU+lipL+nW;
-      const dx=earL*(-.4)+earR*(.4),dy=fore;
-      verts.push(x+dx+nxn*dz,y+dy+nyn*dz,z+nzn*dz+(earL+earR)*.3);
+      verts.push(x+earL*(-.4)+earR*(.4)+nxn*dz,y+fore+nyn*dz,z+nzn*dz+(earL+earR)*.3);
       uvs.push(u,v);
       if(i<CU&&j<CV){const a=j*(CU+1)+i,b=a+1,c=a+CU+1,d=c+1;idx.push(a,b,d,a,d,c)}
     }
@@ -111,11 +205,8 @@ function buildParametricHead(faceTex){
   const geo=new THREE.BufferGeometry();
   geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
   geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
-  geo.setIndex(idx);
-  geo.computeVertexNormals();
-  const mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:faceTex,roughness:.18,metalness:0}));
-  mesh.position.y=1.62;mesh.castShadow=true;
-  return mesh;
+  geo.setIndex(idx);geo.computeVertexNormals();
+  return new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:null,roughness:.18,metalness:0}));
 }
 
 function makeRing(y,rx,rz,seg,dx=0,dz=0){const p=new Float32Array((seg+1)*3);for(let i=0;i<=seg;i++){const a=i/seg*Math.PI*2;p[i*3]=Math.cos(a)*rx+dx;p[i*3+1]=y;p[i*3+2]=Math.sin(a)*rz+dz}return p}
@@ -166,22 +257,27 @@ function processImage(img){
   gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,`rgba(${skin[0]},${skin[1]},${skin[2]},.35)`);
   tc.fillStyle=gr;tc.fillRect(0,0,S,S);
   const tex3=new THREE.CanvasTexture(tex);tex3.colorSpace=THREE.SRGBColorSpace;
-  return{
-    faceTex:tex3,
-    skin:(skin[0]<<16)|(skin[1]<<8)|skin[2],
-    hair:(hair[0]<<16)|(hair[1]<<8)|hair[2],
-    cloth:(bright(cloth[0])<<16)|(bright(cloth[1])<<8)|bright(cloth[2]),
-    pants:0x2a2a44,shoe:0x0e0e1e,
-  };
+  return{faceTex:tex3,skin:(skin[0]<<16)|(skin[1]<<8)|skin[2],hair:(hair[0]<<16)|(hair[1]<<8)|hair[2],cloth:(bright(cloth[0])<<16)|(bright(cloth[1])<<8)|bright(cloth[2]),pants:0x2a2a44,shoe:0x0e0e1e};
 }
 
-function buildAvatar(img){
+function buildAvatar(img, useLandmarks=false){
   const cols=processImage(img);
   const group=new THREE.Group();
-  const body=buildBody(cols.skin,cols.cloth,cols.pants,cols.shoe);
-  for(const m of body)group.add(m);
-  group.add(buildParametricHead(cols.faceTex));
-  const hR=24,hC=48;const hVerts=[],hUvs=[],hIdx=[];
+  for(const m of buildBody(cols.skin,cols.cloth,cols.pants,cols.shoe)) group.add(m);
+
+  let headMesh;
+  if(useLandmarks && faceLandmarks && faceLandmarks.length>=400){
+    headMesh=buildFaceMesh(faceLandmarks, img.width, img.height);
+  }else{
+    headMesh=buildParametricHead();
+  }
+  headMesh.material.map=cols.faceTex;
+  headMesh.material.needsUpdate=true;
+  if(!useLandmarks||!faceLandmarks||faceLandmarks.length<400) headMesh.position.y=1.62;
+  headMesh.castShadow=true;
+  group.add(headMesh);
+
+  const hR=24,hC=48,hVerts=[],hUvs=[],hIdx=[];
   for(let r=0;r<=hR;r++){const v=r/hR,th=v*Math.PI*.5;for(let c=0;c<=hC;c++){const u=c/hC,phi=u*2*Math.PI;hVerts.push(Math.sin(th)*Math.cos(phi)*.22,Math.cos(th)*.30+1.38,Math.sin(th)*Math.sin(phi)*.21);hUvs.push(u,v);if(r<hR&&c<hC){const a=r*(hC+1)+c,b=r*(hC+1)+c+1,d=(r+1)*(hC+1)+c,e=(r+1)*(hC+1)+c+1;hIdx.push(a,b,d,b,e,d)}}}
   const hGeo=new THREE.BufferGeometry();hGeo.setAttribute('position',new THREE.Float32BufferAttribute(hVerts,3));hGeo.setAttribute('uv',new THREE.Float32BufferAttribute(hUvs,2));hGeo.setIndex(hIdx);hGeo.computeVertexNormals();
   group.add(new THREE.Mesh(hGeo,new THREE.MeshStandardMaterial({color:cols.hair,roughness:.85,metalness:0})));
@@ -206,63 +302,80 @@ function initScene(){
   controls.addEventListener('start',()=>controls.autoRotate=false);
   scene.add(new THREE.AmbientLight(0x334466,0.4));
   scene.add(new THREE.HemisphereLight(0x6688dd,0x553322,0.5));
-  const k=new THREE.DirectionalLight(0xffeedd,2.2);
-  k.position.set(2.5,3.0,2.0);k.castShadow=true;
-  k.shadow.mapSize.width=1024;k.shadow.mapSize.height=1024;k.shadow.radius=4;scene.add(k);
+  const k=new THREE.DirectionalLight(0xffeedd,2.2);k.position.set(2.5,3.0,2.0);k.castShadow=true;k.shadow.mapSize.width=1024;k.shadow.mapSize.height=1024;k.shadow.radius=4;scene.add(k);
   scene.add(new THREE.DirectionalLight(0x88ccff,0.8).position.set(-2.0,1.5,-1.5));
   scene.add(new THREE.DirectionalLight(0x44ffff,0.4).position.set(-1.0,2.5,-2.5));
   scene.add(new THREE.DirectionalLight(0xff44aa,0.3).position.set(1.5,1.0,-2.0));
   scene.add(new THREE.DirectionalLight(0x88aaff,0.3).position.set(0,4,0));
   const g=new THREE.Mesh(new THREE.CircleGeometry(3,48),new THREE.MeshStandardMaterial({color:0x0e0e1a,roughness:0.9,metalness:0,transparent:true,opacity:0.35,side:THREE.DoubleSide}));
   g.rotation.x=-Math.PI/2;g.position.y=-0.02;g.receiveShadow=true;scene.add(g);
-  const gr=new THREE.GridHelper(4,20,0x1a1a30,0x1a1a30);
-  gr.position.y=-0.01;gr.material.transparent=true;gr.material.opacity=0.06;scene.add(gr);
+  const gr=new THREE.GridHelper(4,20,0x1a1a30,0x1a1a30);gr.position.y=-0.01;gr.material.transparent=true;gr.material.opacity=0.06;scene.add(gr);
   addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 }
 
 function updateAvatar(time){if(!avatarGroup)return;avatarGroup.position.y=Math.sin(time*1.8)*0.002;avatarGroup.rotation.z=Math.sin(time*0.6)*0.0015}
 function animate(time){animTime=time*0.001;requestAnimationFrame(animate);updateAvatar(animTime);controls?.update();renderer?.render(scene,camera)}
 
-let cameraFacing='user',videoStream=null,cameraReady=false;
-
-async function startCamera(face){
-  const video=$('video');
-  try{videoStream&&videoStream.getTracks().forEach(t=>t.stop())}catch(e){}
-  videoStream=null;cameraReady=false;
-  try{
-    videoStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:face,width:{ideal:640},height:{ideal:480}}});
-  }catch(e){
-    if(face==='environment'){videoStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}});cameraFacing='user'}
-    else throw e;
-  }
-  video.srcObject=videoStream;
-  await new Promise((r,j)=>{video.onloadedmetadata=r;video.onerror=j});
-  await video.play();
-  const cont=$('camera-container');
-  if(cameraFacing==='user')cont.classList.add('mirror');else cont.classList.remove('mirror');
-  cameraReady=true;
-  $('status-tag').textContent='就绪';
-  $('capture-btn').disabled=false;
-  $('capture-btn').textContent='● 捕捉重建';
-}
-
 function capturePhoto(){
   const v=$('video'),w=v.videoWidth||640,h=v.videoHeight||480;
+  if(w===0||h===0){showError('摄像头未就绪，请稍候');return null}
   const c=document.createElement('canvas');c.width=w;c.height=h;
   c.getContext('2d').drawImage(v,0,0);
   return c;
 }
 
-function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));(id)?$(id).classList.remove('hidden'):0}
+function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));$(id).classList.remove('hidden')}
 function showLoading(v){$('loading-overlay').classList.toggle('hidden',!v)}
 function showError(m){const t=$('error-toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),4000)}
+
+async function startCamera(facing){
+  const video=$('video');
+  if(videoStream){videoStream.getTracks().forEach(t=>t.stop());videoStream=null}
+  $('capture-btn').disabled=true;$('capture-btn').textContent='启动中...';
+  $('status-tag').textContent='';
+
+  try{
+    videoStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:facing,width:{ideal:640},height:{ideal:480}}});
+    cameraFacing=facing;
+  }catch(e){
+    if(facing==='environment'){
+      try{videoStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}});cameraFacing='user'}catch(e2){throw e}
+    }else throw e;
+  }
+
+  video.srcObject=videoStream;
+  if(video.readyState<2) await new Promise(r=>video.addEventListener('loadeddata',r,{once:true}));
+  await video.play();
+  $('camera-container').classList.toggle('mirror',cameraFacing==='user');
+  if(trySetupMediaPipe()) $('status-tag').textContent='摄像头就绪';
+  else setTimeout(tryMediaPipePoll,200);
+  $('capture-btn').disabled=false;
+  $('capture-btn').textContent='● 捕捉重建';
+}
+
+function trySetupMediaPipe(){
+  if(!window.FaceMesh||mediapipeReady)return false;
+  try{
+    fmInstance=new FaceMesh({locateFile:file=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/${file}`});
+    fmInstance.setOptions({maxNumFaces:1,refineLandmarks:true,minDetectionConfidence:0.5,minTrackingConfidence:0.5});
+    fmInstance.onResults(results=>{if(results.multiFaceLandmarks?.length>0)faceLandmarks=results.multiFaceLandmarks[0]});
+    mediapipeReady=true;$('status-tag').textContent='AI 面部就绪';
+    detectLoop();
+    return true;
+  }catch(e){console.warn('MediaPipe init failed:',e);return false}
+}
+function tryMediaPipePoll(){if(!trySetupMediaPipe())setTimeout(tryMediaPipePoll,500)}
+
+function detectLoop(){if(detectBusy)return requestAnimationFrame(detectLoop);const v=$('video');if(v.readyState>=2&&fmInstance){detectBusy=true;fmInstance.send({image:v}).then(()=>{detectBusy=false}).catch(()=>{detectBusy=false})}requestAnimationFrame(detectLoop)}
+let detectBusy=false;
 
 async function onCapture(){
   const btn=$('capture-btn');btn.disabled=true;btn.textContent='● 处理中...';
   try{
-    const cap=capturePhoto();showLoading(true);await new Promise(r=>setTimeout(r,50));
+    const cap=capturePhoto();if(!cap){btn.disabled=false;btn.textContent='● 捕捉重建';return}
+    showLoading(true);await new Promise(r=>setTimeout(r,50));
     if(avatarGroup)scene.remove(avatarGroup);
-    avatarGroup=buildAvatar(cap);
+    avatarGroup=buildAvatar(cap, mediapipeReady && faceLandmarks && faceLandmarks.length>0);
     scene.add(avatarGroup);
     controls.target.set(0,0.78,0);controls.autoRotate=true;controls.update();
     showLoading(false);showView('model-view');
@@ -271,9 +384,8 @@ async function onCapture(){
 }
 
 async function onSwitchCamera(){
-  cameraFacing=cameraFacing==='user'?'environment':'user';
-  $('capture-btn').disabled=true;$('capture-btn').textContent='切换中...';
-  try{await startCamera(cameraFacing)}catch(e){showError('摄像头切换失败');$('capture-btn').disabled=false;$('capture-btn').textContent='● 捕捉重建'}
+  const next=cameraFacing==='user'?'environment':'user';
+  try{await startCamera(next)}catch(e){showError('切换失败: '+e.message)}
 }
 
 function onRetake(){
@@ -289,13 +401,12 @@ function onDownload(){
       const a=document.createElement('a');a.href=u;a.download='3d-avatar.glb';a.click();
       URL.revokeObjectURL(u);showLoading(false);
     },()=>{showLoading(false);showError('导出失败')},{binary:true});
-    setTimeout(()=>showLoading(false),12000);
   }catch(e){showLoading(false);showError('下载失败')}
 }
 
 async function init(){
   initScene();animate(0);
-  try{await startCamera(cameraFacing)}catch(e){showError('无法访问摄像头: '+e.message)}
+  await startCamera(cameraFacing).catch(e=>showError('摄像头: '+e.message));
   $('capture-btn').addEventListener('click',onCapture);
   $('camera-toggle').addEventListener('click',onSwitchCamera);
   $('retake-btn').addEventListener('click',onRetake);
