@@ -231,7 +231,11 @@ const R={ // Real classical poetry lines only
 红:['红杏枝头春意闹'],
 绿:['绿蚁新醅酒，红泥小火炉'],
 };
-const T=Object.keys(R); // tracked chars
+const T=Object.keys(R);
+// ----- 专属定制诗 · 为特定名字手写全篇 -----
+const SP={
+  '郑灵':['郑山烟雨最多情','灵雨灵风自可人','郑圃春深花似海','灵禽枝上语新晴'],
+};
 function anyLine(ch){
   if(R[ch]&&R[ch].length>0)return randItem(R[ch]);
   return null;
@@ -239,6 +243,12 @@ function anyLine(ch){
 function genPoem(name){
   if(!name||!name.trim())return[];
   name=name.trim();
+  // Check for dedicated poem
+  if(SP[name]){
+    const lines=SP[name];
+    const cs=[...name];
+    return lines.map((ln,i)=>({ch:cs[i%cs.length],line:ln,real:true}));
+  }
   const chars=[...name];
   const all=[];
   for(const ch of chars){
@@ -246,10 +256,9 @@ function genPoem(name){
     if(line)all.push({ch,line,real:true});
     else all.push({ch,line:null,real:false});
   }
-  // If no chars have real lines, fall back to a default poem
   if(all.every(x=>!x.real)){
-    const fallback=randItem(['春江潮水连海平，海上明月共潮生','长风破浪会有时，直挂云帆济沧海','行到水穷处，坐看云起时','海上生明月，天涯共此时']);
-    return chars.map(ch=>({ch,line:fallback,real:false}));
+    const fb=randItem(['春江潮水连海平，海上明月共潮生','长风破浪会有时，直挂云帆济沧海','行到水穷处，坐看云起时','海上生明月，天涯共此时']);
+    return chars.map(ch=>({ch,line:fb,real:false}));
   }
   return all;
 }
