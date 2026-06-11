@@ -6,247 +6,261 @@
 <title>3D 头像</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,'PingFang SC','Segoe UI',sans-serif;background:#0a0a14;color:#fff;height:100dvh;width:100vw;overflow:hidden;touch-action:manipulation}
+body{font-family:-apple-system,'PingFang SC','Segoe UI',sans-serif;background:#0a0a14;color:#fff;height:100dvh;width:100vw;overflow:hidden}
 .view{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .4s,transform .4s}
 .view.hidden{opacity:0;pointer-events:none;transform:scale(.97)}
-#camera-view{background:radial-gradient(ellipse at 50% 35%,#1a1a30,#0a0a14)}
-#cam-wrap{position:relative;border-radius:16px;overflow:hidden;box-shadow:0 0 80px rgba(60,100,255,.08);border:1px solid rgba(255,255,255,.04);background:#000;width:min(88vw,360px);aspect-ratio:4/3}
-#cam-wrap video{display:block;width:100%;height:100%;object-fit:cover}
-#cam-wrap.mirror video{transform:scaleX(-1)}
-#guide{position:absolute;inset:0;pointer-events:none}
-#guide .oval{position:absolute;top:50%;left:50%;width:50%;height:56%;transform:translate(-50%,-54%);border:1.5px solid rgba(255,255,255,.15);border-radius:50% 50% 50% 50%/60% 60% 40% 40%}
-#guide .txt{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);font-size:11px;color:rgba(255,255,255,.22);letter-spacing:2px;background:rgba(0,0,0,.4);padding:4px 12px;border-radius:20px}
-#cam-btns{margin-top:20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center}
+#cam{position:relative;border-radius:16px;overflow:hidden;box-shadow:0 0 80px rgba(60,100,255,.08);border:1px solid rgba(255,255,255,.04);background:#000;width:min(88vw,360px);aspect-ratio:4/3}
+#cam video{display:block;width:100%;height:100%;object-fit:cover}
+#cam.mirror video{transform:scaleX(-1)}
+#oval{position:absolute;top:50%;left:50%;width:50%;height:56%;transform:translate(-50%,-54%);border:1.5px solid rgba(255,255,255,.15);border-radius:50% 50% 50% 50%/60% 60% 40% 40%;pointer-events:none}
+#txt{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);font-size:11px;color:rgba(255,255,255,.22);background:rgba(0,0,0,.4);padding:4px 14px;border-radius:20px;pointer-events:none}
+.btns{margin-top:18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center}
 .btn{padding:10px 24px;border:none;border-radius:50px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;letter-spacing:.5px;display:inline-flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent}
-.btn-main{background:linear-gradient(135deg,#4a7cff,#6c5ce7);color:#fff;box-shadow:0 4px 20px rgba(74,124,255,.25)}
-.btn-main:active{transform:scale(.96)}
-.btn-main:disabled{opacity:.35;pointer-events:none}
-.btn-ghost{background:rgba(255,255,255,.05);color:#bbb;border:1px solid rgba(255,255,255,.06)}
-.btn-ghost:active{background:rgba(255,255,255,.1)}
-.btn-ghost svg{width:14px;height:14px;fill:currentColor;opacity:.6}
-#capture-btn{min-width:160px;justify-content:center}
-#three-container{width:100vw;height:100dvh;display:block}
-.ctrl-bar{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:10;flex-wrap:wrap;justify-content:center}
-.hint{position:fixed;top:16px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.15);font-size:11px;z-index:10;background:rgba(0,0,0,.35);padding:5px 14px;border-radius:20px;pointer-events:none}
-#loading{position:fixed;inset:0;background:rgba(8,8,14,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;transition:opacity .35s}
-#loading.hidden{opacity:0;pointer-events:none}
-.spin{width:36px;height:36px;border:2px solid rgba(255,255,255,.04);border-top-color:#4a7cff;border-radius:50%;animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-#loading p{margin-top:14px;font-size:13px;color:rgba(255,255,255,.5)}
-#toast{position:fixed;bottom:40px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(255,50,50,.1);border:1px solid rgba(255,50,50,.15);padding:10px 20px;border-radius:10px;font-size:12px;color:#ff6b6b;z-index:200;transition:transform .3s;white-space:nowrap}
-#toast.show{transform:translateX(-50%) translateY(0)}
+.btn1{background:linear-gradient(135deg,#4a7cff,#6c5ce7);color:#fff;box-shadow:0 4px 20px rgba(74,124,255,.25)}
+.btn1:active{transform:scale(.96)}
+.btn1:disabled{opacity:.35;pointer-events:none}
+.btn2{background:rgba(255,255,255,.05);color:#bbb;border:1px solid rgba(255,255,255,.06)}
+.btn2:active{background:rgba(255,255,255,.1)}
+.btn2 svg{width:14px;height:14px;fill:currentColor;opacity:.6}
+#cap{min-width:140px;justify-content:center}
+#c3d{width:100vw;height:100dvh;display:block}
+.ctrl{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:10}
+.tip{position:fixed;top:16px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.15);font-size:11px;z-index:10;background:rgba(0,0,0,.35);padding:5px 14px;border-radius:20px;pointer-events:none}
+#load{position:fixed;inset:0;background:rgba(8,8,14,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;transition:opacity .35s}
+#load.hidden{opacity:0;pointer-events:none}
+.sp{width:36px;height:36px;border:2px solid rgba(255,255,255,.04);border-top-color:#4a7cff;border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+#load p{margin-top:14px;font-size:13px;color:rgba(255,255,255,.5)}
+#err{position:fixed;bottom:40px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(255,50,50,.1);border:1px solid rgba(255,50,50,.15);padding:10px 20px;border-radius:10px;font-size:12px;color:#ff6b6b;z-index:200;transition:transform .3s;white-space:nowrap}
+#err.show{transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
-<div id="camera-view" class="view">
-  <div id="cam-wrap" class="mirror"><video id="video" autoplay playsinline muted></video>
-    <div id="guide"><div class="oval"></div><div class="txt">正面面向镜头</div></div></div>
-  <div id="cam-btns">
-    <button id="toggle-btn" class="btn btn-ghost">
-      <svg viewBox="0 0 24 24"><path d="M20 4h-3.17L15 2H9L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 3c2.21 0 4 1.79 4 4 0 .89-.3 1.72-.79 2.39l2.2 2.2C18.54 13.89 19 12.5 19 11c0-3.87-3.13-7-7-7-1.5 0-2.89.46-4.03 1.26l1.48 1.48A3.98 3.98 0 0112 7zm-4.41 1.13L4.26 4.85 3 6.11l2.08 2.08C3.95 9.7 3 11.24 3 13c0 3.87 3.13 7 7 7 1.76 0 3.36-.63 4.61-1.69l2.13 2.13 1.26-1.26-9.41-9.42z"/></svg>
+
+<div id="cam-view" class="view">
+  <div id="cam" class="mirror">
+    <video id="video" autoplay playsinline muted></video>
+    <div id="oval"></div>
+    <div id="txt">正面面向镜头</div>
+  </div>
+  <div class="btns">
+    <button id="sw" class="btn btn2">
+      <svg viewBox="0 0 24 24"><path d="M12 4c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 16c-3.86 0-7-3.14-7-7s3.14-7 7-7 7 3.14 7 7-3.14 7-7 7zm-1-6h2v2h-2zm0-6h2v4h-2z"/></svg>
       翻转
     </button>
-    <button id="capture-btn" class="btn btn-main">启动中...</button>
+    <button id="cap" class="btn btn1">启动中...</button>
   </div>
 </div>
-<div id="loading" class="hidden"><div class="spin"></div><p id="load-text">生成 3D 模型</p></div>
-<div id="model-view" class="view hidden">
-  <div id="three-container"></div>
-  <div class="hint">拖动旋转 · 缩放</div>
-  <div class="ctrl-bar">
-    <button id="retake-btn" class="btn btn-ghost">← 重拍</button>
-    <button id="download-btn" class="btn btn-main">↓ 下载模型</button>
-  </div>
-</div>
-<div id="toast"></div>
 
+<div id="load" class="hidden"><div class="sp"></div><p>生成中...</p></div>
+
+<div id="md-view" class="view hidden">
+  <div id="c3d"></div>
+  <div class="tip">拖动旋转 · 缩放</div>
+  <div class="ctrl">
+    <button id="re" class="btn btn2">← 重拍</button>
+    <button id="dl" class="btn btn1">↓ 下载模型</button>
+  </div>
+</div>
+
+<div id="err"></div>
+
+<script async src="https://ga.jspm.io/npm:es-module-shims@1.10.0/dist/es-module-shims.js"></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 const $=id=>document.getElementById(id);
 
 let facing='user', stream=null;
 
-function buildHeadMesh(tex){
-  const RX=0.18,RY=0.22,RZ=0.18,U=80,V=60;
-  const Verts=[],Uvs=[],Idx=[];
-  for(let j=0;j<=V;j++){
-    const v=j/V,theta=v*Math.PI,st=Math.sin(theta),ct=Math.cos(theta);
-    for(let i=0;i<=U;i++){
-      const u=i/U,phi=u*2*Math.PI,cp=Math.cos(phi),sp=Math.sin(phi);
-      const front=cp>0?cp:0,f2=front*front;
-      let x=st*cp*RX,y=ct*RY,z=st*sp*RZ;
-      const nx=x/(RX*RX),ny=y/(RY*RY),nz=z/(RZ*RZ),nl=Math.sqrt(nx*nx+ny*ny+nz*nz)||1;
-      const NX=nx/nl,NY=ny/nl,NZ=nz/nl;
-      const nose=.050*Math.exp(-Math.pow((theta-2.50)*5,2)-Math.pow(phi*3,2));
-      const nB=.016*Math.exp(-Math.pow((theta-2.70)*6,2))*f2;
-      const eT=theta-2.62,el=Math.exp(-Math.pow(phi-.42,2)*30-Math.pow(eT,2)*38),er=Math.exp(-Math.pow(phi+.42,2)*30-Math.pow(eT,2)*38);
-      const eS=-(el+er)*.022;
-      const cheek=Math.exp(-Math.pow(theta-2.35,2)*14-Math.pow(Math.abs(phi)-.58,2)*18)*.016;
-      const chin=Math.exp(-Math.pow((theta-1.75)*6,2))*front*.012;
-      const jaw=Math.exp(-Math.pow((theta-1.95)*3.5,2))*(1-Math.abs(front))*.040;
-      const brow=(Math.exp(-Math.pow(phi-.38,2)*16-Math.pow(theta-2.78,2)*32)+Math.exp(-Math.pow(phi+.38,2)*16-Math.pow(theta-2.78,2)*32))*.016;
-      const earL=Math.exp(-Math.pow((theta-2.42)*5,2)-Math.pow(phi+1.22,2)*45)*.040;
-      const earR=Math.exp(-Math.pow((theta-2.42)*5,2)-Math.pow(phi-1.22,2)*45)*.040;
-      const fore=Math.exp(-Math.pow((theta-3.02)*4.5,2))*.008;
-      const dz=nose+nB+eS+cheek+chin+jaw+brow;
-      const dx=earL*(-.35)+earR*(.35);
-      Verts.push(x+dx+NX*dz, y+fore+NY*dz, z+NZ*dz+(earL+earR)*.25);
-      Uvs.push(u,1-v);
-      if(i<U&&j<V){const a=j*(U+1)+i,b=a+1,c=a+U+1,d=c+1;Idx.push(a,b,d,a,d,c)}
+function buildFace(tex,imgW,imgH){
+  const W=80,H=64;
+  const verts=[],uvs=[],idx=[];
+
+  for(let j=0;j<=H;j++){
+    const v=j/H;          // 0=发际线, 1=下巴
+    const y=(0.5-v)*0.50; // 3D Y: 上=+0.25, 下=-0.25
+
+    for(let i=0;i<=W;i++){
+      const u=i/W;                // 0=左脸, 1=右脸
+      const x=(u-0.5)*0.38;       // 3D X: -0.19..+0.19
+      const front=1-Math.abs(u-0.5)*2; // 1中心, 0边缘
+      const cx=u-0.5;
+
+      let z=0;
+
+      // 脸的基本弧度 (侧面往后弯)
+      const sideCurve=-0.06*Math.pow(Math.abs(cx)*2,1.5);
+      z+=sideCurve;
+
+      // 鼻子
+      const nd=Math.pow((u-0.5)*3.5,2)+Math.pow((v-0.55)*3.2,2);
+      z+=0.050*Math.exp(-nd);
+
+      // 鼻梁
+      const nb=Math.pow((u-0.5)*5,2)+Math.pow((v-0.42)*2.8,2);
+      z+=0.018*Math.exp(-nb)*front;
+
+      // 眼窝
+      const el=Math.exp(-Math.pow(u-0.33,2)*40-Math.pow(v-0.44,2)*42);
+      const er=Math.exp(-Math.pow(u-0.67,2)*40-Math.pow(v-0.44,2)*42);
+      z+=-(el+er)*0.022;
+
+      // 眼皮
+      z+=(Math.exp(-Math.pow(u-0.33,2)*28-Math.pow(v-0.40,2)*32)+Math.exp(-Math.pow(u-0.67,2)*28-Math.pow(v-0.40,2)*32))*0.010;
+
+      // 颧骨
+      const ckl=Math.exp(-Math.pow(v-0.52,2)*16-Math.pow(u-0.20,2)*22);
+      const ckr=Math.exp(-Math.pow(v-0.52,2)*16-Math.pow(u-0.80,2)*22);
+      z+=(ckl+ckr)*0.018;
+
+      // 下巴
+      z+=Math.exp(-Math.pow((v-0.88)*6,2))*front*0.014;
+
+      // 下颌线
+      z+=Math.exp(-Math.pow((v-0.70)*4,2))*0.030;
+
+      // 眉毛
+      const bl=Math.exp(-Math.pow(u-0.33,2)*16-Math.pow(v-0.32,2)*36);
+      const br=Math.exp(-Math.pow(u-0.67,2)*16-Math.pow(v-0.32,2)*36);
+      z+=(bl+br)*0.015;
+
+      // 上唇
+      z+=Math.exp(-Math.pow((v-0.68)*28,2))*front*0.008;
+      // 下唇
+      z+=Math.exp(-Math.pow((v-0.72)*24,2))*front*0.006;
+
+      // 额头微凸
+      z+=Math.exp(-Math.pow((v-0.04)*5,2))*0.008;
+
+      // 鼻翼凹陷
+      z+=Math.exp(-Math.pow((v-0.56)*5,2)-Math.pow((u-0.5)*8,2))*(-0.005);
+
+      verts.push(x,y,z);
+      uvs.push(u,1-v);
+      if(i<W&&j<H){
+        const a=j*(W+1)+i,b=a+1,c=a+W+1,d=c+1;
+        idx.push(a,b,d,a,d,c);
+      }
     }
   }
-  const g=new THREE.BufferGeometry();
-  g.setAttribute('position',new THREE.Float32BufferAttribute(Verts,3));
-  g.setAttribute('uv',new THREE.Float32BufferAttribute(Uvs,2));
-  g.setIndex(Idx);g.computeVertexNormals();
-  const m=new THREE.Mesh(g,new THREE.MeshStandardMaterial({map:tex,roughness:.16,metalness:0}));
-  m.position.y=1.54;m.castShadow=true;
-  return m;
+
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
+  geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+  geo.setIndex(idx);geo.computeVertexNormals();
+
+  const mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:tex,roughness:.15,metalness:0}));
+  mesh.position.y=1.60;
+  return mesh;
 }
 
-function ring(y,rx,rz,seg,dx=0,dz=0){const p=new Float32Array((seg+1)*3);for(let i=0;i<=seg;i++){const a=i/seg*Math.PI*2;p[i*3]=Math.cos(a)*rx+dx;p[i*3+1]=y;p[i*3+2]=Math.sin(a)*rz+dz}return p}
-function tube(rings,seg){const n=rings.length,vs=[],us=[],is=[];for(let r=0;r<n;r++){const ri=rings[r],vv=r/(n-1);for(let i=0;i<=seg;i++){vs.push(ri[i*3],ri[i*3+1],ri[i*3+2]);us.push(i/seg,vv);if(r<n-1){const a=r*(seg+1)+i,b=r*(seg+1)+(i+1)%(seg+1),c=(r+1)*(seg+1)+i,d=(r+1)*(seg+1)+(i+1)%(seg+1);is.push(a,b,c,b,d,c)}}}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vs,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(us,2));g.setIndex(is);g.computeVertexNormals();return g}
-function S(y,rx,rz){return{y,rx,rz}}
-function P(rings,mat,seg,dx=0,dz=0){const m=new THREE.Mesh(tube(rings.map(s=>ring(s.y,s.rx,s.rz,seg,(s.dx||0)+dx,(s.dz||0)+dz)),seg),mat);m.castShadow=true;return m}
+function processPhoto(img){
+  const c=document.createElement('canvas');
+  const w=img.width,h=img.height;
+  c.width=w;c.height=h;
+  const ctx=c.getContext('2d');
+  ctx.drawImage(img,0,0);
 
-function buildBody(skinC,topC,pantsC,shoeC){
-  const G=24;
-  const sk=new THREE.MeshStandardMaterial({color:skinC,roughness:.3,metalness:0});
-  const tp=new THREE.MeshStandardMaterial({color:topC,roughness:.5,metalness:.02});
-  const pa=new THREE.MeshStandardMaterial({color:pantsC,roughness:.6,metalness:0});
-  const sh=new THREE.MeshStandardMaterial({color:shoeC,roughness:.7,metalness:0});
-  const ms=[],A=(r,m,dx=0,dz=0)=>ms.push(P(r,m,G,dx,dz));
-  A([S(.76,.13,.10),S(.78,.14,.10),S(.80,.14,.11),S(.82,.14,.11),S(.84,.14,.10),S(.86,.14,.10),S(.88,.14,.10),S(.90,.14,.10),S(.92,.14,.10),S(.94,.14,.10),S(.96,.14,.10),S(.98,.14,.10),S(1.00,.14,.10),S(1.04,.15,.11),S(1.08,.16,.11),S(1.12,.17,.12),S(1.16,.18,.12),S(1.20,.19,.13),S(1.24,.20,.13),S(1.28,.21,.14),S(1.32,.22,.14),S(1.36,.22,.14),S(1.40,.22,.14),S(1.44,.20,.13),S(1.48,.15,.11),S(1.52,.11,.09),S(1.56,.09,.07)],tp);
-  const lR=[S(.74,.10,.08),S(.70,.10,.08),S(.66,.09,.08),S(.62,.09,.07),S(.58,.09,.07),S(.54,.08,.07),S(.50,.08,.07),S(.46,.08,.06),S(.42,.07,.06),S(.38,.07,.06),S(.34,.07,.05),S(.30,.06,.05),S(.26,.06,.05),S(.22,.06,.05),S(.18,.05,.04),S(.14,.05,.04),S(.10,.05,.04),S(.07,.04,.04),S(.04,.04,.03),S(.02,.04,.03),S(.01,.05,.03)];
-  A(lR,pa,-.09);A(lR,pa,.09);A(lR.filter(({y})=>y<.38),sk,-.09);A(lR.filter(({y})=>y<.38),sk,.09);
-  A([S(.01,.05,.03),S(-.01,.06,.04),S(-.02,.04,.02)],sh,-.09);A([S(.01,.05,.03),S(-.01,.06,.04),S(-.02,.04,.02)],sh,.09);
-  const aR=[S(.02,.06,.06),S(-.02,.06,.05),S(-.06,.05,.05),S(-.10,.05,.05),S(-.14,.05,.05),S(-.18,.05,.04),S(-.22,.04,.04),S(-.26,.04,.04),S(-.30,.04,.04),S(-.34,.04,.04),S(-.38,.04,.03),S(-.42,.03,.03),S(-.45,.03,.03)];
-  A(aR,sk,-.24);A(aR,sk,.24);A(aR.filter(({y})=>y>-.22),tp,-.24);A(aR.filter(({y})=>y>-.22),tp,.24);
-  A([S(1.56,.09,.07),S(1.58,.08,.07),S(1.60,.08,.07),S(1.62,.08,.07),S(1.64,.07,.06)],sk);
-  for(const s of[-1,1]){const sp=new THREE.Mesh(new THREE.SphereGeometry(.07,12,12),tp);sp.position.set(s*.24,1.44,0);ms.push(sp)}
-  return ms;
-}
-
-function avgPx(ctx,x,y,w,h){const d=ctx.getImageData(Math.max(0,x|0),Math.max(0,y|0),Math.min(w|0,ctx.canvas.width-x|0),Math.min(h|0,ctx.canvas.height-y|0)).data;let r=0,g=0,b=0,n=0;for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2];n++}return n?[(r/n|0),(g/n|0),(b/n|0)]:[180,150,130]}
-
-function process(img){
-  const w=img.width,h=img.height,c=document.createElement('canvas');c.width=w;c.height=h;
-  const ctx=c.getContext('2d');ctx.drawImage(img,0,0);
   const fW=w*.34,fH=fW*1.25,fX=(w-fW)/2,fY=(h-fH)/2;
-  const skin=avgPx(ctx,fX+fW*.3,fY+fH*.15,fW*.4,fH*.5);
-  const hair=avgPx(ctx,w*.25,h*.01,w*.5,h*.14);
-  const cloth=avgPx(ctx,w*.15,fY+fH+h*.03,w*.7,h*.25);
-  const brt=c=>Math.min(255,c+25);
+  const skin=avg(ctx,fX+fW*.3,fY+fH*.12,fW*.4,fH*.55);
+  const hair=avg(ctx,w*.25,h*.02,w*.5,h*.12);
+
   const SZ=512;
   const tx=document.createElement('canvas');tx.width=SZ;tx.height=SZ;
   const tc=tx.getContext('2d');
   tc.fillStyle=`rgb(${skin[0]},${skin[1]},${skin[2]})`;
   tc.fillRect(0,0,SZ,SZ);
-  const fs=SZ*.62,ox=(SZ-fs)/2,oy=(SZ-fs)/2;
-  tc.save();tc.beginPath();tc.ellipse(SZ/2,SZ/2,fs/2,fs/2,0,0,Math.PI*2);tc.clip();
-  tc.drawImage(img,fX,fY,fW,fH,ox,oy,fs,fs);tc.restore();
-  const gr=tc.createRadialGradient(SZ/2,SZ/2,fs*.25,SZ/2,SZ/2,fs*.5);
-  gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,`rgba(${skin[0]},${skin[1]},${skin[2]},.3)`);
+  tc.save();tc.beginPath();tc.ellipse(SZ/2,SZ/2,SZ*.30,SZ*.36,0,0,Math.PI*2);tc.clip();
+  tc.drawImage(img,fX,fY,fW,fH,0,0,SZ,SZ);
+  tc.restore();
+  const gr=tc.createRadialGradient(SZ/2,SZ/2,SZ*.08,SZ/2,SZ/2,SZ*.40);
+  gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,`rgba(${skin[0]},${skin[1]},${skin[2]},.28)`);
   tc.fillStyle=gr;tc.fillRect(0,0,SZ,SZ);
+
   const t3=new THREE.CanvasTexture(tx);t3.colorSpace=THREE.SRGBColorSpace;
-  return{faceTex:t3,skin:(skin[0]<<16)|(skin[1]<<8)|skin[2],hair:(hair[0]<<16)|(hair[1]<<8)|hair[2],top:(brt(cloth[0])<<16)|(brt(cloth[1])<<8)|brt(cloth[2]),pants:0x2a2a44,shoe:0x0e0e1e};
+  return{tex:t3,hair:(hair[0]<<16)|(hair[1]<<8)|hair[2]};
 }
+function avg(ctx,x,y,w,h){const d=ctx.getImageData(Math.max(0,x|0),Math.max(0,y|0),Math.min(w|0,ctx.canvas.width-x|0),Math.min(h|0,ctx.canvas.height-y|0)).data;let r=0,g=0,b=0,n=0;for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2];n++}return n?[(r/n|0),(g/n|0),(b/n|0)]:[180,150,130]}
 
 function buildAvatar(img){
-  const col=process(img);const g=new THREE.Group();
-  for(const m of buildBody(col.skin,col.top,col.pants,col.shoe))g.add(m);
-  g.add(buildHeadMesh(col.faceTex));
-  const hR=22,hC=44;const hV=[],hU=[],hI=[];
-  for(let r=0;r<=hR;r++){const v=r/hR,th=v*Math.PI*.5;for(let c=0;c<=hC;c++){const u=c/hC,phi=u*2*Math.PI;hV.push(Math.sin(th)*Math.cos(phi)*.20,Math.cos(th)*.28+1.33,Math.sin(th)*Math.sin(phi)*.19);hU.push(u,v);if(r<hR&&c<hC){const a=r*(hC+1)+c,b=r*(hC+1)+c+1,d=(r+1)*(hC+1)+c,e=(r+1)*(hC+1)+c+1;hI.push(a,b,d,b,e,d)}}}
-  const hG=new THREE.BufferGeometry();hG.setAttribute('position',new THREE.Float32BufferAttribute(hV,3));hG.setAttribute('uv',new THREE.Float32BufferAttribute(hU,2));hG.setIndex(hI);hG.computeVertexNormals();
-  g.add(new THREE.Mesh(hG,new THREE.MeshStandardMaterial({color:col.hair,roughness:.85,metalness:0})));
+  const col=processPhoto(img);const g=new THREE.Group();
+  g.add(buildFace(col.tex,img.width,img.height));
   return g;
 }
 
+// Scene
 let scene,cam,renderer,ctl,avatar,t=0;
 function initScene(){
   scene=new THREE.Scene();scene.background=new THREE.Color(0x0c0c16);
   cam=new THREE.PerspectiveCamera(30,innerWidth/innerHeight,.1,100);
-  cam.position.set(1.5,1.3,2.8);
+  cam.position.set(0,1.6,3);
   renderer=new THREE.WebGLRenderer({antialias:true});
   renderer.setSize(innerWidth,innerHeight);
   renderer.setPixelRatio(Math.min(devicePixelRatio,2));
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
-  $('three-container').appendChild(renderer.domElement);
+  $('c3d').appendChild(renderer.domElement);
   ctl=new OrbitControls(cam,renderer.domElement);
-  ctl.target.set(0,.78,0);ctl.enableDamping=true;ctl.dampingFactor=.08;
-  ctl.minDistance=.6;ctl.maxDistance=4;ctl.maxPolarAngle=Math.PI*.78;
-  ctl.autoRotate=true;ctl.autoRotateSpeed=1.5;ctl.update();
+  ctl.target.set(0,1.55,0);ctl.enableDamping=true;ctl.dampingFactor=.08;
+  ctl.minDistance=.5;ctl.maxDistance=3.5;ctl.maxPolarAngle=Math.PI*.75;ctl.minPolarAngle=.15;
+  ctl.autoRotate=true;ctl.autoRotateSpeed=1.2;ctl.update();
   ctl.addEventListener('start',()=>ctl.autoRotate=false);
   scene.add(new THREE.AmbientLight(0x334466,.4));
   scene.add(new THREE.HemisphereLight(0x6688dd,0x553322,.5));
-  const k=new THREE.DirectionalLight(0xffeedd,2);k.position.set(2.5,3,2);k.castShadow=true;k.shadow.mapSize.width=1024;k.shadow.mapSize.height=1024;k.shadow.radius=3;scene.add(k);
-  scene.add(new THREE.DirectionalLight(0x88ccff,.7).position.set(-2,1.5,-1.5));
-  scene.add(new THREE.DirectionalLight(0x44ffff,.35).position.set(-1,2.5,-2.5));
-  scene.add(new THREE.DirectionalLight(0xff44aa,.25).position.set(1.5,1,-2));
-  const fl=new THREE.Mesh(new THREE.CircleGeometry(3,48),new THREE.MeshStandardMaterial({color:0x0e0e1a,roughness:.9,metalness:0,transparent:true,opacity:.3,side:THREE.DoubleSide}));
-  fl.rotation.x=-Math.PI/2;fl.position.y=-.02;fl.receiveShadow=true;scene.add(fl);
+  const k=new THREE.DirectionalLight(0xffeedd,2.2);k.position.set(2,3,2.5);k.castShadow=true;
+  k.shadow.mapSize.width=1024;k.shadow.mapSize.height=1024;k.shadow.radius=3;scene.add(k);
+  scene.add(new THREE.DirectionalLight(0x88ccff,.6).position.set(-2,1.5,-1.5));
+  scene.add(new THREE.DirectionalLight(0xff44aa,.2).position.set(1,1.2,-2));
+  const fl=new THREE.Mesh(new THREE.CircleGeometry(3,48),new THREE.MeshStandardMaterial({color:0x0e0e1a,roughness:.9,metalness:0,transparent:true,opacity:.35,side:THREE.DoubleSide}));
+  fl.rotation.x=-Math.PI/2;fl.position.y=-.2;fl.receiveShadow=true;scene.add(fl);
   addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 }
-function updA(time){if(!avatar)return;avatar.position.y=Math.sin(time*1.8)*.0015;avatar.rotation.z=Math.sin(time*.6)*.001}
-function anim(time){t=time*.001;requestAnimationFrame(anim);updA(t);ctl?.update();renderer?.render(scene,cam)}
+function anim(time){t=time*.001;requestAnimationFrame(anim);if(avatar){avatar.rotation.y=Math.sin(t*.5)*.003;avatar.position.y=Math.sin(t*1.5)*.0015}ctl?.update();renderer?.render(scene,cam)}
 
-function snap(){
-  const v=$('video'),w=v.videoWidth||640,h=v.videoHeight||480;
-  if(!w||!h)return null;
-  const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(v,0,0);return c;
-}
-
-function toast(m){const e=$('toast');e.textContent=m;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),3500)}
-function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));$(id).classList.remove('hidden')}
-function loading(v){$('loading').classList.toggle('hidden',!v)}
+// Camera
+function snap(){const v=$('video'),w=v.videoWidth||640,h=v.videoHeight||480;if(!w||!h)return null;const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(v,0,0);return c}
+function toast(m){const e=$('err');e.textContent=m;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),3500)}
+function showV(id){document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));$(id).classList.remove('hidden')}
+function ld(v){$('load').classList.toggle('hidden',!v)}
 
 async function startCam(face){
   const v=$('video');
   if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
-  $('capture-btn').disabled=true;$('capture-btn').textContent='启动中...';
+  $('cap').disabled=true;$('cap').textContent='启动中...';
   try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:face,width:{ideal:640},height:{ideal:480}}});facing=face}
   catch(e){if(face!=='user')return startCam('user');throw e}
   v.srcObject=stream;
   if(v.readyState<2)await new Promise(r=>{v.addEventListener('loadeddata',r,{once:true})});
   await v.play();
-  $('cam-wrap').classList.toggle('mirror',facing==='user');
-  $('capture-btn').disabled=false;$('capture-btn').textContent='拍摄';
+  $('cam').classList.toggle('mirror',facing==='user');
+  $('cap').disabled=false;$('cap').textContent='拍摄';
 }
 
 async function capture(){
-  const btn=$('capture-btn');btn.disabled=true;btn.textContent='处理中...';
+  const btn=$('cap');btn.disabled=true;btn.textContent='处理中...';
   try{
     const img=snap();if(!img){btn.disabled=false;btn.textContent='拍摄';return}
-    loading(true);await new Promise(r=>setTimeout(r,60));
+    ld(true);await new Promise(r=>setTimeout(r,80));
     if(avatar)scene.remove(avatar);
     avatar=buildAvatar(img);scene.add(avatar);
-    ctl.target.set(0,.78,0);ctl.autoRotate=true;ctl.update();
-    loading(false);showView('model-view');
-  }catch(e){loading(false);toast('生成失败: '+e.message)}
+    ctl.target.set(0,1.55,0);ctl.autoRotate=true;ctl.update();
+    ld(false);showV('md-view');
+  }catch(e){ld(false);toast('出错: '+e.message)}
   finally{btn.disabled=false;btn.textContent='拍摄'}
 }
 
-async function toggleCam(){await startCam(facing==='user'?'environment':'user').catch(e=>toast('切换失败'))}
-function retake(){if(avatar){scene.remove(avatar);avatar=null}ctl.autoRotate=true;showView('camera-view')}
-function dl(){
-  if(!avatar)return;loading(true);
-  try{new GLTFExporter().parse(avatar,b=>{const u=URL.createObjectURL(new Blob([b],{type:'application/octet-stream'}));const a=document.createElement('a');a.href=u;a.download='avatar.glb';a.click();URL.revokeObjectURL(u);loading(false)},()=>{loading(false);toast('导出失败')},{binary:true})}
-  catch(e){loading(false);toast('下载失败')}
-}
+async function sw(){await startCam(facing==='user'?'environment':'user').catch(e=>toast('切换失败'))}
+function retake(){if(avatar){scene.remove(avatar);avatar=null}ctl.autoRotate=true;showV('cam-view')}
 
 async function init(){
   initScene();anim(0);
   await startCam(facing).catch(e=>toast('摄像头: '+e.message));
-  $('capture-btn').addEventListener('click',capture);
-  $('toggle-btn').addEventListener('click',toggleCam);
-  $('retake-btn').addEventListener('click',retake);
-  $('download-btn').addEventListener('click',dl);
-  showView('camera-view');
+  $('cap').addEventListener('click',capture);
+  $('sw').addEventListener('click',sw);
+  $('re').addEventListener('click',retake);
+  showV('cam-view');
 }
 init();
 </script>
