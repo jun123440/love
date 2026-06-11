@@ -2,30 +2,34 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>3D 面部重建</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>3D 人脸重建</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,'Segoe UI',system-ui,sans-serif;background:#08080e;color:#fff;overflow:hidden;height:100vh;width:100vw;user-select:none}
+body{font-family:-apple-system,'Segoe UI',system-ui,sans-serif;background:#08080e;color:#fff;height:100vh;width:100vw;user-select:none;overflow:hidden}
 .view{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s ease,transform .5s ease}
 .view.hidden{opacity:0;pointer-events:none;transform:scale(.96)}
 #camera-view{background:radial-gradient(ellipse at 50% 40%,#141420,#08080e)}
 #camera-container{position:relative;border-radius:16px;overflow:hidden;box-shadow:0 0 80px rgba(60,100,255,.12);border:1px solid rgba(255,255,255,.05);background:#000;max-width:88vw;max-height:68vh}
-#camera-container video{display:block;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);max-width:640px;max-height:480px}
+#camera-container video{display:block;width:100%;height:100%;object-fit:cover;max-width:640px;max-height:480px}
+#camera-container.mirror video{transform:scaleX(-1)}
 #capture-overlay{position:absolute;inset:0;pointer-events:none}
 .face-guide{position:absolute;top:50%;left:50%;width:52%;height:60%;transform:translate(-50%,-54%);border:1.5px solid rgba(255,255,255,.2);border-radius:50% 50% 50% 50%/60% 60% 40% 40%}
 .guide-hint{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);font-size:12px;color:rgba(255,255,255,.3);letter-spacing:2px;background:rgba(0,0,0,.5);padding:5px 14px;border-radius:20px;backdrop-filter:blur(6px);white-space:nowrap}
-.btn-group{margin-top:24px;display:flex;gap:14px;align-items:center}
-.btn{padding:13px 32px;border:none;border-radius:50px;font-size:15px;font-weight:600;cursor:pointer;transition:all .25s ease;letter-spacing:.5px;display:inline-flex;align-items:center;gap:8px}
+.btn-group{margin-top:24px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:center}
+.btn{padding:10px 26px;border:none;border-radius:50px;font-size:14px;font-weight:600;cursor:pointer;transition:all .25s ease;letter-spacing:.5px;display:inline-flex;align-items:center;gap:6px}
 .btn-primary{background:linear-gradient(135deg,#4a7cff,#6c5ce7);color:#fff;box-shadow:0 4px 24px rgba(74,124,255,.3)}
 .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(74,124,255,.45)}
 .btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .btn-secondary{background:rgba(255,255,255,.06);color:#ccc;border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(8px)}
 .btn-secondary:hover{background:rgba(255,255,255,.12);color:#fff;transform:translateY(-2px)}
+.btn-toggle{background:rgba(255,255,255,.04);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.1);font-size:12px;padding:8px 18px}
+.btn-toggle:hover{background:rgba(255,255,255,.1);color:#fff}
+.btn-toggle svg{width:14px;height:14px;fill:currentColor;opacity:.7}
 #capture-btn{min-width:180px;justify-content:center}
 #three-container{width:100vw;height:100vh;display:block}
-.model-controls{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:10}
-.model-hint{position:fixed;top:18px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.2);font-size:12px;z-index:10;background:rgba(0,0,0,.4);padding:6px 16px;border-radius:20px;backdrop-filter:blur(8px)}
+.model-controls{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:10;flex-wrap:wrap;justify-content:center}
+.model-hint{position:fixed;top:18px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.18);font-size:12px;z-index:10;background:rgba(0,0,0,.4);padding:6px 16px;border-radius:20px;backdrop-filter:blur(8px);pointer-events:none}
 #loading-overlay{position:fixed;inset:0;background:rgba(8,8,14,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(16px);transition:opacity .4s ease}
 #loading-overlay.hidden{opacity:0;pointer-events:none}
 .spinner{width:44px;height:44px;border:2.5px solid rgba(255,255,255,.04);border-top-color:#4a7cff;border-radius:50%;animation:spin .7s linear infinite}
@@ -38,22 +42,31 @@ body{font-family:-apple-system,'Segoe UI',system-ui,sans-serif;background:#08080
 #error-toast.show{transform:translateX(-50%) translateY(0)}
 .status-tag{position:absolute;top:12px;right:12px;font-size:11px;padding:4px 10px;border-radius:8px;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);color:rgba(255,255,255,.4);pointer-events:none}
 .status-tag.ok{color:#4a7cff}
-@media(max-width:600px){#camera-container{border-radius:10px;max-height:50vh}.btn{padding:11px 22px;font-size:13px}#capture-btn{min-width:150px}.model-controls{flex-wrap:wrap;justify-content:center;bottom:20px}}
+@media(max-width:600px){#camera-container{border-radius:10px;max-height:50vh}.btn{padding:9px 18px;font-size:12px}#capture-btn{min-width:140px}.model-controls{bottom:18px}}
 </style>
 </head>
 <body>
 <div id="camera-view" class="view">
-  <div id="camera-container"><video id="video" autoplay playsinline muted></video>
-    <div id="capture-overlay"><div class="face-guide"></div><div class="guide-hint">正面面向镜头，自然表情</div></div>
-    <div class="status-tag" id="status-tag">面部检测就绪</div></div>
-  <div class="btn-group"><button id="capture-btn" class="btn btn-primary">● 捕捉重建</button></div></div>
+  <div id="camera-container" class="mirror"><video id="video" autoplay playsinline muted></video>
+    <div id="capture-overlay"><div class="face-guide"></div><div class="guide-hint">正面面向镜头</div></div>
+    <div class="status-tag" id="status-tag">准备中</div></div>
+  <div class="btn-group">
+    <button id="camera-toggle" class="btn btn-toggle" title="切换摄像头">
+      <svg viewBox="0 0 24 24"><path d="M20 4h-3.17L15 2H9L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 3c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6 2.69-6 6-6zm0 2c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/></svg>
+      翻转
+    </button>
+    <button id="capture-btn" class="btn btn-primary" disabled>检测面部</button>
+  </div>
+</div>
 <div id="loading-overlay" class="hidden"><div class="spinner"></div><p id="load-text">正在重建 3D 模型</p><div id="processing-bar"></div></div>
 <div id="model-view" class="view hidden">
   <div id="three-container"></div>
   <div class="model-hint">拖动旋转 · 滚轮缩放</div>
   <div class="model-controls">
     <button id="retake-btn" class="btn btn-secondary">← 重新拍摄</button>
-    <button id="download-btn" class="btn btn-primary">↓ 下载 .glb</button></div></div>
+    <button id="download-btn" class="btn btn-primary">↓ 下载 .glb</button>
+  </div>
+</div>
 <div id="error-toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/clmtrackr@1.1.2/build/clmtrackr.min.js"></script>
@@ -65,108 +78,91 @@ import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 
 const $=id=>document.getElementById(id);
 
-// ════════════════════════════════════════════════════════════════
-//  Delaunay Triangulation
-// ════════════════════════════════════════════════════════════════
+function buildParametricHead(faceTex, landmarks, imgW, imgH) {
+  const RX=0.21, RY=0.25, RZ=0.21;
+  const CU=96, CV=72;
 
-function delaunay(pts){
-  const n=pts.length;if(n<3)return new Uint16Array(0);
-  let mnX=Infinity,mnY=Infinity,mxX=-Infinity,mxY=-Infinity;
-  for(const p of pts){const x=p[0],y=p[1];if(x<mnX)mnX=x;if(x>mxX)mxX=x;if(y<mnY)mnY=y;if(y>mxY)mxY=y}
-  const dx=mxX-mnX||1,dy=mxY-mnY||1,mx=(mnX+mxX)/2,my=(mnY+mxY)/2,r=Math.max(dx,dy)*20;
-  const ps=pts.map(p=>[p[0],p[1]]);ps.push([mx-r,my-r],[mx+r,my-r],[mx,my+r]);
-  function circ(a,b,c,p){
-    const ax=a[0]-p[0],ay=a[1]-p[1],bx=b[0]-p[0],by=b[1]-p[1],cx=c[0]-p[0],cy=c[1]-p[1];
-    const ab=ax*ax+ay*ay,bc=bx*bx+by*by,cd=cx*cx+cy*cy,d=2*(ax*(by-cy)+bx*(cy-ay)+cx*(ay-by));
-    if(d===0)return false;
-    const ux=(ab*(by-cy)+bc*(cy-ay)+cd*(ay-by))/d,uy=(ab*(cx-bx)+bc*(ax-cx)+cd*(bx-ax))/d;
-    return(ax-ux)*(ax-ux)+(ay-uy)*(ay-uy)<ux*ux+uy*uy;
+  let scaleX=1, scaleY=1, offsetX=0, offsetY=0;
+  if (landmarks && landmarks.length===70) {
+    let mnX=Infinity,mxX=-Infinity,mnY=Infinity,mxY=-Infinity;
+    for (const p of landmarks) { if(p[0]<mnX)mnX=p[0]; if(p[0]>mxX)mxX=p[0]; if(p[1]<mnY)mnY=p[1]; if(p[1]>mxY)mxY=p[1]; }
+    const fW=(mxX-mnX)/imgW, fH=(mxY-mnY)/imgH;
+    scaleX=Math.max(.85, Math.min(1.20, fW/0.42));
+    scaleY=Math.max(.85, Math.min(1.20, fH/0.56));
+    const myX=(mnX+mxX)/2/imgW, myY=(mnY+mxY)/2/imgH;
+    offsetX=(myX-0.5)*0.04;
+    offsetY=(myY-0.5)*0.02;
   }
-  const tris=[{a:n,b:n+1,c:n+2}];
-  for(let i=0;i<n;i++){
-    const p=ps[i];const edges=[];
-    for(let j=tris.length-1;j>=0;j--){const t=tris[j];if(circ(ps[t.a],ps[t.b],ps[t.c],p)){edges.push(t.a,t.b,t.b,t.c,t.c,t.a);tris.splice(j,1)}}
-    for(let j=0;j<edges.length;j+=2){let dup=false;for(let k=j+2;k<edges.length;k+=2){if(edges[j]===edges[k]&&edges[j+1]===edges[k+1]){dup=true;edges.splice(k,2);break}if(edges[j]===edges[k+1]&&edges[j+1]===edges[k]){dup=true;edges.splice(k,2);break}}if(!dup)tris.push({a:edges[j],b:edges[j+1],c:i})}
-  }
-  const out=[];for(const t of tris){if(t.a<n&&t.b<n&&t.c<n)out.push(t.a,t.b,t.c)}
-  return new Uint16Array(out);
-}
 
-// ════════════════════════════════════════════════════════════════
-//  Face Mesh from clmtrackr Landmarks
-//  70 landmarks → detailed 3D face mesh
-// ════════════════════════════════════════════════════════════════
+  const verts=[], uvs=[], idx=[];
 
-const LANDMARK_DEPTH = {
-  // Jaw line (0-16)
-  0:-0.06,1:-0.055,2:-0.05,3:-0.045,4:-0.04,5:-0.035,6:-0.03,7:-0.025,
-  8:-0.02,9:-0.025,10:-0.03,11:-0.035,12:-0.04,13:-0.045,14:-0.05,15:-0.055,16:-0.06,
-  // Eyebrows (17-26)
-  17:-0.035,18:-0.033,19:-0.030,20:-0.028,21:-0.030,
-  22:-0.035,23:-0.033,24:-0.030,25:-0.028,26:-0.030,
-  // Nose (27-35)
-  27:-0.025,28:-0.015,29:-0.005,30:0.0,31:0.0,32:-0.005,33:-0.01,34:-0.01,35:-0.01,
-  // Eyes (36-47)
-  36:-0.035,37:-0.038,38:-0.040,39:-0.038,40:-0.035,41:-0.032,
-  42:-0.035,43:-0.038,44:-0.040,45:-0.038,46:-0.035,47:-0.032,
-  // Mouth outer (48-59)
-  48:-0.015,49:-0.012,50:-0.010,51:-0.010,52:-0.010,53:-0.012,
-  54:-0.015,55:-0.018,56:-0.020,57:-0.022,58:-0.020,59:-0.018,
-  // Mouth inner (60-67)
-  60:-0.013,61:-0.012,62:-0.012,63:-0.013,64:-0.015,65:-0.016,66:-0.016,67:-0.015,
-  // Additional (68-69)
-  68:-0.04,69:-0.04,
-};
+  for (let j=0; j<=CV; j++) {
+    const v=j/CV;
+    const theta=(1-v)*Math.PI;
+    const st=Math.sin(theta), ct=Math.cos(theta);
 
-function buildFaceFromLandmarks(landmarks, imgW, imgH) {
-  // landmarks: array of [x,y] in image pixels
-  const n = landmarks.length;
-  const pts = landmarks.map(p => [p[0]/imgW, p[1]/imgH]);
-  const tri = delaunay(pts);
+    for (let i=0; i<=CU; i++) {
+      const u=i/CU;
+      const phi=u*2*Math.PI;
+      const cp=Math.cos(phi), sp=Math.sin(phi);
+      const front=cp>0?cp:0;
+      const f3=front*front*front;
 
-  // Center and scale face
-  let mnX=Infinity,mxX=-Infinity,mnY=Infinity,mxY=-Infinity;
-  for(const p of pts){if(p[0]<mnX)mnX=p[0];if(p[0]>mxX)mxX=p[0];if(p[1]<mnY)mnY=p[1];if(p[1]>mxY)mxY=p[1]}
-  const cX=(mnX+mxX)/2,cY=(mnY+mxY)/2,fW=mxX-mnX,fH=mxY-mnY;
-  const tW=0.50,tH=0.60,sX=tW/fW,sY=tH/fH;
+      let x=st*cp*RX;
+      let y=ct*RY;
+      let z=st*sp*RZ;
 
-  const verts=new Float32Array(n*3);
-  const uvs=new Float32Array(n*2);
+      const nx=x/(RX*RX), ny=y/(RY*RY), nz=z/(RZ*RZ);
+      const nl=Math.sqrt(nx*nx+ny*ny+nz*nz)||1;
+      const nxn=nx/nl, nyn=ny/nl, nzn=nz/nl;
 
-  for(let i=0;i<n;i++){
-    const d=LANDMARK_DEPTH[i]||-0.03;
-    verts[i*3]=(pts[i][0]-cX)*sX;
-    verts[i*3+1]=-(pts[i][1]-cY)*sY+1.72;
-    verts[i*3+2]=d*sX*2;
-    uvs[i*2]=pts[i][0];
-    uvs[i*2+1]=pts[i][1];
+      const nose=.060*Math.exp(-Math.pow((theta-.65)*6,2)-Math.pow(phi*3.2,2));
+      const nB=.020*Math.exp(-Math.pow((theta-.42)*7,2))*f3;
+      const eT=theta-.50, eL=Math.exp(-Math.pow(phi-.42,2)*35-Math.pow(eT,2)*40);
+      const eR=Math.exp(-Math.pow(phi+.42,2)*35-Math.pow(eT,2)*40);
+      const eSoc=-(eL+eR)*.028;
+      const eBal=(Math.exp(-Math.pow(phi-.42,2)*30-Math.pow(eT,2)*32)+Math.exp(-Math.pow(phi+.42,2)*30-Math.pow(eT,2)*32))*.012;
+      const cheek=Math.exp(-Math.pow(theta-.78,2)*14-Math.pow(Math.abs(phi)-.60,2)*20)*.020;
+      const chin=Math.exp(-Math.pow((theta-1.42)*7,2))*front*.014;
+      const jaw=Math.exp(-Math.pow((theta-1.20)*4,2))*(1-Math.abs(front))*.048;
+      const brow=(Math.exp(-Math.pow(phi-.42,2)*18-Math.pow(theta-.35,2)*35)+Math.exp(-Math.pow(phi+.42,2)*18-Math.pow(theta-.35,2)*35))*.020;
+      const lipU=Math.exp(-Math.pow((theta-1.08)*25,2))*front*.008;
+      const lipL=Math.exp(-Math.pow((theta-1.18)*22,2))*front*.007;
+      const fore=Math.exp(-Math.pow((theta-.10)*5,2))*.010;
+      const earL=Math.exp(-Math.pow((theta-.70)*5,2)-Math.pow(phi+1.25,2)*50)*.048;
+      const earR=Math.exp(-Math.pow((theta-.70)*5,2)-Math.pow(phi-1.23,2)*50)*.048;
+      const nW=Math.exp(-Math.pow((theta-.65)*4.5,2)-Math.pow(phi*8,2))*(-.006);
+
+      const dz=nose+nB+eSoc+eBal+cheek+chin+jaw+brow+lipU+lipL+nW;
+      const dx=earL*(-.4)+earR*(.4);
+      const dy=fore;
+
+      verts.push(
+        (x+dx+nxn*dz)*scaleX+offsetX,
+        (y+dy+nyn*dz)*scaleY+offsetY,
+        z+nzn*dz+(earL+earR)*.3
+      );
+      uvs.push(u, v);
+      if (i<CU && j<CV) { const a=j*(CU+1)+i, b=a+1, c=a+CU+1, d=c+1; idx.push(a,b,d, a,d,c); }
+    }
   }
 
   const geo=new THREE.BufferGeometry();
-  geo.setAttribute('position',new THREE.BufferAttribute(verts,3));
-  geo.setAttribute('uv',new THREE.BufferAttribute(uvs,2));
-  geo.setIndex(new THREE.BufferAttribute(tri,1));
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts,3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs,2));
+  geo.setIndex(idx);
   geo.computeVertexNormals();
-  return geo;
+  const mat=new THREE.MeshStandardMaterial({map:faceTex, roughness:.18, metalness:0});
+  const mesh=new THREE.Mesh(geo, mat);
+  mesh.position.y=1.62;
+  mesh.castShadow=true;
+  return mesh;
 }
 
-// ════════════════════════════════════════════════════════════════
-//  Body Mesh
-// ════════════════════════════════════════════════════════════════
-
-function makeRing(y,rx,rz,seg,dx=0,dz=0){
-  const pts=new Float32Array((seg+1)*3);
-  for(let i=0;i<=seg;i++){const a=i/seg*Math.PI*2;pts[i*3]=Math.cos(a)*rx+dx;pts[i*3+1]=y;pts[i*3+2]=Math.sin(a)*rz+dz}
-  return pts;
-}
-function buildTube(rings,seg){
-  const n=rings.length,verts=[],uvs=[],idx=[];
-  for(let r=0;r<n;r++){const ri=rings[r],v=r/(n-1);for(let i=0;i<=seg;i++){verts.push(ri[i*3],ri[i*3+1],ri[i*3+2]);uvs.push(i/seg,v);if(r<n-1){const a=r*(seg+1)+i,b=r*(seg+1)+(i+1)%(seg+1),c=(r+1)*(seg+1)+i,d=(r+1)*(seg+1)+(i+1)%(seg+1);idx.push(a,b,c,b,d,c)}}}
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));g.setIndex(idx);g.computeVertexNormals();return g;
-}
-
+function makeRing(y,rx,rz,seg,dx=0,dz=0){const p=new Float32Array((seg+1)*3);for(let i=0;i<=seg;i++){const a=i/seg*Math.PI*2;p[i*3]=Math.cos(a)*rx+dx;p[i*3+1]=y;p[i*3+2]=Math.sin(a)*rz+dz}return p}
+function buildTube(rings,seg){const n=rings.length,verts=[],uvs=[],idx=[];for(let r=0;r<n;r++){const ri=rings[r],v=r/(n-1);for(let i=0;i<=seg;i++){verts.push(ri[i*3],ri[i*3+1],ri[i*3+2]);uvs.push(i/seg,v);if(r<n-1){const a=r*(seg+1)+i,b=r*(seg+1)+(i+1)%(seg+1),c=(r+1)*(seg+1)+i,d=(r+1)*(seg+1)+(i+1)%(seg+1);idx.push(a,b,c,b,d,c)}}}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));g.setIndex(idx);g.computeVertexNormals();return g}
 function sec(y,rx,rz){return{y,rx,rz}}
-function part(rings,mat,seg,dx=0,dz=0){const m=new THREE.Mesh(buildTube(rings.map(s=>makeRing(s.y,s.rx,s.rz,seg,s.dx||0+dx,s.dz||0+dz)),seg),mat);m.castShadow=true;return m}
+function part(rings,mat,seg,dx=0,dz=0){const m=new THREE.Mesh(buildTube(rings.map(s=>makeRing(s.y,s.rx,s.rz,seg,(s.dx||0)+dx,(s.dz||0)+dz)),seg),mat);m.castShadow=true;return m}
 
 function buildBody(skinC,clothC,pantsC,shoeC){
   const S=28;
@@ -176,46 +172,30 @@ function buildBody(skinC,clothC,pantsC,shoeC){
   const shoe=new THREE.MeshStandardMaterial({color:shoeC,roughness:.7,metalness:0});
   const meshes=[];
   const P=(r,m,dx=0,dz=0)=>meshes.push(part(r,m,S,dx,dz));
-
   P([sec(.76,.13,.10),sec(.78,.14,.10),sec(.80,.14,.11),sec(.82,.14,.11),sec(.84,.14,.10),sec(.86,.14,.10),sec(.88,.14,.10),sec(.90,.14,.10),sec(.92,.14,.10),sec(.94,.14,.10),sec(.96,.14,.10),sec(.98,.14,.10),sec(1.00,.14,.10),sec(1.02,.14,.10),sec(1.04,.15,.11),sec(1.06,.15,.11),sec(1.08,.16,.11),sec(1.10,.16,.11),sec(1.12,.17,.12),sec(1.14,.17,.12),sec(1.16,.18,.12),sec(1.18,.18,.12),sec(1.20,.19,.13),sec(1.22,.19,.13),sec(1.24,.20,.13),sec(1.26,.20,.14),sec(1.28,.21,.14),sec(1.30,.21,.14),sec(1.32,.22,.14),sec(1.34,.22,.14),sec(1.36,.22,.14),sec(1.38,.22,.14),sec(1.40,.22,.14),sec(1.42,.21,.14),sec(1.44,.20,.13),sec(1.46,.18,.12),sec(1.48,.15,.11),sec(1.50,.13,.10),sec(1.52,.11,.09),sec(1.54,.10,.08),sec(1.56,.09,.07)],top);
-
   const lR=[sec(.74,.10,.08),sec(.70,.10,.08),sec(.66,.09,.08),sec(.62,.09,.07),sec(.58,.09,.07),sec(.54,.08,.07),sec(.50,.08,.07),sec(.46,.08,.06),sec(.42,.07,.06),sec(.38,.07,.06),sec(.34,.07,.05),sec(.30,.06,.05),sec(.26,.06,.05),sec(.22,.06,.05),sec(.18,.05,.04),sec(.14,.05,.04),sec(.10,.05,.04),sec(.07,.04,.04),sec(.04,.04,.03),sec(.02,.04,.03),sec(.01,.05,.03)];
   P(lR,pants,-.09);P(lR,pants,.09);
   P(lR.filter(({y})=>y<.38),skin,-.09);P(lR.filter(({y})=>y<.38),skin,.09);
   P([sec(.01,.05,.03),sec(-.01,.06,.04),sec(-.02,.04,.02)],shoe,-.09);P([sec(.01,.05,.03),sec(-.01,.06,.04),sec(-.02,.04,.02)],shoe,.09);
-
   const aR=[sec(.02,.06,.06),sec(-.02,.06,.05),sec(-.06,.05,.05),sec(-.10,.05,.05),sec(-.14,.05,.05),sec(-.18,.05,.04),sec(-.22,.04,.04),sec(-.26,.04,.04),sec(-.30,.04,.04),sec(-.34,.04,.04),sec(-.38,.04,.03),sec(-.42,.03,.03),sec(-.45,.03,.03)];
   P(aR,skin,-.24);P(aR,skin,.24);
   P(aR.filter(({y})=>y>-.22),top,-.24);P(aR.filter(({y})=>y>-.22),top,.24);
-
   P([sec(1.56,.09,.07),sec(1.58,.08,.07),sec(1.60,.08,.07),sec(1.62,.08,.07),sec(1.64,.07,.06)],skin);
-
   for(const s of[-1,1]){const sh=new THREE.Mesh(new THREE.SphereGeometry(.07,14,14),top);sh.position.set(s*.24,1.44,0);meshes.push(sh)}
   return meshes;
 }
 
-// ════════════════════════════════════════════════════════════════
-//  Texture & Color Processing
-// ════════════════════════════════════════════════════════════════
-
-function avgPixels(ctx,x,y,w,h){
-  const d=ctx.getImageData(Math.max(0,x|0),Math.max(0,y|0),Math.min(w|0,ctx.canvas.width-x|0),Math.min(h|0,ctx.canvas.height-y|0)).data;
-  let r=0,g=0,b=0,n=0;for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2];n++}
-  return n?[(r/n|0),(g/n|0),(b/n|0)]:[180,150,130];
-}
+function avgPixels(ctx,x,y,w,h){const d=ctx.getImageData(Math.max(0,x|0),Math.max(0,y|0),Math.min(w|0,ctx.canvas.width-x|0),Math.min(h|0,ctx.canvas.height-y|0)).data;let r=0,g=0,b=0,n=0;for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2];n++}return n?[(r/n|0),(g/n|0),(b/n|0)]:[180,150,130]}
 
 function processImage(img){
   const w=img.width,h=img.height;
   const c=document.createElement('canvas');c.width=w;c.height=h;
   const ctx=c.getContext('2d');ctx.drawImage(img,0,0);
-
   const fW=w*.38,fH=fW*1.2,fX=(w-fW)/2,fY=(h-fH)/2-h*.02;
   const skin=avgPixels(ctx,fX+fW*.25,fY+fH*.2,fW*.5,fH*.4);
   const hair=avgPixels(ctx,w*.25,h*.02,w*.5,h*.12);
   const cloth=avgPixels(ctx,w*.15,fY+fH+h*.04,w*.7,h*.2);
   const bright=c=>Math.min(255,c+20);
-
-  // Head texture canvas
   const S=512;
   const tex=document.createElement('canvas');tex.width=S;tex.height=S;
   const tc=tex.getContext('2d');
@@ -227,59 +207,31 @@ function processImage(img){
   const gr=tc.createRadialGradient(S/2,S/2,fs*.2,S/2,S/2,fs*.5);
   gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,`rgba(${skin[0]},${skin[1]},${skin[2]},.35)`);
   tc.fillStyle=gr;tc.fillRect(0,0,S,S);
-
   const tex3=new THREE.CanvasTexture(tex);tex3.colorSpace=THREE.SRGBColorSpace;
   return{
     faceTex:tex3,
     skin:(skin[0]<<16)|(skin[1]<<8)|skin[2],
     hair:(hair[0]<<16)|(hair[1]<<8)|hair[2],
     cloth:(bright(cloth[0])<<16)|(bright(cloth[1])<<8)|bright(cloth[2]),
-    pants:0x2a2a44,shoe:0x0e0e1e,
-    cx:fX,cy:fY,cw:fW,ch:fH,
+    pants:0x2a2a44, shoe:0x0e0e1e,
   };
 }
 
-// ════════════════════════════════════════════════════════════════
-//  Avatar Assembly
-// ════════════════════════════════════════════════════════════════
-
-function buildAvatar(img,faceLMs){
+function buildAvatar(img, landmarks){
   const cols=processImage(img);
   const group=new THREE.Group();
-
-  // Body
   const body=buildBody(cols.skin,cols.cloth,cols.pants,cols.shoe);
-  for(const m of body)group.add(m);
-
-  // Face from landmarks (if detected)
-  let headMesh;
-  if(faceLMs&&faceLMs.length===70){
-    const fGeo=buildFaceFromLandmarks(faceLMs,img.width,img.height);
-    const fMat=new THREE.MeshStandardMaterial({map:cols.faceTex,roughness:.2,metalness:0,side:THREE.DoubleSide});
-    headMesh=new THREE.Mesh(fGeo,fMat);
-  }else{
-    // Fallback: parametric head
-    const C=48,R=36,W=.21,H=.26,D=.21;const verts=[],uvs=[],idx=[];
-    for(let r=0;r<=R;r++){const v=r/R,th=v*Math.PI,ct=Math.cos(th),st=Math.sin(th);for(let c=0;c<=C;c++){const u=c/C,phi=u*2*Math.PI,cp=Math.cos(phi),sp=Math.sin(phi),front=cp>0?cp:0,frontS=Math.pow(Math.max(0,cp),3);const x=st*cp*W,y=ct*H,z=st*sp*D;const nose=.055*Math.exp(-Math.pow((th-.67)*5.5,2))*frontS,nB=.018*Math.exp(-Math.pow((th-.44)*6.5,2))*frontS,eT=th-.51,eL=Math.exp(-Math.pow(phi-.44,2)*32-Math.pow(eT,2)*38),eR=Math.exp(-Math.pow(phi+.44,2)*32-Math.pow(eT,2)*38),eSoc=-(eL+eR)*.025,eBal=(Math.exp(-Math.pow(phi-.44,2)*28-Math.pow(eT,2)*30)+Math.exp(-Math.pow(phi+.44,2)*28-Math.pow(eT,2)*30))*.010;const cheek=Math.exp(-Math.pow(th-.80,2)*12-Math.pow(Math.abs(phi)-.62,2)*18)*.018,chin=Math.exp(-Math.pow((th-1.44)*6.5,2))*front*.012,jaw=Math.exp(-Math.pow((th-1.22)*3.8,2))*(1-Math.abs(front))*.045,brow=(Math.exp(-Math.pow(phi-.44,2)*16-Math.pow(th-.37,2)*30)+Math.exp(-Math.pow(phi+.44,2)*16-Math.pow(th-.37,2)*30))*.018,lipU=Math.exp(-Math.pow((th-1.10)*22,2))*front*.006,lipL=Math.exp(-Math.pow((th-1.20)*20,2))*front*.005,fore=Math.exp(-Math.pow((th-.12)*4.5,2))*.008,ear=Math.exp(-Math.pow((th-.72)*4.5,2)-Math.pow(Math.abs(Math.abs(phi)-1.0)*22,2))*.040,nW=Math.exp(-Math.pow((th-.67)*4,2))*Math.exp(-Math.pow(phi,2)*8)*(-.005);const tz=z+nose+nB+eSoc+eBal+cheek+chin+jaw+brow+lipU+lipL+ear+nW,tx=x+ear*.3,ty=y+fore;verts.push(tx,ty+.005,tz);uvs.push(u,v);if(r<R&&c<C){const a=r*(C+1)+c,b=r*(C+1)+c+1,d=(r+1)*(C+1)+c,e=(r+1)*(C+1)+c+1;idx.push(a,b,d,b,e,d)}}}
-    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));g.setIndex(idx);g.computeVertexNormals();
-    headMesh=new THREE.Mesh(g,new THREE.MeshStandardMaterial({map:cols.faceTex,roughness:.22,metalness:0}));
-  }
-  headMesh.position.y=1.58;headMesh.castShadow=true;
+  for(const m of body) group.add(m);
+  const headMesh=buildParametricHead(cols.faceTex, landmarks, img.width, img.height);
   group.add(headMesh);
 
-  // Hair
-  const hC=48,hR=24;const hVerts=[],hUvs=[],hIdx=[];
-  for(let r=0;r<=hR;r++){const v=r/hR,th=v*Math.PI*.5;for(let c=0;c<=hC;c++){const u=c/hC,phi=u*2*Math.PI;hVerts.push(Math.sin(th)*Math.cos(phi)*.22,Math.cos(th)*.30+1.34,Math.sin(th)*Math.sin(phi)*.21);hUvs.push(u,v);if(r<hR&&c<hC){const a=r*(hC+1)+c,b=r*(hC+1)+c+1,d=(r+1)*(hC+1)+c,e=(r+1)*(hC+1)+c+1;hIdx.push(a,b,d,b,e,d)}}}
+  const hR=24, hC=48; const hVerts=[], hUvs=[], hIdx=[];
+  for(let r=0;r<=hR;r++){const v=r/hR, th=v*Math.PI*.5;for(let c=0;c<=hC;c++){const u=c/hC, phi=u*2*Math.PI;hVerts.push(Math.sin(th)*Math.cos(phi)*.22,Math.cos(th)*.30+1.38,Math.sin(th)*Math.sin(phi)*.21);hUvs.push(u,v);if(r<hR&&c<hC){const a=r*(hC+1)+c,b=r*(hC+1)+c+1,d=(r+1)*(hC+1)+c,e=(r+1)*(hC+1)+c+1;hIdx.push(a,b,d,b,e,d)}}}
   const hGeo=new THREE.BufferGeometry();hGeo.setAttribute('position',new THREE.Float32BufferAttribute(hVerts,3));hGeo.setAttribute('uv',new THREE.Float32BufferAttribute(hUvs,2));hGeo.setIndex(hIdx);hGeo.computeVertexNormals();
-  const hMat=new THREE.MeshStandardMaterial({color:cols.hair,roughness:.85,metalness:0});
-  group.add(new THREE.Mesh(hGeo,hMat));
+  group.add(new THREE.Mesh(hGeo, new THREE.MeshStandardMaterial({color:cols.hair,roughness:.85,metalness:0})));
 
   return group;
 }
-
-// ════════════════════════════════════════════════════════════════
-//  Scene
-// ════════════════════════════════════════════════════════════════
 
 let scene,camera,renderer,controls,avatarGroup,animTime=0;
 function initScene(){
@@ -302,7 +254,7 @@ function initScene(){
   const k=new THREE.DirectionalLight(0xffeedd,2.2);
   k.position.set(2.5,3.0,2.0);k.castShadow=true;
   k.shadow.mapSize.width=1024;k.shadow.mapSize.height=1024;k.shadow.radius=4;scene.add(k);
-  const f=new THREE.DirectionalLight(0x88ccff,0.8);f.position.set(-2.0,1.5,-1.5);scene.add(f);
+  scene.add(new THREE.DirectionalLight(0x88ccff,0.8).position.set(-2.0,1.5,-1.5));
   scene.add(new THREE.DirectionalLight(0x44ffff,0.4).position.set(-1.0,2.5,-2.5));
   scene.add(new THREE.DirectionalLight(0xff44aa,0.3).position.set(1.5,1.0,-2.0));
   scene.add(new THREE.DirectionalLight(0x88aaff,0.3).position.set(0,4,0));
@@ -312,41 +264,56 @@ function initScene(){
   gr.position.y=-0.01;gr.material.transparent=true;gr.material.opacity=0.06;scene.add(gr);
   addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 }
+
 function updateAvatar(time){if(!avatarGroup)return;avatarGroup.position.y=Math.sin(time*1.8)*0.002;avatarGroup.rotation.z=Math.sin(time*0.6)*0.0015}
 function animate(time){animTime=time*0.001;requestAnimationFrame(animate);updateAvatar(animTime);controls?.update();renderer?.render(scene,camera)}
 
-// ════════════════════════════════════════════════════════════════
-//  Capture & UI
-// ════════════════════════════════════════════════════════════════
-
 const ctrack=new clm.tracker();ctrack.init();
+let detectedLandmarks=null;
+let cameraFacing='user';
+let videoStream=null;
 
-async function startCamera(){
+async function startCamera(facing){
   const video=$('video');
-  video.srcObject=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}});
+  if(videoStream){videoStream.getTracks().forEach(t=>t.stop());videoStream=null}
+  detectedLandmarks=null;
+  ctrack.reset();
+
+  const constraints={video:{facingMode:facing,width:{ideal:640},height:{ideal:480}}};
+  videoStream=await navigator.mediaDevices.getUserMedia(constraints);
+  video.srcObject=videoStream;
+  await new Promise(r=>video.onloadedmetadata=r);
   await video.play();
+  const cont=$('camera-container');
+  if(facing==='user') cont.classList.add('mirror'); else cont.classList.remove('mirror');
   ctrack.start(video);
-  // Start face tracking loop
+  $('status-tag').classList.remove('ok');
+  $('status-tag').textContent='面部检测中...';
+  $('capture-btn').disabled=true;
+  $('capture-btn').textContent='检测面部';
   trackFace();
 }
 
-let detectedLandmarks=null;
 function trackFace(){
   const video=$('video');
   if(video.readyState>=2){
     const pos=ctrack.getCurrentPosition();
-    if(pos){detectedLandmarks=pos;$('status-tag').textContent='✓ 已检测到面部';$('status-tag').classList.add('ok');$('capture-btn').disabled=false}
-    else{$('status-tag').textContent='面部检测中...';$('status-tag').classList.remove('ok');$('capture-btn').disabled=true}
+    if(pos){
+      detectedLandmarks=pos;
+      $('status-tag').textContent='✓ 已检测到面部';
+      $('status-tag').classList.add('ok');
+      $('capture-btn').disabled=false;
+      $('capture-btn').textContent='● 捕捉重建';
+    }else{
+      $('status-tag').textContent='面部检测中...';
+      $('status-tag').classList.remove('ok');
+      if(!$('capture-btn').disabled){$('capture-btn').disabled=true;$('capture-btn').textContent='检测面部'}
+    }
   }
   requestAnimationFrame(trackFace);
 }
 
-function capturePhoto(){
-  const v=$('video'),w=v.videoWidth||640,h=v.videoHeight||480;
-  const c=document.createElement('canvas');c.width=w;c.height=h;
-  const ctx=c.getContext('2d');ctx.drawImage(v,0,0);
-  return c;
-}
+function capturePhoto(){const v=$('video'),w=v.videoWidth||640,h=v.videoHeight||480;const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(v,0,0);return c}
 
 function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));$(id).classList.remove('hidden')}
 function showLoading(v){$('loading-overlay').classList.toggle('hidden',!v)}
@@ -355,25 +322,31 @@ function showError(m){const t=$('error-toast');t.textContent=m;t.classList.add('
 async function onCapture(){
   const btn=$('capture-btn');btn.disabled=true;btn.textContent='● 处理中...';
   try{
-    // Use stored landmarks if available
     let lms=detectedLandmarks;
     if(!lms||lms.length!==70){
-      // Try detecting from current frame
       const cap=document.createElement('canvas');cap.width=640;cap.height=480;
       cap.getContext('2d').drawImage($('video'),0,0);
       lms=ctrack.track(cap.getContext('2d').getImageData(0,0,640,480).data,640,480);
     }
     const cap=capturePhoto();showLoading(true);await new Promise(r=>setTimeout(r,50));
     if(avatarGroup)scene.remove(avatarGroup);
-    avatarGroup=buildAvatar(cap,lms&&lms.length===70?lms:null);
+    avatarGroup=buildAvatar(cap, lms&&lms.length===70?lms:null);
     scene.add(avatarGroup);
     controls.target.set(0,0.78,0);controls.autoRotate=true;controls.update();
     showLoading(false);showView('model-view');
-  }catch(e){showLoading(false);showError('生成失败');console.error(e)}
+  }catch(e){showLoading(false);showError('生成失败: '+e.message);console.error(e)}
   finally{btn.disabled=false;btn.textContent='● 捕捉重建'}
 }
 
-function onRetake(){if(avatarGroup){scene.remove(avatarGroup);avatarGroup=null}controls.autoRotate=true;showView('camera-view');ctrack.start($('video'))}
+async function onSwitchCamera(){
+  cameraFacing=cameraFacing==='user'?'environment':'user';
+  $('camera-toggle').innerHTML=cameraFacing==='user'?
+    '<svg viewBox="0 0 24 24"><path d="M20 4h-3.17L15 2H9L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 3c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6 2.69-6 6-6zm0 2c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/></svg>翻转':
+    '<svg viewBox="0 0 24 24"><path d="M20 4h-3.17L15 2H9L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 3c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6 2.69-6 6-6zm0 2c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/></svg>翻转';
+  try{await startCamera(cameraFacing)}catch(e){showError('摄像头切换失败')}
+}
+
+function onRetake(){if(avatarGroup){scene.remove(avatarGroup);avatarGroup=null}controls.autoRotate=true;showView('camera-view');ctrack.start($('video'));trackFace()}
 function onDownload(){
   if(!avatarGroup)return;showLoading(true);
   try{new GLTFExporter().parse(avatarGroup,blob=>{const u=URL.createObjectURL(new Blob([blob],{type:'application/octet-stream'}));const a=document.createElement('a');a.href=u;a.download='3d-avatar.glb';a.click();URL.revokeObjectURL(u);showLoading(false)},()=>{showLoading(false);showError('导出失败')},{binary:true});setTimeout(()=>showLoading(false),12000)}
@@ -381,9 +354,10 @@ function onDownload(){
 }
 
 async function init(){
-  try{await startCamera()}catch(e){showError('无法访问摄像头')}
+  try{await startCamera(cameraFacing)}catch(e){showError('无法访问摄像头: '+e.message)}
   initScene();animate(0);showView('camera-view');
   $('capture-btn').addEventListener('click',onCapture);
+  $('camera-toggle').addEventListener('click',onSwitchCamera);
   $('retake-btn').addEventListener('click',onRetake);
   $('download-btn').addEventListener('click',onDownload);
 }
