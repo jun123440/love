@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cosmic Voyage — Black Hole</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#000;overflow:hidden}
+  canvas{display:block}
+  #info{position:fixed;bottom:8px;left:50%;transform:translateX(-50%);
+        color:rgba(255,255,255,0.35);font-family:consolas,monospace;font-size:13px;
+        pointer-events:none;user-select:none}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="info">ESC to exit</div>
+<script>
+"use strict";
+
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+let W, H, cx, cy;
+
+function resize() {
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  cx = W / 2; cy = H / 2;
+}
+window.addEventListener("resize", resize);
+resize();
+
+// —— prerender nebula texture ————————————————
+const nebCanvas = document.createElement("canvas");
+const nebCtx = nebCanvas.getContext("2d");
+function buildNebula() {
+  const s = 1024;
+  nebCanvas.width = nebCanvas.height = s;
+  nebCtx.clearRect(0, 0, s, s);
+  const blobs = [
+    { x: 0.25, y: 0.30, rx: 0.35, ry: 0.28, h: 240, c: "hsl(240,60%,18%)" },
+    { x: 0.70, y: 0.60, rx: 0.30, ry: 0.25, h: 280, c: "hsl(280,50%,14%)" },
+    { x: 0.50, y: 0.75, rx: 0.40, ry: 0.22, h: 220, c: "hsl(220,70%,12%)" },
+    { x: 0.80, y: 0.20, rx: 0.22, ry: 0.30, h: 200, c: "hsl(200,50%,10%)" },
+    { x: 0.15, y: 0.70, rx: 0.28, ry: 0.20, h: 260, c: "hsl(260,40%,11%)" },
+    { x: 0.55, y: 0.40, rx: 0.18, ry: 0.32, h: 190, c: "hsl(190,30%,9%)" },
+    { x: 0.35, y: 0.55, rx: 0.25, ry: 0.18, h: 300, c: "hsl(300,35%,10%)" },
+    { x: 0.90, y: 0.85, rx: 0.15, ry: 0.12, h: 230, c: "hsl(230,50%,7%)" },
+  ];
+  for (const b of blobs) {
+    const g = nebCtx.createRadialGradient(b.x * s, b.y * s, 0, b.x * s, b.y * s, b.rx * s);
+    g.addColorStop(0, b.c);
+    g.addColorStop(1, "transparent");
+    nebCtx.fillStyle = g;
+    nebCtx.fillRect(0, 0, s, s);
+  }
+  // fine texture noise
+  nebCtx.globalAlpha = 0.08;
+  for (let i = 0; i < 3000; i++) {
+    const x = Math.random() * s, y = Math.random() * s;
+    const r = Math.random() * 40 + 5;
+    const g = nebCtx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, Math.random() < 0.5 ? "#4a6fa5" : "#3a2050");
+    g.addColorStop(1, "transparent");
+    nebCtx.fillStyle = g;
+    nebCtx.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  nebCtx.globalAlpha = 1;
+}
+buildNebula();
+
+// —— configuration ———————————————————————————————
+const BH_Z = 180;
+const EVENT_HORIZON_BASE = 18;
+const EINSTEIN_BASE = 40;
+const ISCO_BASE = 28;
+const DISK_OUTER_BASE = 110;
+const PHOTON_RING_BASE = 22;
+const FOCAL = 400;
+const NUM_FIELD_STARS = 800;
+const NUM_FLIGHT_STARS = 1400;
+const DISK_RINGS = 36;
+const DISK_PPR = 28;
+const NUM_JETS = 120;
+
+// —— state ———————————————————————————————————————
+let fieldStars = [];
+let flightStars = [];
+let diskParticles = [];
+let jetParticles = [];
+let globalTime = 0;
+let zoom = 1.0;
+
+// —— helpers ——————————————————————————————————————
+function hslStr(h, s, l, a = 1) {
+  return `hsla(${h},${s}%,${l}%,${a})`;
+}
+function lensDeflect(beta, thetaE) {
+  if (beta < 0.001) return { theta: thetaE, secondary: false };
+  const disc = beta * beta + 4 * thetaE * thetaE;
+  const sqrtD = Math.sqrt(disc);
+  const theta = (beta + sqrtD) * 0.5;
+  if (theta > beta * 4) return { theta: beta * 4, secondary: false };
+  return { theta, secondary: true };
+}
+
+// —— stars ————————————————————————————————————————
+function initFieldStars() {
+  fieldStars = [];
+  for (let i = 0; i < NUM_FIELD_STARS; i++) {
+    fieldStars.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      size: Math.random() * 1.8 + 0.3,
+      hue: [210, 200, 40, 45, 50, 30, 20, 15][Math.random() * 8 | 0],
+      sat: 20 + Math.random() * 60,
+      light: 68 + Math.random() * 30,
+      twPhase: Math.random() * Math.PI * 2,
+      twSpeed: 0.01 + Math.random() * 0.04,
+      alpha: 0.6 + Math.random() * 0.4,
+    });
+  }
+}
+
+function initFlightStars() {
+  flightStars = [];
+  for (let i = 0; i < NUM_FLIGHT_STARS; i++) {
+    const z = 1.5 + Math.random() * 200;
+    const spread = (z / FOCAL) * 300;
+    flightStars.push({
+      x: (Math.random() - 0.5) * 2 * spread,
+      y: (Math.random() - 0.5) * 2 * spread,
+      z,
+      size: 0.4 + Math.random() * 2.2,
+      hue: [210, 200, 40, 45, 50, 30, 20, 15][Math.random() * 8 | 0],
+      light: 70 + Math.random() * 28,
+    });
+  }
+}
+
+// —— disk —————————————————————————————————————————
+function initDisk() {
+  diskParticles = [];
+  for (let r = 0; r < DISK_RINGS; r++) {
+    const t = r / (DISK_RINGS - 1);
+    const radius = ISCO_BASE + (DISK_OUTER_BASE - ISCO_BASE) * Math.pow(t, 1.5);
+    const angVel = 0.04 / (Math.sqrt(radius) * radius) * 80;
+    for (let p = 0; p < DISK_PPR; p++) {
+      diskParticles.push({
+        radius,
+        angle: Math.random() * Math.PI * 2,
+        angVel,
+        hVar: (Math.random() - 0.5) * 2 * t * 2.5,
+        size: 0.5 + Math.random() * 1.2,
+        life: Math.random(),
+      });
+    }
+  }
+}
+
+// —— jets —————————————————————————————————————————
+function initJets() {
+  jetParticles = [];
+  for (let i = 0; i < NUM_JETS; i++) {
+    jetParticles.push({
+      x: (Math.random() - 0.5) * 6,
+      y: (Math.random() > 0.5 ? 1 : -1) * (EVENT_HORIZON_BASE * 0.5 + Math.random() * 4),
+      vy: 0,
+      vx: 0,
+      life: Math.random(),
+      maxLife: 0.4 + Math.random() * 0.6,
+      size: 0.3 + Math.random() * 1.5,
+    });
+  }
+  for (const j of jetParticles) {
+    const dir = j.y > 0 ? 1 : -1;
+    j.vy = dir * (1.5 + Math.random() * 4);
+    j.vx = (Math.random() - 0.5) * 0.6;
+  }
+}
+
+function resetJet(j) {
+  const dir = Math.random() > 0.5 ? 1 : -1;
+  j.x = (Math.random() - 0.5) * 6;
+  j.y = dir * (EVENT_HORIZON_BASE * 0.4 + Math.random() * 3);
+  j.vy = dir * (1.5 + Math.random() * 4.5);
+  j.vx = (Math.random() - 0.5) * 0.7;
+  j.life = 0;
+  j.maxLife = 0.3 + Math.random() * 0.7;
+}
+
+// —— disk particle color by radius & doppler ——————
+function diskColorHSL(radius, doppler) {
+  const zn = zoom;
+  const inner = ISCO_BASE * zn;
+  const outer = DISK_OUTER_BASE * zn;
+  let t = (radius - inner) / (outer - inner);
+  if (t < 0) t = 0; if (t > 1) t = 1;
+  let h, s, l;
+  if (t < 0.15)        { h = 40;  s = 10; l = 90; }
+  else if (t < 0.35)   { h = 42;  s = 60; l = 82; }
+  else if (t < 0.55)   { h = 35;  s = 80; l = 68; }
+  else if (t < 0.75)   { h = 20;  s = 90; l = 52; }
+  else                 { h = 8;   s = 95; l = 35; }
+  l += doppler * 8;
+  return { h, s, l };
+}
+
+// —— render ———————————————————————————————————————
+function render() {
+  ctx.clearRect(0, 0, W, H);
+
+  // nebula background
+  ctx.globalAlpha = 0.22;
+  ctx.drawImage(nebCanvas, 0, 0, nebCanvas.width, nebCanvas.height,
+    0, 0, W, H);
+  ctx.globalAlpha = 1;
+
+  const eh = EVENT_HORIZON_BASE * zoom;
+  const einsteinR = EINSTEIN_BASE * zoom;
+  const photonR = PHOTON_RING_BASE * zoom;
+  const isco = ISCO_BASE * zoom;
+  const diskOuter = DISK_OUTER_BASE * zoom;
+
+  // field stars (with lensing)
+  for (const s of fieldStars) {
+    const dx = s.x - cx, dy = s.y - cy;
+    const beta = Math.sqrt(dx * dx + dy * dy);
+    let sx = s.x, sy = s.y;
+    let secondary = false;
+    if (beta > 0.001 && beta < diskOuter + 80) {
+      const { theta, secondary: sec } = lensDeflect(beta, einsteinR);
+      const scale = theta / beta;
+      if (scale > 1.001 && scale < 5) {
+        sx = cx + dx * scale;
+        sy = cy + dy * scale;
+        secondary = sec;
+      }
+    }
+    // secondary image (fainter, inside Einstein ring)
+    if (secondary && beta > 0.01 && beta < einsteinR * 1.8) {
+      const theta2 = (beta - Math.sqrt(Math.max(0, beta * beta - 4 * einsteinR * einsteinR))) * 0.5;
+      if (Math.abs(theta2) > 0.001 && Math.abs(theta2) < einsteinR) {
+        const sc2 = theta2 / beta;
+        const sx2 = cx + dx * sc2;
+        const sy2 = cy + dy * sc2;
+        const bd2 = Math.sqrt((sx2 - cx) ** 2 + (sy2 - cy) ** 2);
+        if (bd2 > eh * 1.05) {
+          const tw = (Math.sin(s.twPhase + globalTime * s.twSpeed) + 1) * 0.5;
+          const a = s.alpha * 0.12 * (0.5 + 0.5 * tw);
+          ctx.beginPath();
+          ctx.arc(sx2, sy2, s.size * 0.4, 0, Math.PI * 2);
+          ctx.fillStyle = hslStr(s.hue, s.sat, s.light, a);
+          ctx.fill();
+        }
+      }
+    }
+    if (sx > -10 && sx < W + 10 && sy > -10 && sy < H + 10) {
+      const bd = Math.sqrt((sx - cx) ** 2 + (sy - cy) ** 2);
+      if (bd < eh * 0.98) continue;
+      const tw = (Math.sin(s.twPhase + globalTime * s.twSpeed) + 1) * 0.5;
+      let a = s.alpha * (0.5 + 0.5 * tw);
+      if (bd < diskOuter + 20 && bd > eh)
+        a *= 0.4 + 0.6 * Math.min(1, (bd - eh) / (diskOuter + 20 - eh));
+      ctx.beginPath();
+      ctx.arc(sx, sy, s.size, 0, Math.PI * 2);
+      ctx.fillStyle = hslStr(s.hue, s.sat, s.light, a);
+      ctx.fill();
+      // glow for bright stars
+      if (a > 0.7 && s.size > 1.2) {
+        ctx.beginPath();
+        ctx.arc(sx, sy, s.size * 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = hslStr(s.hue, 30, s.light + 10, a * 0.15);
+        ctx.fill();
+      }
+    }
+  }
+
+  // flight stars (with lensing)
+  for (const s of flightStars) {
+    const sx0 = s.x / s.z * FOCAL + cx;
+    const sy0 = s.y / s.z * FOCAL + cy;
+    const dx = sx0 - cx, dy = sy0 - cy;
+    const beta = Math.sqrt(dx * dx + dy * dy);
+    let sx = sx0, sy = sy0;
+    if (beta > 0.001 && beta < diskOuter + 80) {
+      const { theta } = lensDeflect(beta, einsteinR);
+      const scale = theta / beta;
+      if (scale > 1.001 && scale < 5) {
+        sx = cx + dx * scale;
+        sy = cy + dy * scale;
+      }
+    }
+    if (sx > -5 && sx < W + 5 && sy > -5 && sy < H + 5) {
+      const bd = Math.sqrt((sx - cx) ** 2 + (sy - cy) ** 2);
+      if (bd < eh * 0.95) continue;
+      const depth = 1 - (s.z - 1.5) / 200;
+      const sz = s.size * (0.2 + 0.8 * depth);
+      const a = 0.3 + 0.7 * depth;
+      ctx.beginPath();
+      ctx.arc(sx, sy, sz, 0, Math.PI * 2);
+      ctx.fillStyle = hslStr(s.hue, 25, s.light, a);
+      ctx.fill();
+    }
+  }
+
+  // accretion disk
+  const cosTilt = Math.cos(0.38);
+  for (const p of diskParticles) {
+    const r = p.radius * zoom;
+    const px2 = r * Math.cos(p.angle);
+    const py2 = r * Math.sin(p.angle) * cosTilt + p.hVar * zoom;
+    const sx = cx + px2, sy = cy + py2;
+    if (sx < 0 || sx >= W || sy < 0 || sy >= H) continue;
+    const doppler = Math.sin(p.angle) * 0.8;
+    const { h, s, l } = diskColorHSL(p.radius * zoom, doppler);
+    const a = 0.6 + doppler * 0.2;
+    ctx.beginPath();
+    ctx.arc(sx, sy, p.size * zoom * 0.7, 0, Math.PI * 2);
+    ctx.fillStyle = hslStr(h, s, l, a);
+    ctx.fill();
+  }
+
+  // photon ring
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, photonR, photonR * cosTilt, 0, 0, Math.PI * 2);
+  ctx.strokeStyle = "hsla(200,20%,92%,0.8)";
+  ctx.lineWidth = 1.6;
+  ctx.shadowColor = "hsla(210,30%,85%,0.7)";
+  ctx.shadowBlur = 5;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.restore();
+
+  // event horizon + glow
+  const ehGradOuter = eh + 6;
+  const ehGrad = ctx.createRadialGradient(cx, cy, eh * 0.7, cx, cy, ehGradOuter);
+  ehGrad.addColorStop(0, "rgba(0,0,0,1)");
+  ehGrad.addColorStop(0.55, "rgba(0,0,0,0.98)");
+  ehGrad.addColorStop(0.8, "rgba(10,5,20,0.6)");
+  ehGrad.addColorStop(0.95, "rgba(20,10,40,0.15)");
+  ehGrad.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = ehGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, ehGradOuter, 0, Math.PI * 2);
+  ctx.fill();
+
+  // subtle corona glow
+  const coronaGrad = ctx.createRadialGradient(cx, cy, eh * 0.85, cx, cy, eh * 1.8);
+  coronaGrad.addColorStop(0, "rgba(100,140,255,0)");
+  coronaGrad.addColorStop(0.5, "rgba(80,120,220,0.06)");
+  coronaGrad.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = coronaGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, eh * 1.8, 0, Math.PI * 2);
+  ctx.fill();
+
+  // inner disk glow
+  const innerGlow = ctx.createRadialGradient(cx, cy, isco * 0.8, cx, cy, isco * 1.4);
+  innerGlow.addColorStop(0, "rgba(255,240,200,0.15)");
+  innerGlow.addColorStop(0.5, "rgba(255,200,100,0.08)");
+  innerGlow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = innerGlow;
+  ctx.beginPath();
+  ctx.arc(cx, cy, isco * 1.4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // jets
+  for (const j of jetParticles) {
+    const alpha = 1 - j.life / j.maxLife;
+    const sx = cx + j.x * zoom;
+    const sy = cy + j.y * zoom;
+    if (alpha < 0.02 || sx < 0 || sx >= W || sy < -10 || sy > H + 10) continue;
+    let h, sl, a;
+    if (alpha < 0.2)      { h = 210; sl = 70; a = alpha * 5 * 0.5; }
+    else if (alpha < 0.45) { h = 205; sl = 80; a = 0.5; }
+    else if (alpha < 0.7)  { h = 200; sl = 85; a = 0.7; }
+    else                   { h = 195; sl = 90; a = 0.85; }
+    ctx.beginPath();
+    ctx.arc(sx, sy, j.size * zoom * 0.5, 0, Math.PI * 2);
+    ctx.fillStyle = hslStr(h, 60, sl, a * 0.7);
+    ctx.fill();
+    // glow
+    ctx.beginPath();
+    ctx.arc(sx, sy, j.size * zoom * 1.3, 0, Math.PI * 2);
+    ctx.fillStyle = hslStr(h, 40, sl + 5, a * 0.15);
+    ctx.fill();
+  }
+
+  // vignette
+  const vignetteGrad = ctx.createRadialGradient(cx, cy, Math.max(W, H) * 0.5, cx, cy, Math.max(W, H) * 0.9);
+  vignetteGrad.addColorStop(0, "rgba(0,0,0,0)");
+  vignetteGrad.addColorStop(1, "rgba(0,0,0,0.55)");
+  ctx.fillStyle = vignetteGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // info
+  ctx.fillStyle = "rgba(255,255,255,0.28)";
+  ctx.font = "13px Consolas, monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("ESC to exit", cx, H - 18);
+}
+
+// —— update ———————————————————————————————————————
+function update(dt) {
+  const spd = dt * 55;
+  zoom = 1.0 + globalTime * 0.00006;
+
+  for (const s of flightStars) {
+    s.z -= spd;
+    if (s.z < 1.2) {
+      s.z = 200;
+      const spread = (s.z / FOCAL) * 300;
+      s.x = (Math.random() - 0.5) * 2 * spread;
+      s.y = (Math.random() - 0.5) * 2 * spread;
+    }
+  }
+
+  for (const p of diskParticles) {
+    p.angle += p.angVel * dt * 1.2;
+    if (p.angle > Math.PI * 2) p.angle -= Math.PI * 2;
+  }
+
+  for (const j of jetParticles) {
+    j.life += dt * 0.5;
+    j.y += j.vy * dt * 50;
+    j.x += j.vx * dt * 30;
+    if (j.life >= j.maxLife || Math.abs(j.y) > H * 1.2) {
+      resetJet(j);
+    }
+  }
+}
+
+// —— loop —————————————————————————————————————————
+let lastTime = performance.now();
+function loop(now) {
+  let dt = (now - lastTime) / 1000;
+  if (dt > 0.1) dt = 0.1;
+  if (dt <= 0) dt = 0.016;
+  lastTime = now;
+  globalTime += dt;
+  update(dt);
+  render();
+  requestAnimationFrame(loop);
+}
+
+// —— keyboard —————————————————————————————————————
+window.addEventListener("keydown", e => {
+  if (e.key === "Escape") {
+    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#aaa;font-family:Consolas,monospace;font-size:18px">Cosmic voyage ended.</div>';
+  }
+});
+
+// —— init & start —————————————————————————————————
+initFieldStars();
+initFlightStars();
+initDisk();
+initJets();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
