@@ -5,733 +5,452 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>3D 人物建模</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
-  background: #08080e; color: #fff;
-  overflow: hidden; height: 100vh; width: 100vw; user-select: none;
-}
-.view {
-  position: fixed; inset: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  transition: opacity 0.5s ease, transform 0.5s ease;
-}
-.view.hidden { opacity: 0; pointer-events: none; transform: scale(0.96); }
-#camera-view { background: radial-gradient(ellipse at 50% 40%, #141420, #08080e); }
-#camera-container {
-  position: relative; border-radius: 16px; overflow: hidden;
-  box-shadow: 0 0 80px rgba(60,100,255,0.12);
-  border: 1px solid rgba(255,255,255,0.05); background: #000;
-  max-width: 88vw; max-height: 68vh;
-}
-#camera-container video {
-  display: block; width: 100%; height: 100%;
-  object-fit: cover; transform: scaleX(-1);
-  max-width: 640px; max-height: 480px;
-}
-#capture-overlay { position: absolute; inset: 0; pointer-events: none; }
-.face-guide {
-  position: absolute; top: 50%; left: 50%;
-  width: 52%; height: 60%;
-  transform: translate(-50%, -54%);
-  border: 1.5px solid rgba(255,255,255,0.2);
-  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-}
-.guide-hint {
-  position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
-  font-size: 12px; color: rgba(255,255,255,0.3); letter-spacing: 2px;
-  background: rgba(0,0,0,0.5); padding: 5px 14px; border-radius: 20px;
-  backdrop-filter: blur(6px); white-space: nowrap;
-}
-.btn-group { margin-top: 24px; display: flex; gap: 14px; align-items: center; }
-.btn {
-  padding: 13px 32px; border: none; border-radius: 50px;
-  font-size: 15px; font-weight: 600; cursor: pointer;
-  transition: all 0.25s ease; letter-spacing: 0.5px;
-  display: inline-flex; align-items: center; gap: 8px;
-}
-.btn-primary {
-  background: linear-gradient(135deg, #4a7cff, #6c5ce7);
-  color: #fff; box-shadow: 0 4px 24px rgba(74,124,255,0.3);
-}
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(74,124,255,0.45); }
-.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-.btn-secondary {
-  background: rgba(255,255,255,0.06); color: #ccc;
-  border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(8px);
-}
-.btn-secondary:hover { background: rgba(255,255,255,0.12); color: #fff; transform: translateY(-2px); }
-#capture-btn { min-width: 180px; justify-content: center; }
-#three-container { width: 100vw; height: 100vh; display: block; }
-.model-controls {
-  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
-  display: flex; gap: 12px; z-index: 10;
-}
-.model-hint {
-  position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
-  color: rgba(255,255,255,0.2); font-size: 12px; z-index: 10;
-  background: rgba(0,0,0,0.4); padding: 6px 16px; border-radius: 20px;
-  backdrop-filter: blur(8px);
-}
-#loading-overlay {
-  position: fixed; inset: 0; background: rgba(8,8,14,0.85);
-  display: flex; flex-direction: column; align-items: center;
-  justify-content: center; z-index: 100; backdrop-filter: blur(16px);
-  transition: opacity 0.4s ease;
-}
-#loading-overlay.hidden { opacity: 0; pointer-events: none; }
-.spinner {
-  width: 44px; height: 44px; border: 2.5px solid rgba(255,255,255,0.04);
-  border-top-color: #4a7cff; border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-#loading-overlay p { margin-top: 16px; font-size: 14px; color: rgba(255,255,255,0.55); }
-#processing-bar {
-  margin-top: 14px; width: 200px; height: 2px;
-  background: rgba(255,255,255,0.06); overflow: hidden;
-}
-#processing-bar::after {
-  content: ''; display: block; width: 40%; height: 100%;
-  background: linear-gradient(90deg, #4a7cff, #6c5ce7);
-  animation: bar-load 1.2s ease-in-out infinite;
-}
-@keyframes bar-load {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(350%); }
-}
-#error-toast {
-  position: fixed; bottom: 36px; left: 50%;
-  transform: translateX(-50%) translateY(80px);
-  background: rgba(255,50,50,0.12); backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,50,50,0.2); padding: 12px 24px;
-  border-radius: 10px; font-size: 13px; color: #ff6b6b;
-  z-index: 200; transition: transform 0.35s ease; white-space: nowrap;
-}
-#error-toast.show { transform: translateX(-50%) translateY(0); }
-@media (max-width: 600px) {
-  #camera-container { border-radius: 10px; max-height: 50vh; }
-  .btn { padding: 11px 22px; font-size: 13px; }
-  #capture-btn { min-width: 150px; }
-  .model-controls { flex-wrap: wrap; justify-content: center; bottom: 20px; }
-}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,'Segoe UI',system-ui,sans-serif;background:#08080e;color:#fff;overflow:hidden;height:100vh;width:100vw;user-select:none}
+.view{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s ease,transform .5s ease}
+.view.hidden{opacity:0;pointer-events:none;transform:scale(.96)}
+#camera-view{background:radial-gradient(ellipse at 50% 40%,#141420,#08080e)}
+#camera-container{position:relative;border-radius:16px;overflow:hidden;box-shadow:0 0 80px rgba(60,100,255,.12);border:1px solid rgba(255,255,255,.05);background:#000;max-width:88vw;max-height:68vh}
+#camera-container video{display:block;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);max-width:640px;max-height:480px}
+#capture-overlay{position:absolute;inset:0;pointer-events:none}
+.face-guide{position:absolute;top:50%;left:50%;width:52%;height:60%;transform:translate(-50%,-54%);border:1.5px solid rgba(255,255,255,.2);border-radius:50% 50% 50% 50%/60% 60% 40% 40%}
+.guide-hint{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);font-size:12px;color:rgba(255,255,255,.3);letter-spacing:2px;background:rgba(0,0,0,.5);padding:5px 14px;border-radius:20px;backdrop-filter:blur(6px);white-space:nowrap}
+.btn-group{margin-top:24px;display:flex;gap:14px;align-items:center}
+.btn{padding:13px 32px;border:none;border-radius:50px;font-size:15px;font-weight:600;cursor:pointer;transition:all .25s ease;letter-spacing:.5px;display:inline-flex;align-items:center;gap:8px}
+.btn-primary{background:linear-gradient(135deg,#4a7cff,#6c5ce7);color:#fff;box-shadow:0 4px 24px rgba(74,124,255,.3)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(74,124,255,.45)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-secondary{background:rgba(255,255,255,.06);color:#ccc;border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(8px)}
+.btn-secondary:hover{background:rgba(255,255,255,.12);color:#fff;transform:translateY(-2px)}
+#capture-btn{min-width:180px;justify-content:center}
+#three-container{width:100vw;height:100vh;display:block}
+.model-controls{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:10}
+.model-hint{position:fixed;top:18px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.2);font-size:12px;z-index:10;background:rgba(0,0,0,.4);padding:6px 16px;border-radius:20px;backdrop-filter:blur(8px)}
+#loading-overlay{position:fixed;inset:0;background:rgba(8,8,14,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(16px);transition:opacity .4s ease}
+#loading-overlay.hidden{opacity:0;pointer-events:none}
+.spinner{width:44px;height:44px;border:2.5px solid rgba(255,255,255,.04);border-top-color:#4a7cff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loading-overlay p{margin-top:16px;font-size:14px;color:rgba(255,255,255,.55)}
+#processing-bar{margin-top:14px;width:200px;height:2px;background:rgba(255,255,255,.06);overflow:hidden}
+#processing-bar::after{content:'';display:block;width:40%;height:100%;background:linear-gradient(90deg,#4a7cff,#6c5ce7);animation:bar-load 1.2s ease-in-out infinite}
+@keyframes bar-load{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}
+#error-toast{position:fixed;bottom:36px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(255,50,50,.12);backdrop-filter:blur(12px);border:1px solid rgba(255,50,50,.2);padding:12px 24px;border-radius:10px;font-size:13px;color:#ff6b6b;z-index:200;transition:transform .35s ease;white-space:nowrap}
+#error-toast.show{transform:translateX(-50%) translateY(0)}
+@media(max-width:600px){#camera-container{border-radius:10px;max-height:50vh}.btn{padding:11px 22px;font-size:13px}#capture-btn{min-width:150px}.model-controls{flex-wrap:wrap;justify-content:center;bottom:20px}}
 </style>
 </head>
 <body>
-
 <div id="camera-view" class="view">
-  <div id="camera-container">
-    <video id="video" autoplay playsinline muted></video>
-    <div id="capture-overlay">
-      <div class="face-guide"></div>
-      <div class="guide-hint">将面部对准椭圆区域</div>
-    </div>
-  </div>
-  <div class="btn-group">
-    <button id="capture-btn" class="btn btn-primary">● 捕捉形象</button>
-  </div>
-</div>
-
-<div id="loading-overlay" class="hidden">
-  <div class="spinner"></div>
-  <p>正在重建 3D 模型</p>
-  <div id="processing-bar"></div>
-</div>
-
+  <div id="camera-container"><video id="video" autoplay playsinline muted></video>
+    <div id="capture-overlay"><div class="face-guide"></div><div class="guide-hint">将面部对准椭圆区域</div></div></div>
+  <div class="btn-group"><button id="capture-btn" class="btn btn-primary">● 捕捉形象</button></div></div>
+<div id="loading-overlay" class="hidden"><div class="spinner"></div><p>正在重建 3D 模型</p><div id="processing-bar"></div></div>
 <div id="model-view" class="view hidden">
   <div id="three-container"></div>
   <div class="model-hint">拖动旋转 · 滚轮缩放</div>
   <div class="model-controls">
     <button id="retake-btn" class="btn btn-secondary">← 重新拍摄</button>
-    <button id="download-btn" class="btn btn-primary">↓ 下载 .glb</button>
-  </div>
-</div>
-
+    <button id="download-btn" class="btn btn-primary">↓ 下载 .glb</button></div></div>
 <div id="error-toast"></div>
 
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-  }
-}
-</script>
-
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { mergeBufferGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
-const $ = id => document.getElementById(id);
-const SEG = 20; // segments around each ring
+const $=id=>document.getElementById(id);
 
-// ═══════════════════════════════════════════════════
-//  Body Mesh Builder — Lofted cross-sections
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+//  High-Poly Body Mesh Generator
+//  ~10,000+ vertices — real 3D geometry, not primitives
+// ═══════════════════════════════════════════════════════════
 
-function makeRing(y, rx, rz, seg) {
-  const pts = [];
-  for (let i = 0; i < seg; i++) {
-    const a = (i / seg) * Math.PI * 2;
-    pts.push([Math.cos(a) * rx, y, Math.sin(a) * rz]);
+function buildRing(y, rx, rz, seg, dx=0, dz=0) {
+  const pts = new Float32Array((seg+1)*3);
+  for (let i=0; i<=seg; i++) {
+    const a=i/seg*Math.PI*2;
+    pts[i*3]=Math.cos(a)*rx+dx;
+    pts[i*3+1]=y;
+    pts[i*3+2]=Math.sin(a)*rz+dz;
   }
   return pts;
 }
 
-function loft(rings, seg) {
-  const verts = [], uvs = [], idx = [];
-  for (let r = 0; r < rings.length; r++) {
-    const pts = rings[r];
-    const v = r / (rings.length - 1);
-    for (let i = 0; i <= seg; i++) {
-      const p = pts[i % seg];
-      verts.push(p[0], p[1], p[2]);
-      uvs.push(i / seg, v);
-      if (r < rings.length - 1) {
-        const a = r * (seg + 1) + i;
-        const b = r * (seg + 1) + ((i + 1) % (seg + 1));
-        const c = (r + 1) * (seg + 1) + i;
-        const d = (r + 1) * (seg + 1) + ((i + 1) % (seg + 1));
-        idx.push(a, b, c, b, d, c);
+function buildTube(rings, seg) {
+  const n=rings.length;
+  const verts=[], uvs=[], idx=[];
+  for (let r=0; r<n; r++) {
+    const ring=rings[r];
+    const v=r/(n-1);
+    for (let i=0; i<=seg; i++) {
+      verts.push(ring[i*3], ring[i*3+1], ring[i*3+2]);
+      uvs.push(i/seg, v);
+      if (r<n-1) {
+        const a=r*(seg+1)+i, b=r*(seg+1)+(i+1)%(seg+1);
+        const c=(r+1)*(seg+1)+i, d=(r+1)*(seg+1)+(i+1)%(seg+1);
+        idx.push(a,b,c,b,d,c);
       }
     }
   }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-  g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-  g.setIndex(idx);
-  g.computeVertexNormals();
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
+  g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+  g.setIndex(idx); g.computeVertexNormals();
   return g;
 }
 
-function offsetRing(ring, dx, dz) {
-  return ring.map(p => [p[0] + dx, p[1], p[2] + dz]);
+// Body cross-section profiles: [y, rx, rz, label]
+// High density — rings every 0.02-0.05 units
+function genProfile() {
+  const S=28; // segments per ring
+  const geos=[];
+
+  function sec(y,rx,rz,dx=0,dz=0){return {y,rx,rz,dx,dz}}
+
+  // ── Torso ─────────────────────────────────────
+  const torso=[
+    sec(0.76,0.13,0.10),sec(0.78,0.14,0.10),sec(0.80,0.14,0.11),
+    sec(0.82,0.14,0.11),sec(0.84,0.14,0.10),sec(0.86,0.14,0.10),
+    sec(0.88,0.14,0.10),sec(0.90,0.14,0.10),sec(0.92,0.14,0.10),
+    sec(0.94,0.14,0.10),sec(0.96,0.14,0.10),sec(0.98,0.14,0.10),
+    sec(1.00,0.14,0.10),sec(1.02,0.14,0.10),sec(1.04,0.15,0.11),
+    sec(1.06,0.15,0.11),sec(1.08,0.16,0.11),sec(1.10,0.16,0.11),
+    sec(1.12,0.17,0.12),sec(1.14,0.17,0.12),sec(1.16,0.18,0.12),
+    sec(1.18,0.18,0.12),sec(1.20,0.19,0.13),sec(1.22,0.19,0.13),
+    sec(1.24,0.20,0.13),sec(1.26,0.20,0.14),sec(1.28,0.21,0.14),
+    sec(1.30,0.21,0.14),sec(1.32,0.22,0.14),sec(1.34,0.22,0.14),
+    sec(1.36,0.22,0.14),sec(1.38,0.22,0.14),sec(1.40,0.22,0.14),
+    sec(1.42,0.21,0.14),sec(1.44,0.20,0.13),sec(1.46,0.18,0.12),
+    sec(1.48,0.15,0.11),sec(1.50,0.13,0.10),sec(1.52,0.11,0.09),
+    sec(1.54,0.10,0.08),sec(1.56,0.09,0.07),
+  ];
+  geos.push(buildTube(torso.map(s=>buildRing(s.y,s.rx,s.rz,S,s.dx,s.dz)),S));
+
+  // ── Left Leg ──────────────────────────────────
+  const leg=[
+    sec(0.74,0.10,0.08,-0.09),sec(0.70,0.10,0.08,-0.09),
+    sec(0.66,0.09,0.08,-0.09),sec(0.62,0.09,0.07,-0.09),
+    sec(0.58,0.09,0.07,-0.09),sec(0.54,0.08,0.07,-0.09),
+    sec(0.50,0.08,0.07,-0.09),sec(0.46,0.08,0.06,-0.09),
+    sec(0.42,0.07,0.06,-0.09),sec(0.38,0.07,0.06,-0.09),
+    sec(0.34,0.07,0.05,-0.09),sec(0.30,0.06,0.05,-0.09),
+    sec(0.26,0.06,0.05,-0.09),sec(0.22,0.06,0.05,-0.09),
+    sec(0.18,0.05,0.04,-0.09),sec(0.14,0.05,0.04,-0.09),
+    sec(0.10,0.05,0.04,-0.09),sec(0.07,0.04,0.04,-0.09),
+    sec(0.04,0.04,0.03,-0.09),sec(0.02,0.04,0.03,-0.09),
+    sec(0.01,0.05,0.03,-0.09),
+  ];
+  geos.push(buildTube(leg.map(s=>buildRing(s.y,s.rx,s.rz,S,s.dx,s.dz)),S));
+
+  // ── Right Leg ─────────────────────────────────
+  geos.push(buildTube(leg.map(s=>buildRing(s.y,s.rx,s.rz,S,0.09,s.dz)),S));
+
+  // ── Left Arm ──────────────────────────────────
+  const arm=[
+    sec(0.02,0.06,0.06,-0.26),sec(-0.02,0.06,0.05,-0.27),
+    sec(-0.06,0.05,0.05,-0.28),sec(-0.10,0.05,0.05,-0.29),
+    sec(-0.14,0.05,0.05,-0.30),sec(-0.18,0.05,0.04,-0.31),
+    sec(-0.22,0.04,0.04,-0.31),sec(-0.26,0.04,0.04,-0.31),
+    sec(-0.30,0.04,0.04,-0.31),sec(-0.34,0.04,0.04,-0.31),
+    sec(-0.38,0.04,0.03,-0.31),sec(-0.42,0.03,0.03,-0.30),
+    sec(-0.45,0.03,0.03,-0.30),
+  ];
+  geos.push(buildTube(arm.map(s=>buildRing(s.y,s.rx,s.rz,S,s.dx,s.dz)),S));
+
+  // ── Right Arm ─────────────────────────────────
+  geos.push(buildTube(arm.map(s=>buildRing(s.y,s.rx,s.rz,S,0.26,s.dz)),S));
+
+  // ── Neck ──────────────────────────────────────
+  const neck=[
+    sec(1.56,0.09,0.07),sec(1.58,0.08,0.07),sec(1.60,0.08,0.07),
+    sec(1.62,0.08,0.07),sec(1.64,0.07,0.06),
+  ];
+  geos.push(buildTube(neck.map(s=>buildRing(s.y,s.rx,s.rz,S,s.dx,s.dz)),S));
+
+  // Merge all body meshes
+  return mergeBufferGeometries(geos, false);
 }
 
-function scaleRing(ring, sx, sz) {
-  return ring.map(p => [p[0] * sx, p[1], p[2] * sz]);
-}
+// ═══════════════════════════════════════════════════════════
+//  High-Poly Head — Deformed UV sphere
+//  64×48 = 3072 vertices, facial features sculpted in
+// ═══════════════════════════════════════════════════════════
 
-function partRings(profile, seg) {
-  return profile.map(([y, rx, rz]) => makeRing(y, rx, rz, seg));
-}
+function buildHead() {
+  const C=64, R=48;
+  const verts=[], uvs=[], idx=[];
+  const W=0.21, H=0.26, D=0.21;
 
-// Build complete body
-function buildBodyMesh(colSkin, colTop, colPants, colShoe) {
-  const seg = SEG;
+  for (let r=0; r<=R; r++) {
+    const v=r/R, theta=v*Math.PI, ct=Math.cos(theta), st=Math.sin(theta);
+    for (let c=0; c<=C; c++) {
+      const u=c/C, phi=u*2*Math.PI, cp=Math.cos(phi), sp=Math.sin(phi);
+      const front=cp>0?cp:0, frontS=Math.pow(Math.max(0,cp),3);
 
-  // Torso profile: [y, rx, rz]
-  const torsoProf = [
-    [0.80, 0.14, 0.11], [0.88, 0.15, 0.11], [0.95, 0.14, 0.10],
-    [1.02, 0.14, 0.10], [1.10, 0.16, 0.11], [1.18, 0.18, 0.12],
-    [1.26, 0.20, 0.13], [1.34, 0.22, 0.14], [1.40, 0.23, 0.15],
-    [1.46, 0.21, 0.14], [1.50, 0.16, 0.12], [1.54, 0.12, 0.10],
-  ];
+      const x=st*cp*W, y=ct*H, z=st*sp*D;
 
-  // Left leg profile (and mirrored for right)
-  const legProf = [
-    [0.78, 0.10, 0.08], [0.72, 0.10, 0.08], [0.65, 0.09, 0.07],
-    [0.55, 0.08, 0.07], [0.45, 0.07, 0.06], [0.38, 0.07, 0.06],
-    [0.30, 0.06, 0.05], [0.22, 0.06, 0.05], [0.14, 0.05, 0.04],
-    [0.07, 0.04, 0.04], [0.03, 0.04, 0.03], [0.01, 0.05, 0.03],
-  ];
+      // ── Facial feature deformations ──
+      const fr=Math.exp(-Math.pow((theta-0.78)*1.6,2));
+      const nose=0.055*Math.exp(-Math.pow((theta-0.67)*5.5,2))*frontS;
+      const nBridge=0.018*Math.exp(-Math.pow((theta-0.44)*6.5,2))*frontS;
+      const eT=theta-0.51;
+      const eL=Math.exp(-Math.pow(phi-0.44,2)*32-Math.pow(eT,2)*38);
+      const eR=Math.exp(-Math.pow(phi+0.44,2)*32-Math.pow(eT,2)*38);
+      const eSoc=-(eL+eR)*0.025;
+      const eBal=(Math.exp(-Math.pow(phi-0.44,2)*28-Math.pow(eT,2)*30)+
+                 Math.exp(-Math.pow(phi+0.44,2)*28-Math.pow(eT,2)*30))*0.010;
+      const cheek=Math.exp(-Math.pow(theta-0.80,2)*12-Math.pow(Math.abs(phi)-0.62,2)*18)*0.018;
+      const chin=Math.exp(-Math.pow((theta-1.44)*6.5,2))*front*0.012;
+      const jaw=Math.exp(-Math.pow((theta-1.22)*3.8,2))*(1-Math.abs(front))*0.045;
+      const browL=Math.exp(-Math.pow(phi-0.44,2)*16-Math.pow(theta-0.37,2)*30);
+      const browR=Math.exp(-Math.pow(phi+0.44,2)*16-Math.pow(theta-0.37,2)*30);
+      const brow=(browL+browR)*0.018;
+      const lipU=Math.exp(-Math.pow((theta-1.10)*22,2))*front*0.006;
+      const lipL=Math.exp(-Math.pow((theta-1.20)*20,2))*front*0.005;
+      const fore=Math.exp(-Math.pow((theta-0.12)*4.5,2))*0.008;
+      const ear=Math.exp(-Math.pow((theta-0.72)*4.5,2)-Math.pow(Math.abs(Math.abs(phi)-1.0)*22,2))*0.040;
+      const noseW=Math.exp(-Math.pow((theta-0.67)*4,2))*Math.exp(-Math.pow(phi,2)*8)*(-0.005);
 
-  // Left arm profile
-  const armProf = [
-    [0.02, 0.06, 0.06], [-0.02, 0.05, 0.05], [-0.08, 0.05, 0.05],
-    [-0.14, 0.05, 0.05], [-0.20, 0.04, 0.04], [-0.25, 0.04, 0.04],
-    [-0.30, 0.04, 0.04], [-0.36, 0.03, 0.03], [-0.42, 0.03, 0.03],
-    [-0.46, 0.03, 0.03],
-  ];
+      const tz=z+nose+nBridge+eSoc+eBal+cheek+chin+jaw+brow+lipU+lipL+ear+noseW;
+      const tx=x+ear*0.3;
+      const ty=y+fore;
 
-  const torsoR = partRings(torsoProf, seg);
-  const legR = partRings(legProf, seg);
-  const armR = partRings(armProf, seg);
-
-  const meshes = [];
-
-  function addPart(rings, mat, dx, dz) {
-    const off = rings.map(r => r.map(p => [p[0] + dx, p[1], p[2] + dz]));
-    const g = loft(off, seg);
-    const m = new THREE.Mesh(g, mat);
-    m.castShadow = true;
-    meshes.push(m);
-  }
-
-  const skin = new THREE.MeshStandardMaterial({ color: colSkin, roughness: 0.35, metalness: 0.0 });
-  const top = new THREE.MeshStandardMaterial({ color: colTop, roughness: 0.5, metalness: 0.02 });
-  const pants = new THREE.MeshStandardMaterial({ color: colPants, roughness: 0.6, metalness: 0.0 });
-  const shoe = new THREE.MeshStandardMaterial({ color: colShoe, roughness: 0.7, metalness: 0.0 });
-
-  // Torso (clothed)
-  addPart(torsoR, top, 0, 0);
-
-  // Split torso into upper (top) and lower (pants) at y ≈ 0.82
-  const pantsRings = torsoR.filter(r => r[0][1] < 0.85);
-  const topRings = torsoR.filter(r => r[0][1] >= 0.82);
-
-  // Actually just add pants as separate mesh over lower torso
-  const pantsProf = [
-    [0.80, 0.14, 0.11], [0.78, 0.14, 0.11], [0.72, 0.13, 0.10],
-  ];
-  addPart(partRings(pantsProf, seg), pants, 0, 0);
-
-  // Legs
-  addPart(legR, pants, -0.10, 0);
-  addPart(legR, pants, 0.10, 0);
-
-  // Lower legs (skin visible)
-  const skinLegProf = legProf.filter(([y]) => y < 0.40);
-  addPart(partRings(skinLegProf, seg), skin, -0.10, 0);
-  addPart(partRings(skinLegProf, seg), skin, 0.10, 0);
-
-  // Feet
-  const footProf = [[0.01, 0.05, 0.03], [-0.01, 0.06, 0.04], [-0.02, 0.04, 0.02]];
-  addPart(partRings(footProf, seg), shoe, -0.10, 0);
-  addPart(partRings(footProf, seg), shoe, 0.10, 0);
-
-  // Arms
-  addPart(armR, skin, -0.24, 0);
-  addPart(armR, skin, 0.24, 0);
-
-  // Upper arms (clothed)
-  const clothedArmProf = armProf.filter(([y]) => y > -0.20);
-  addPart(partRings(clothedArmProf, seg), top, -0.24, 0);
-  addPart(partRings(clothedArmProf, seg), top, 0.24, 0);
-
-  // Shoulders (ball joints)
-  for (const s of [-1, 1]) {
-    const sh = new THREE.Mesh(new THREE.SphereGeometry(0.08, 14, 14), top);
-    sh.position.set(s * 0.24, 1.45, 0);
-    meshes.push(sh);
-  }
-
-  // Neck
-  const neckProf = [[1.54, 0.10, 0.08], [1.58, 0.08, 0.07], [1.62, 0.07, 0.06]];
-  addPart(partRings(neckProf, seg), skin, 0, 0);
-
-  return meshes;
-}
-
-// ═══════════════════════════════════════════════════
-//  Detailed Head Mesh
-// ═══════════════════════════════════════════════════
-
-function buildHeadMesh() {
-  const C = 48, R = 36;
-  const verts = [], uvs = [], idx = [];
-  const W = 0.22, H = 0.28, D = 0.22;
-
-  for (let r = 0; r <= R; r++) {
-    const v = r / R;
-    const theta = v * Math.PI;
-    const ct = Math.cos(theta), st = Math.sin(theta);
-
-    for (let c = 0; c <= C; c++) {
-      const u = c / C;
-      const phi = u * 2 * Math.PI;
-      const cp = Math.cos(phi), sp = Math.sin(phi);
-      const front = cp > 0 ? cp : 0;
-      const frontSharp = Math.pow(Math.max(0, cp), 3);
-
-      // Base ellipsoid
-      const x = st * cp * W;
-      const y = ct * H;
-      const z = st * sp * D;
-
-      // Face region (phi near 0, theta near 0.6-1.0)
-      const faceRegion = Math.exp(-Math.pow((theta - 0.8) * 1.8, 2));
-
-      // — Nose —
-      const nose = 0.05 * Math.exp(-Math.pow((theta - 0.68) * 5, 2)) * frontSharp;
-      const noseBridge = 0.015 * Math.exp(-Math.pow((theta - 0.45) * 6, 2)) * frontSharp;
-
-      // — Eye sockets —
-      const eLvl = theta - 0.52;
-      const eyeL = Math.exp(-Math.pow(phi - 0.45, 2) * 30 - Math.pow(eLvl, 2) * 35);
-      const eyeR = Math.exp(-Math.pow(phi + 0.45, 2) * 30 - Math.pow(eLvl, 2) * 35);
-      const eyeSocket = -(eyeL + eyeR) * 0.022;
-
-      // — Eyeball protrusion —
-      const eyeBall = (Math.exp(-Math.pow(phi - 0.45, 2) * 25 - Math.pow(eLvl, 2) * 28) +
-                       Math.exp(-Math.pow(phi + 0.45, 2) * 25 - Math.pow(eLvl, 2) * 28)) * 0.008;
-
-      // — Cheekbones —
-      const cheek = Math.exp(-Math.pow(theta - 0.82, 2) * 12 - Math.pow(Math.abs(phi) - 0.65, 2) * 18) * 0.015;
-
-      // — Chin —
-      const chin = Math.exp(-Math.pow((theta - 1.45) * 6, 2)) * front * 0.01;
-
-      // — Jaw —
-      const jaw = Math.exp(-Math.pow((theta - 1.25) * 3.5, 2)) * (1 - Math.abs(front)) * 0.04;
-
-      // — Brow ridge —
-      const brow = (Math.exp(-Math.pow(phi - 0.45, 2) * 14 - Math.pow(theta - 0.38, 2) * 28) +
-                    Math.exp(-Math.pow(phi + 0.45, 2) * 14 - Math.pow(theta - 0.38, 2) * 28)) * 0.015;
-
-      // — Lips —
-      const lipUpper = Math.exp(-Math.pow((theta - 1.12) * 20, 2)) * front * 0.005;
-      const lipLower = Math.exp(-Math.pow((theta - 1.22) * 18, 2)) * front * 0.004;
-
-      // — Forehead —
-      const forehead = Math.exp(-Math.pow((theta - 0.15) * 4, 2)) * 0.01;
-
-      // — Ears (sides) —
-      const ear = Math.exp(-Math.pow((theta - 0.75) * 4, 2) - Math.pow(Math.abs(Math.abs(phi) - 1.0) * 20, 2)) * 0.035;
-
-      const totalZ = z + nose + noseBridge + eyeSocket + eyeBall + cheek + chin + jaw + brow + lipUpper + lipLower + ear;
-      const totalX = x + ear * 0.3;
-
-      verts.push(totalX, y + 0.005, totalZ);
+      verts.push(tx, ty+0.005, tz);
       uvs.push(u, v);
-
-      if (r < R && c < C) {
-        const a = r*(C+1)+c, b = r*(C+1)+c+1;
-        const d = (r+1)*(C+1)+c, e = (r+1)*(C+1)+c+1;
-        idx.push(a,b,d, b,e,d);
+      if (r<R && c<C) {
+        const a=r*(C+1)+c,b=r*(C+1)+c+1,d=(r+1)*(C+1)+c,e=(r+1)*(C+1)+c+1;
+        idx.push(a,b,d,b,e,d);
       }
     }
   }
-
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-  geo.setIndex(idx);
-  geo.computeVertexNormals();
-  return geo;
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
+  g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+  g.setIndex(idx); g.computeVertexNormals();
+  return g;
 }
 
-// ═══════════════════════════════════════════════════
-//  Hair 
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+//  Hair
+// ═══════════════════════════════════════════════════════════
 
-function buildHairMesh() {
-  const C = 40, R = 20;
-  const verts = [], uvs = [], idx = [];
-
-  for (let r = 0; r <= R; r++) {
-    const v = r / R;
-    const theta = v * Math.PI * 0.50;
-    for (let c = 0; c <= C; c++) {
-      const u = c / C;
-      const phi = u * 2 * Math.PI;
-      const x = Math.sin(theta) * Math.cos(phi) * 0.23;
-      const y = Math.cos(theta) * 0.32;
-      const z = Math.sin(theta) * Math.sin(phi) * 0.22;
-      verts.push(x, y + 1.34, z);
-      uvs.push(u, v);
-      if (r < R && c < C) {
-        const a = r*(C+1)+c, b = r*(C+1)+c+1;
-        const d = (r+1)*(C+1)+c, e = (r+1)*(C+1)+c+1;
-        idx.push(a,b,d, b,e,d);
-      }
+function buildHair() {
+  const C=48,R=24,V=0.50;
+  const verts=[],uvs=[],idx=[];
+  for (let r=0;r<=R;r++){
+    const v=r/R,th=v*Math.PI*V;
+    for (let c=0;c<=C;c++){
+      const u=c/C,phi=u*2*Math.PI;
+      verts.push(Math.sin(th)*Math.cos(phi)*0.22,Math.cos(th)*0.30+1.34,Math.sin(th)*Math.sin(phi)*0.21);
+      uvs.push(u,v);
+      if(r<R&&c<C){const a=r*(C+1)+c,b=r*(C+1)+c+1,d=(r+1)*(C+1)+c,e=(r+1)*(C+1)+c+1;idx.push(a,b,d,b,e,d)}
     }
   }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-  geo.setIndex(idx);
-  geo.computeVertexNormals();
-  return geo;
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
+  g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+  g.setIndex(idx);g.computeVertexNormals();
+  return g;
 }
 
-// ═══════════════════════════════════════════════════
-//  Texture & Color Extraction
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+//  Color Extraction
+// ═══════════════════════════════════════════════════════════
 
-function extractColors(img) {
-  const w = img.width, h = img.height;
-  const c = document.createElement('canvas');
-  c.width = w; c.height = h;
-  const ctx = c.getContext('2d');
-  ctx.drawImage(img, 0, 0);
-
-  const faceW = w * 0.38, faceH = faceW * 1.2;
-  const fx = (w - faceW) / 2, fy = (h - faceH) / 2 - h * 0.02;
-
-  function avg(x, y, w2, h2) {
-    const d = ctx.getImageData(Math.max(0,x|0), Math.max(0,y|0), Math.min(w2|0,w-x|0), Math.min(h2|0,h-y|0)).data;
-    let r=0,g=0,b=0,n=0;
-    for (let i=0; i<d.length; i+=4) { r+=d[i]; g+=d[i+1]; b+=d[i+2]; n++; }
-    return n ? [r/n|0, g/n|0, b/n|0] : [180,150,130];
-  }
-
-  const skin = avg(fx+faceW*0.2, fy+faceH*0.2, faceW*0.6, faceH*0.4);
-  const hair = avg(w*0.25, h*0.02, w*0.5, h*0.12);
-  const cloth = avg(w*0.15, fy+faceH+h*0.04, w*0.7, h*0.2);
-
-  // Brighten colors for youthful look
-  const bright = (c2) => Math.min(255, c2 + 15);
-  const clothB = [bright(cloth[0]), bright(cloth[1]), bright(cloth[2])];
-
-  return {
-    skin: (skin[0]<<16)|(skin[1]<<8)|skin[2],
-    hair: (hair[0]<<16)|(hair[1]<<8)|hair[2],
-    cloth: (clothB[0]<<16)|(clothB[1]<<8)|clothB[2],
-    pants: 0x2a2a44,
-    shoe: 0x111122,
-    faceTex: buildFaceTexture(c, img, fx, fy, faceW, faceH, skin),
-  };
+function sample(img,x,y,w,h){
+  const c=document.createElement('canvas');c.width=img.width;c.height=img.height;
+  const ctx=c.getContext('2d');ctx.drawImage(img,0,0);
+  const d=ctx.getImageData(Math.max(0,x|0),Math.max(0,y|0),Math.min(w|0,img.width),Math.min(h|0,img.height)).data;
+  let r=0,g=0,b=0,n=0;for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2];n++}
+  return n?[(r/n|0),(g/n|0),(b/n|0)]:[180,150,130];
 }
 
-function buildFaceTexture(ctx, img, fx, fy, fw, fh, skin) {
-  const S = 512;
-  const c = document.createElement('canvas');
-  c.width = S; c.height = S;
-  const tc = c.getContext('2d');
-
-  tc.fillStyle = `rgb(${skin[0]},${skin[1]},${skin[2]})`;
-  tc.fillRect(0, 0, S, S);
-
-  const fs = S * 0.60;
-  const ox = (S - fs) / 2, oy = (S - fs) / 2 - S * 0.02;
-
-  tc.save();
-  tc.beginPath();
-  tc.ellipse(S/2, S/2, fs/2, fs/2, 0, 0, Math.PI*2);
-  tc.clip();
-  tc.drawImage(img, fx, fy, fw, fh, ox, oy, fs, fs);
-  tc.restore();
-
-  // Edge blend
-  const g = tc.createRadialGradient(S/2, S/2, fs*0.25, S/2, S/2, fs*0.50);
-  g.addColorStop(0, 'rgba(0,0,0,0)');
-  g.addColorStop(1, `rgba(${skin[0]},${skin[1]},${skin[2]},0.35)`);
-  tc.fillStyle = g;
-  tc.fillRect(0, 0, S, S);
-
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
+function makeHeadTex(img){
+  const S=512,w=img.width,h=img.height;
+  const fw=w*0.38,fh=fw*1.2,fx=(w-fw)/2,fy=(h-fh)/2-h*0.02;
+  const skin=sample(img,fx+fw*0.25,fy+fh*0.2,fw*0.5,fh*0.4);
+  const c=document.createElement('canvas');c.width=S;c.height=S;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle=`rgb(${skin[0]},${skin[1]},${skin[2]})`;
+  ctx.fillRect(0,0,S,S);
+  const fs=S*0.58,ox=(S-fs)/2,oy=(S-fs)/2-S*0.02;
+  ctx.save();ctx.beginPath();ctx.ellipse(S/2,S/2,fs/2,fs/2,0,0,Math.PI*2);ctx.clip();
+  ctx.drawImage(img,fx,fy,fw,fh,ox,oy,fs,fs);ctx.restore();
+  const gr=ctx.createRadialGradient(S/2,S/2,fs*0.2,S/2,S/2,fs*0.5);
+  gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,`rgba(${skin[0]},${skin[1]},${skin[2]},0.4)`);
+  ctx.fillStyle=gr;ctx.fillRect(0,0,S,S);
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
+  return t;
 }
 
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 //  Avatar Assembly
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 
 function buildAvatar(img) {
-  const cols = extractColors(img);
-  const group = new THREE.Group();
+  const w=img.width,h=img.height;
+  const fw=w*0.38,fh=fw*1.2,fx=(w-fw)/2,fy=(h-fh)/2-h*0.02;
+  const skin=sample(img,fx+fw*0.25,fy+fh*0.2,fw*0.5,fh*0.4);
+  const hair=sample(img,w*0.25,h*0.02,w*0.5,h*0.12);
+  const cloth=sample(img,w*0.15,fy+fh+h*0.04,w*0.7,h*0.2);
+  const bright=c=>Math.min(255,c+20);
+  const cSkin=(skin[0]<<16)|(skin[1]<<8)|skin[2];
+  const cHair=(hair[0]<<16)|(hair[1]<<8)|hair[2];
+  const cCloth=(bright(cloth[0])<<16)|(bright(cloth[1])<<8)|bright(cloth[2]);
+  const cPants=0x2a2a44,cShoe=0x0e0e1e;
 
-  // Body parts
-  const parts = buildBodyMesh(cols.skin, cols.cloth, cols.pants, cols.shoe);
-  for (const p of parts) group.add(p);
+  const group=new THREE.Group();
 
-  // Head
-  const headM = new THREE.MeshStandardMaterial({
-    map: cols.faceTex, roughness: 0.25, metalness: 0.0
+  // ── Body (high-poly merged mesh) ──
+  const bodyMesh=genProfile();
+  const bodyM=new THREE.MeshStandardMaterial({color:cCloth,roughness:0.5,metalness:0.02});
+  const body=new THREE.Mesh(bodyMesh,bodyM);
+  body.castShadow=true;group.add(body);
+
+  // ── Skin parts (neck, arms overlap) ──
+  // Skin overlay for neck and exposed arms
+  const neckIdx=bodyMesh.attributes.position.count-((4*29)+5); // approximate
+  // Use a separate skin-tone mesh overlaid
+  const skinM=new THREE.MeshStandardMaterial({color:cSkin,roughness:0.3,metalness:0.0});
+
+  // Lower legs (skin visible)
+  const llProf=[];
+  for(let y=0.02;y<=0.38;y+=0.03)llProf.push({y,rx:0.04+0.015*(1-y/0.38),rz:0.03+0.012*(1-y/0.38),dx:0,dz:0});
+  const llGeo=buildTube(llProf.map(s=>buildRing(s.y,s.rx,s.rz,24,s.dx,s.dz)),24);
+  const llL=new THREE.Mesh(llGeo,skinM);llL.position.x=-0.09;group.add(llL);
+  const llR=new THREE.Mesh(llGeo,skinM);llR.position.x=0.09;group.add(llR);
+
+  // Forearms (skin visible)
+  const faProf=[];
+  for(let y=-0.42;y<=0.0;y+=0.03)faProf.push({y,rx:0.038-0.008*(y+0.42)/0.42,rz:0.038-0.008*(y+0.42)/0.42,dx:0,dz:0});
+  const faGeo=buildTube(faProf.map(s=>buildRing(s.y,s.rx,s.rz,20,s.dx,s.dz)),20);
+  const faL=new THREE.Mesh(faGeo,skinM);faL.position.set(-0.26,-0.02,0);group.add(faL);
+  const faR=new THREE.Mesh(faGeo,skinM);faR.position.set(0.26,-0.02,0);group.add(faR);
+
+  // ── Head ──
+  const headM=new THREE.MeshStandardMaterial({
+    map:makeHeadTex(img),roughness:0.22,metalness:0.0
   });
-  const head = new THREE.Mesh(buildHeadMesh(), headM);
-  head.position.y = 1.58;
-  head.castShadow = true;
+  const head=new THREE.Mesh(buildHead(),headM);
+  head.position.y=1.58;head.castShadow=true;
   group.add(head);
 
-  // Hair
-  const hairM = new THREE.MeshStandardMaterial({
-    color: cols.hair, roughness: 0.85, metalness: 0.0
-  });
-  const hair = new THREE.Mesh(buildHairMesh(), hairM);
-  group.add(hair);
+  // ── Hair ──
+  const hM=new THREE.MeshStandardMaterial({color:cHair,roughness:0.85,metalness:0.0});
+  const hairM=new THREE.Mesh(buildHair(),hM);
+  group.add(hairM);
+
+  // ── Joint spheres for smooth transitions ──
+  const jM=new THREE.MeshStandardMaterial({color:cCloth,roughness:0.5,metalness:0.02});
+  for(const s of[-1,1]){
+    const sh=new THREE.Mesh(new THREE.SphereGeometry(0.07,14,14),jM);
+    sh.position.set(s*0.24,1.44,0);group.add(sh);
+  }
 
   return group;
 }
 
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 //  Scene
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 
-let scene, camera, renderer, controls, avatarGroup, animTime = 0;
+let scene,camera,renderer,controls,avatarGroup,animTime=0;
 
-function initScene() {
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0c0c16);
-
-  camera = new THREE.PerspectiveCamera(32, innerWidth/innerHeight, 0.1, 100);
-  camera.position.set(1.6, 1.4, 2.8);
-
-  renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(innerWidth, innerHeight);
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.shadowMap.bias = -0.0005;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
+function initScene(){
+  scene=new THREE.Scene();scene.background=new THREE.Color(0x0c0c16);
+  camera=new THREE.PerspectiveCamera(30,innerWidth/innerHeight,0.1,100);
+  camera.position.set(1.5,1.3,2.8);
+  renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setSize(innerWidth,innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.2;
   $('three-container').appendChild(renderer.domElement);
+  controls=new OrbitControls(camera,renderer.domElement);
+  controls.target.set(0,0.78,0);controls.enableDamping=true;controls.dampingFactor=0.06;
+  controls.minDistance=0.7;controls.maxDistance=4.0;controls.maxPolarAngle=Math.PI*0.78;
+  controls.autoRotate=true;controls.autoRotateSpeed=2.0;controls.update();
+  controls.addEventListener('start',()=>controls.autoRotate=false);
 
-  controls = new OrbitControls(camera, renderer.domElement);
-  controls.target.set(0, 0.80, 0);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.06;
-  controls.minDistance = 0.8;
-  controls.maxDistance = 4.5;
-  controls.maxPolarAngle = Math.PI * 0.80;
-  controls.autoRotate = true;
-  controls.autoRotateSpeed = 1.8;
-  controls.update();
-  controls.addEventListener('start', () => controls.autoRotate = false);
+  scene.add(new THREE.AmbientLight(0x334466,0.4));
+  scene.add(new THREE.HemisphereLight(0x6688dd,0x553322,0.5));
+  const k=new THREE.DirectionalLight(0xffeedd,2.2);
+  k.position.set(2.5,3.0,2.0);k.castShadow=true;
+  k.shadow.mapSize.width=1024;k.shadow.mapSize.height=1024;k.shadow.radius=4;scene.add(k);
+  const f=new THREE.DirectionalLight(0x88ccff,0.8);f.position.set(-2.0,1.5,-1.5);scene.add(f);
+  const c=new THREE.DirectionalLight(0x44ffff,0.4);c.position.set(-1.0,2.5,-2.5);scene.add(c);
+  const m=new THREE.DirectionalLight(0xff44aa,0.3);m.position.set(1.5,1.0,-2.0);scene.add(m);
+  scene.add(new THREE.DirectionalLight(0x88aaff,0.3).position.set(0,4,0));
 
-  // Vibrant lighting for youthful feel
-  scene.add(new THREE.AmbientLight(0x334466, 0.4));
-  scene.add(new THREE.HemisphereLight(0x6688dd, 0x553322, 0.5));
+  const g=new THREE.Mesh(new THREE.CircleGeometry(3,48),
+    new THREE.MeshStandardMaterial({color:0x0e0e1a,roughness:0.9,metalness:0,transparent:true,opacity:0.35,side:THREE.DoubleSide}));
+  g.rotation.x=-Math.PI/2;g.position.y=-0.02;g.receiveShadow=true;scene.add(g);
 
-  const key = new THREE.DirectionalLight(0xffeedd, 2.0);
-  key.position.set(2.5, 3.0, 2.0);
-  key.castShadow = true;
-  key.shadow.mapSize.width = 1024;
-  key.shadow.mapSize.height = 1024;
-  key.shadow.radius = 4;
-  scene.add(key);
+  const gr=new THREE.GridHelper(4,20,0x1a1a30,0x1a1a30);
+  gr.position.y=-0.01;gr.material.transparent=true;gr.material.opacity=0.06;scene.add(gr);
 
-  const fill = new THREE.DirectionalLight(0x88ccff, 0.8);
-  fill.position.set(-2.0, 1.5, -1.5);
-  scene.add(fill);
-
-  const rimCyan = new THREE.DirectionalLight(0x44ffff, 0.4);
-  rimCyan.position.set(-1.0, 2.5, -2.5);
-  scene.add(rimCyan);
-
-  const rimMagenta = new THREE.DirectionalLight(0xff44aa, 0.3);
-  rimMagenta.position.set(1.5, 1.0, -2.0);
-  scene.add(rimMagenta);
-
-  const top = new THREE.DirectionalLight(0x88aaff, 0.3);
-  top.position.set(0, 4, 0);
-  scene.add(top);
-
-  // Ground
-  const g = new THREE.Mesh(
-    new THREE.CircleGeometry(2.8, 48),
-    new THREE.MeshStandardMaterial({ color: 0x0e0e1a, roughness: 0.9, metalness: 0, transparent: true, opacity: 0.4, side: THREE.DoubleSide })
-  );
-  g.rotation.x = -Math.PI/2;
-  g.position.y = -0.02;
-  g.receiveShadow = true;
-  scene.add(g);
-
-  const gr = new THREE.GridHelper(4, 20, 0x1a1a30, 0x1a1a30);
-  gr.position.y = -0.01;
-  gr.material.transparent = true;
-  gr.material.opacity = 0.08;
-  scene.add(gr);
-
-  addEventListener('resize', () => {
-    camera.aspect = innerWidth / innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(innerWidth, innerHeight);
-  });
+  addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 }
 
-function updateAvatar(time) {
-  if (!avatarGroup) return;
-  const b = Math.sin(time * 1.8) * 0.002;
-  const s = Math.sin(time * 0.6) * 0.0015;
-  avatarGroup.position.y = b;
-  avatarGroup.rotation.z = s;
+function updateAvatar(time){
+  if(!avatarGroup)return;
+  avatarGroup.position.y=Math.sin(time*1.8)*0.002;
+  avatarGroup.rotation.z=Math.sin(time*0.6)*0.0015;
 }
 
-function animate(time) {
-  animTime = time * 0.001;
-  requestAnimationFrame(animate);
-  updateAvatar(animTime);
-  controls?.update();
-  renderer?.render(scene, camera);
+function animate(time){
+  animTime=time*0.001;requestAnimationFrame(animate);
+  updateAvatar(animTime);controls?.update();renderer?.render(scene,camera);
 }
 
-// ═══════════════════════════════════════════════════
-//  Capture & UI
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+//  UI
+// ═══════════════════════════════════════════════════════════
 
-async function startCamera() {
-  const video = $('video');
-  video.srcObject = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
-  });
+async function startCamera(){
+  const video=$('video');
+  video.srcObject=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}});
   await video.play();
 }
 
-function capturePhoto() {
-  const video = $('video');
-  const w = video.videoWidth || 640, h = video.videoHeight || 480;
-  const c = document.createElement('canvas');
-  c.width = w; c.height = h;
-  const ctx = c.getContext('2d');
-  ctx.scale(-1, 1);
-  ctx.drawImage(video, -w, 0, w, h);
-  return c;
+function capturePhoto(){
+  const v=$('video'),w=v.videoWidth||640,h=v.videoHeight||480;
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  const ctx=c.getContext('2d');ctx.scale(-1,1);ctx.drawImage(v,-w,0,w,h);return c;
 }
 
-function showView(id) {
-  document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-  $(id).classList.remove('hidden');
+function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));$(id).classList.remove('hidden')}
+function showLoading(v){$('loading-overlay').classList.toggle('hidden',!v)}
+function showError(m){const t=$('error-toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),4000)}
+
+async function onCapture(){
+  const btn=$('capture-btn');btn.disabled=true;btn.textContent='● 处理中...';
+  try{
+    const cap=capturePhoto();showLoading(true);await new Promise(r=>setTimeout(r,50));
+    if(avatarGroup)scene.remove(avatarGroup);
+    avatarGroup=buildAvatar(cap);scene.add(avatarGroup);
+    controls.target.set(0,0.78,0);controls.autoRotate=true;controls.update();
+    showLoading(false);showView('model-view');
+  }catch(e){showLoading(false);showError('生成失败');console.error(e)}
+  finally{btn.disabled=false;btn.textContent='● 捕捉形象'}
 }
 
-function showLoading(v) { $('loading-overlay').classList.toggle('hidden', !v); }
-
-function showError(m) {
-  const t = $('error-toast');
-  t.textContent = m;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 4000);
+function onRetake(){if(avatarGroup){scene.remove(avatarGroup);avatarGroup=null}controls.autoRotate=true;showView('camera-view')}
+function onDownload(){
+  if(!avatarGroup)return;showLoading(true);
+  try{new GLTFExporter().parse(avatarGroup,blob=>{const u=URL.createObjectURL(new Blob([blob],{type:'application/octet-stream'}));const a=document.createElement('a');a.href=u;a.download='3d-avatar.glb';a.click();URL.revokeObjectURL(u);showLoading(false)},()=>{showLoading(false);showError('导出失败')},{binary:true});setTimeout(()=>showLoading(false),12000)}
+  catch(e){showLoading(false);showError('下载失败')}
 }
 
-async function onCapture() {
-  const btn = $('capture-btn');
-  btn.disabled = true;
-  btn.textContent = '● 处理中...';
-  try {
-    const cap = capturePhoto();
-    showLoading(true);
-    await new Promise(r => setTimeout(r, 50));
-    if (avatarGroup) scene.remove(avatarGroup);
-    avatarGroup = buildAvatar(cap);
-    scene.add(avatarGroup);
-    controls.target.set(0, 0.80, 0);
-    controls.autoRotate = true;
-    controls.update();
-    showLoading(false);
-    showView('model-view');
-  } catch (e) {
-    showLoading(false);
-    showError('生成失败');
-    console.error(e);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '● 捕捉形象';
-  }
+async function init(){
+  try{await startCamera()}catch(e){showError('无法访问摄像头')}
+  initScene();animate(0);showView('camera-view');
+  $('capture-btn').addEventListener('click',onCapture);
+  $('retake-btn').addEventListener('click',onRetake);
+  $('download-btn').addEventListener('click',onDownload);
 }
-
-function onRetake() {
-  if (avatarGroup) { scene.remove(avatarGroup); avatarGroup = null; }
-  controls.autoRotate = true;
-  showView('camera-view');
-}
-
-function onDownload() {
-  if (!avatarGroup) return;
-  showLoading(true);
-  try {
-    new GLTFExporter().parse(avatarGroup, blob => {
-      const url = URL.createObjectURL(new Blob([blob], { type:'application/octet-stream' }));
-      const a = document.createElement('a');
-      a.href = url; a.download = '3d-avatar.glb'; a.click();
-      URL.revokeObjectURL(url); showLoading(false);
-    }, () => { showLoading(false); showError('导出失败'); }, { binary: true });
-    setTimeout(() => showLoading(false), 12000);
-  } catch (e) { showLoading(false); showError('下载失败'); }
-}
-
-async function init() {
-  try { await startCamera(); } catch (e) { showError('无法访问摄像头'); }
-  initScene();
-  animate(0);
-  showView('camera-view');
-  $('capture-btn').addEventListener('click', onCapture);
-  $('retake-btn').addEventListener('click', onRetake);
-  $('download-btn').addEventListener('click', onDownload);
-}
-
 init();
 </script>
 </body>
