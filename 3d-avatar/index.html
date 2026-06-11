@@ -6,7 +6,7 @@
 <title>3D 头像</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:#111;color:#fff;height:100dvh;width:100vw;overflow:hidden}
+body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:#111;color:#fff;height:100vh;width:100vw;overflow:hidden}
 .view{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .4s,transform .4s}
 .view.hidden{opacity:0;pointer-events:none;transform:scale(.97)}
 #cam-wrap{position:relative;border-radius:16px;overflow:hidden;box-shadow:0 0 60px rgba(80,130,255,.15);border:2px solid rgba(255,255,255,.1);background:#000;width:min(88vw,360px);aspect-ratio:4/3}
@@ -23,7 +23,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:#111;colo
 .btn2:active{background:rgba(255,255,255,.18)}
 .btn2 svg{width:15px;height:15px;fill:currentColor}
 #capBtn{min-width:160px;justify-content:center}
-#gl{width:100vw;height:100dvh;display:block}
+#gl{width:100vw;height:100vh;display:block}
 .ctrl{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:10}
 .tip{position:fixed;top:16px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.35);font-size:12px;z-index:10;background:rgba(0,0,0,.5);padding:5px 16px;border-radius:20px;pointer-events:none}
 #load{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;transition:opacity .3s}
@@ -109,9 +109,9 @@ function buildFace(tex,imgW,imgH){
     }
   }
   var geo=new T.BufferGeometry();
-  geo.setAttribute('position',new T.Float32BufferAttribute(verts,3));
-  geo.setAttribute('uv',new T.Float32BufferAttribute(uvs,2));
-  geo.setIndex(idx);geo.computeVertexNormals();
+  geo.setAttribute('position',new T.BufferAttribute(new Float32Array(verts),3));
+  geo.setAttribute('uv',new T.BufferAttribute(new Float32Array(uvs),2));
+  geo.setIndex(new T.BufferAttribute(new Uint16Array(idx),1));geo.computeVertexNormals();
   var mesh=new T.Mesh(geo,new T.MeshStandardMaterial({map:tex,roughness:.15,metalness:0}));
   mesh.position.y=1.60;return mesh;
 }
@@ -162,6 +162,9 @@ function initScene(){
   scene.add(new T.DirectionalLight(0xff44aa,.2).position.set(1,1.2,-2));
   var fl=new T.Mesh(new T.CircleGeometry(3,48),new T.MeshStandardMaterial({color:0x0e0e1a,roughness:.9,metalness:0,transparent:true,opacity:.35,side:T.DoubleSide}));
   fl.rotation.x=-Math.PI/2;fl.position.y=-.2;fl.receiveShadow=true;scene.add(fl);
+  // 测试球 - 验证渲染是否正常
+  var test=new T.Mesh(new T.SphereGeometry(.15,16,16),new T.MeshBasicMaterial({color:0xff4444}));
+  test.position.set(0,1.55,0);scene.add(test);
   addEventListener('resize',function(){cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 }
 
@@ -192,6 +195,7 @@ async function capture(){
     await new Promise(function(r){setTimeout(r,60)});
     if(avatar)scene.remove(avatar);
     avatar=buildAvatar(img);scene.add(avatar);
+    renderer.setSize(innerWidth,innerHeight);
     ctl.target.set(0,1.55,0);ctl.autoRotate=true;ctl.update();
     document.getElementById('load').classList.add('hidden');
     showV('md-view');
