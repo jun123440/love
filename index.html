@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>为你写诗</title>
+<link href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Noto Serif SC','ZCOOL XiaoWei','SimSun',serif;background:#0a0015;color:#e8d5b7;user-select:none;-webkit-user-select:none}
+#stars{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.star{position:absolute;width:2px;height:2px;background:#fff;border-radius:50%;animation:twinkle var(--dur) ease-in-out infinite alternate;opacity:0}
+@keyframes twinkle{0%{opacity:0;transform:scale(0.5)}100%{opacity:var(--max-op,1);transform:scale(1)}}
+.meteor{position:fixed;width:2px;height:2px;background:#fff;border-radius:50%;z-index:1;pointer-events:none;opacity:0}
+.meteor::after{content:'';position:absolute;top:0;left:0;width:80px;height:1px;background:linear-gradient(to left,transparent,#fff);opacity:.3;transform:rotate(0deg) translateX(0)}
+@keyframes shoot{0%{opacity:0;transform:translate(0,0)}5%{opacity:1}100%{opacity:0;transform:translate(-300px,300px)}}
+.page{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2;transition:opacity .8s cubic-bezier(.4,0,.2,1),transform .8s cubic-bezier(.4,0,.2,1);will-change:transform,opacity}
+.page.hidden{pointer-events:none}
+.page-exit{opacity:0;transform:scale(.96)}
+.page-enter{opacity:1;transform:scale(1)}
+.page-before{opacity:0;transform:scale(1.04)}
+#splash{background:radial-gradient(ellipse at center bottom,#1a0030 0%,#0a0015 60%,#050010 100%);cursor:pointer;z-index:10}
+.moon{width:120px;height:120px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#f0d6b0,#d4a574 60%,#b8864e);box-shadow:0 0 60px rgba(212,165,116,.3),0 0 120px rgba(212,165,116,.15);position:relative;margin-bottom:40px;animation:moonGlow 4s ease-in-out infinite alternate}
+@keyframes moonGlow{0%{box-shadow:0 0 60px rgba(212,165,116,.3),0 0 120px rgba(212,165,116,.15)}100%{box-shadow:0 0 80px rgba(212,165,116,.4),0 0 160px rgba(212,165,116,.2)}}
+.moon::before{content:'';position:absolute;top:15px;left:25px;width:25px;height:25px;border-radius:50%;background:rgba(255,255,255,.15)}
+.moon::after{content:'';position:absolute;top:45px;left:55px;width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.1)}
+.splash-title{font-family:'ZCOOL XiaoWei',serif;font-size:clamp(2.2rem,8vw,3.5rem);font-weight:400;letter-spacing:.5em;text-align:center;margin-bottom:12px;background:linear-gradient(135deg,#f0d6b0,#d4a574,#b8864e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.splash-sub{font-size:clamp(.85rem,3vw,1.1rem);color:rgba(232,213,183,.6);letter-spacing:.3em;margin-bottom:50px;font-weight:300}
+.splash-tip{position:absolute;bottom:clamp(40px,10vh,80px);font-size:.85rem;color:rgba(232,213,183,.35);letter-spacing:.2em;animation:breathe 2.5s ease-in-out infinite}
+@keyframes breathe{0%,100%{opacity:.35}50%{opacity:.8}}
+.petal{position:fixed;z-index:3;pointer-events:none;font-size:18px;opacity:.4;animation:fall linear forwards}
+@keyframes fall{0%{transform:translateY(-10vh) rotate(0deg) scale(1);opacity:.4}100%{transform:translateY(110vh) rotate(720deg) scale(.6);opacity:0}}
+#input-page{background:radial-gradient(ellipse at center top,#1a0030 0%,#0a0015 70%,#050010 100%);z-index:5}
+.input-card{background:rgba(255,255,255,.03);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(232,213,183,.1);border-radius:24px;padding:clamp(30px,6vw,50px) clamp(24px,5vw,45px);width:clamp(300px,85vw,420px);text-align:center}
+.input-card h2{font-size:clamp(1.3rem,4.5vw,1.8rem);font-weight:400;letter-spacing:.15em;margin-bottom:8px;color:#f0d6b0}
+.input-card p{font-size:.85rem;color:rgba(232,213,183,.5);margin-bottom:30px;letter-spacing:.1em}
+.input-group{position:relative;margin-bottom:28px}
+.input-group input{width:100%;padding:14px 16px;background:rgba(255,255,255,.05);border:1px solid rgba(232,213,183,.2);border-radius:14px;color:#e8d5b7;font-size:1.1rem;font-family:'Noto Serif SC',serif;outline:none;transition:border-color .3s,box-shadow .3s;letter-spacing:.05em;text-align:center}
+.input-group input:focus{border-color:#d4a574;box-shadow:0 0 20px rgba(212,165,116,.1)}
+.input-group input::placeholder{color:rgba(232,213,183,.25);text-align:center}
+.input-group .input-glow{position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);width:0;height:2px;background:linear-gradient(90deg,transparent,#d4a574,transparent);transition:width .5s;border-radius:2px}
+.input-group input:focus ~ .input-glow{width:80%}
+.submit-btn{width:100%;padding:14px 0;background:linear-gradient(135deg,#d4a574,#b8864e);border:none;border-radius:14px;color:#0a0015;font-size:1rem;font-family:'Noto Serif SC',serif;letter-spacing:.2em;cursor:pointer;transition:all .3s;font-weight:700}
+.submit-btn:active{transform:scale(.97);opacity:.9}
+.submit-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+#result-page{background:radial-gradient(ellipse at center,#1a0030 0%,#0a0015 70%,#050010 100%);z-index:6;overflow-y:auto;justify-content:flex-start;padding-top:clamp(50px,12vh,90px)}
+.result-scroll{width:clamp(300px,85vw,450px);max-height:calc(100vh - 40px);overflow-y:auto;padding:10px 0 20px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.result-scroll::-webkit-scrollbar{display:none}
+.result-card{background:rgba(255,255,255,.03);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(232,213,183,.1);border-radius:24px;padding:clamp(30px,5vw,45px);text-align:center;position:relative;overflow:hidden}
+.result-card::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:conic-gradient(from 0deg,transparent,rgba(212,165,116,.03),transparent,rgba(212,165,116,.03),transparent);animation:rotateGlow 10s linear infinite}
+@keyframes rotateGlow{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+.result-to{font-size:.9rem;color:rgba(232,213,183,.5);letter-spacing:.15em;margin-bottom:6px;position:relative;z-index:1}
+.result-name{font-family:'ZCOOL XiaoWei',serif;font-size:clamp(1.5rem,5vw,2rem);color:#f0d6b0;margin-bottom:25px;letter-spacing:.3em;position:relative;z-index:1}
+.result-divider{width:40px;height:1px;background:linear-gradient(90deg,transparent,#d4a574,transparent);margin:0 auto 25px;position:relative;z-index:1}
+.poem-line{font-size:clamp(1.2rem,4vw,1.6rem);line-height:2.2;letter-spacing:.12em;position:relative;z-index:1;padding:4px 0;opacity:0;transform:translateY(15px);transition:opacity .6s ease,transform .6s ease}
+.poem-line.show{opacity:1;transform:translateY(0)}
+.poem-line .c1{color:#d4a574;font-weight:700}
+.result-from{font-size:.85rem;color:rgba(232,213,183,.35);margin-top:25px;letter-spacing:.2em;position:relative;z-index:1}
+.result-actions{display:flex;gap:12px;margin-top:20px;justify-content:center;position:relative;z-index:1;flex-wrap:wrap}
+.action-btn{padding:10px 24px;background:rgba(255,255,255,.05);border:1px solid rgba(232,213,183,.15);border-radius:20px;color:#e8d5b7;font-size:.8rem;font-family:'Noto Serif SC',serif;letter-spacing:.1em;cursor:pointer;transition:all .3s;white-space:nowrap}
+.action-btn:active{background:rgba(212,165,116,.15);transform:scale(.96)}
+.copy-toast{position:fixed;bottom:clamp(40px,8vh,70px);left:50%;transform:translateX(-50%);background:rgba(232,213,183,.12);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);padding:10px 28px;border-radius:20px;border:1px solid rgba(232,213,183,.1);color:#e8d5b7;font-size:.85rem;font-family:'Noto Serif SC',serif;letter-spacing:.1em;opacity:0;transition:opacity .5s;z-index:100;pointer-events:none}
+.copy-toast.show{opacity:1}
+@media(max-width:400px){.input-card{padding:24px 20px}.moon{width:90px;height:90px}.moon::before{width:18px;height:18px;top:12px;left:18px}.moon::after{width:9px;height:9px;top:34px;left:40px}}
+</style>
+</head>
+<body>
+<div id="stars"></div>
+<div id="splash" class="page">
+  <div class="moon"></div>
+  <div class="splash-title">为你写诗</div>
+  <div class="splash-sub">以你之名 · 赋你之诗</div>
+  <div class="splash-tip">✦ 轻触开启 ✦</div>
+</div>
+<div id="input-page" class="page hidden">
+  <div class="input-card">
+    <h2>你的名字</h2>
+    <p>告诉我你的名字，我为你写一首诗</p>
+    <div class="input-group">
+      <input type="text" id="nameInput" placeholder="请输入你的名字" maxlength="6" autocomplete="off">
+      <div class="input-glow"></div>
+    </div>
+    <button class="submit-btn" id="submitBtn">为 你 写 诗</button>
+  </div>
+</div>
+<div id="result-page" class="page hidden">
+  <div class="result-scroll">
+    <div class="result-card">
+      <div class="result-to">— 致 —</div>
+      <div class="result-name" id="displayName"></div>
+      <div class="result-divider"></div>
+      <div id="poemContainer"></div>
+      <div class="result-from">—— 赠予最特别的你 ——</div>
+      <div class="result-actions">
+        <button class="action-btn" id="copyBtn">📋 复制诗句</button>
+        <button class="action-btn" id="againBtn">✎ 换一个名字</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="copy-toast" id="toast">已复制到剪贴板</div>
+<script>
+const P={};
+// ----- Poem Database -----
+const chars='爱明华文丽伟芳娜秀英敏静霞军磊洋勇艳杰娟涛鑫强浩鹏飞雪琳瑶婷欣慧佳怡颖琪琦珊蕾薇萱萍燕虹玲桂兰琴红梅春风云花月星山水海天心思念相知君子如梦龙凤祥瑞福贵诗书画琴瑟和鸣';
+const lines={
+爱:['爱意如风拂柳岸，烟雨朦胧入梦来','爱此山花落晚风，一枝斜映水光中','爱如春水初生处，脉脉无言已动心','爱月夜行深竹里，清辉照影两依依','爱君笔下有烟霞，字字珠玑句句花'],
+明:['明月出天山，苍茫云海间','明眸似水含星子，一笑春风满画楼','明日烟波江上客，与君同醉一湖秋','明灯照夜三千界，不及回眸一瞬光','明朝若问相思处，月在青天水在瓶'],
+华:['华灯初上夜未央，星河倒影入池塘','华年似水匆匆去，留得真心在世间','华枝春满香盈袖，月下独酌思故人','华堂昼永春风暖，一曲清歌醉碧霄'],
+文:['文章本天成，妙手偶得之','文心如月照清流，墨韵书香满画楼','文采风流天下知，一诗一酒一相思','文君当垆情意重，相如作赋为红颜'],
+丽:['丽日晴空云似锦，花香满径蝶纷飞','丽质天成不染尘，一笑嫣然百媚生','丽影婆娑花月下，清歌婉转水云间','丽人如画立春风，烟雨江南入梦中'],
+伟:['伟岸如松立世间，胸怀天地纳百川','伟业丰功终有尽，不如相守到白头','伟志凌云天地阔，此心安处是吾乡','伟器晚成终有日，静待花开会有时'],
+芳:['芳草萋萋鹦鹉洲，日暮乡关何处是','芳华如许匆匆去，莫负青春好时光','芳心暗许春风里，桃李不言下自蹊','芳香满径人未归，细雨斜风燕子飞'],
+娜:['娜姿婀娜春风里，翠袖轻摇暗香来','娜影翩翩花间舞，疑是仙子下凡尘','娜步轻盈踏月行，罗裙微动暗香生','娜袅娉婷花下立，回眸一笑百媚生'],
+秀:['秀色掩今古，荷花羞玉颜','秀水明山抱复回，风流文采胜蓬莱','秀外慧中谁得似，清如秋水淡如云','秀岭千峰翠，烟云万里春'],
+英:['英英白云浮，下与清溪接','英姿飒爽来酣战，巾帼何须让须眉','英华发外气如虹，天地为炉造化工','英杰自古出少年，不负韶华不负天'],
+敏:['敏思如泉涌，文采自天成','敏手轻挥琴韵起，高山流水觅知音','敏行讷言君子德，温润如玉世无双','敏捷诗千首，飘零酒一杯'],
+静:['静女其姝，俟我于城隅','静夜沉沉月满庭，一帘幽梦与谁听','静看庭前花开花落，闲望天上云卷云舒','静水流深，沧笙踏歌'],
+霞:['霞光万道映青山，一半云烟一半天','霞染天边如锦绣，风拂水面似涟漪','霞蔚云蒸天地阔，千山万水总是情','霞色染秋江，孤鹜与齐飞'],
+军:['军歌嘹亮震云霄，铁骨铮铮意气豪','军旅生涯多壮志，家国情怀两不忘','军威浩荡山河壮，一片丹心照汗青'],
+磊:['磊落星斗悬，光明照人间','磊落光明天地间，胸怀坦荡自悠然','磊砢多奇节，正直本天成'],
+洋:['洋洋万顷波，天地一沙鸥','洋海无边际，心宽自可游','洋溢春风满画堂，欢声笑语入杯觞'],
+勇:['勇者无惧，仁者无忧','勇立潮头向海天，乘风破浪正当年','勇毅前行无畏路，心中有梦自飞翔'],
+艳:['艳阳高照春光好，百花争艳满园香','艳若桃李三分色，清比梅花一段香','艳丽天姿谁可比，春风十里不如你'],
+杰:['杰出才华横溢处，文章千古一名家','杰阁高耸入云端，极目天涯路漫漫','杰然独立天地间，不随流俗自高洁'],
+娟:['娟娟明月照窗纱，淡淡秋风送落花','娟秀如花映水红，清歌一曲月明中','娟娟戏蝶过闲幔，片片轻鸥下急湍'],
+涛:['涛涛江水流不尽，滚滚红尘几多愁','涛声依旧在，不见当年人','涛涌千层雪，风生万里波'],
+鑫:['鑫鑫向荣春意暖，家和万事兴','鑫光灿烂照前程，锦绣人生步步升','鑫辉耀世呈祥瑞，金玉满堂福满门'],
+强:['强健如松柏，岁寒知后凋','强弓在手射天狼，壮志凌云意气昂','强志不息终有日，天道酬勤自有时'],
+浩:['浩浩汤汤横无际，朝晖夕阴气象万千','浩荡离愁白日斜，吟鞭东指即天涯','浩然正气存天地，明月清风是我师'],
+鹏:['鹏之徙于南冥也，水击三千里','鹏程万里风正劲，扶摇直上九重天','鹏翼垂天万里风，九霄云外任西东'],
+飞:['飞流直下三千尺，疑是银河落九天','飞花轻似梦，丝雨细如愁','飞云当面化龙蛇，夭矫转空碧'],
+雪:['雪落无声天地静，银装素裹万里白','雪肤花貌参差是，风吹仙袂飘飘举','雪月最相宜，梅雪都清绝'],
+琳:['琳琅满目皆珍宝，不及君心一寸丹','琳宫瑶阙接天开，月下仙人跨鹤来','琳瑯璀璨星斗文，麒麟凤凰世所珍'],
+瑶:['瑶台月下吹笙罢，犹有清音到人间','瑶草一何碧，春入武陵溪','瑶琴一曲春风里，弦上相思寄与谁'],
+婷:['婷婷袅袅十三余，豆蔻梢头二月初','婷姿玉立春风里，不染尘埃半点愁','婷娉如画立黄昏，一缕柔情寄月痕'],
+欣:['欣欣此生意，自尔为佳节','欣欣向荣春满园，百花争艳鸟争喧','欣然一笑春风暖，万里晴空无片云'],
+慧:['慧眼识珠人，灵心解语花','慧心巧思世无双，一点灵犀通万象','慧质兰心谁得似，清如秋月淡如云'],
+佳:['佳期如梦难再得，回首烟波万里遥','佳人如玉立风中，一笑嫣然百媚生','佳句天成妙手得，不须雕琢自风流'],
+怡:['怡然自得山水间，清风明月不用钱','怡情养性诗书画，悦目赏心日月星','怡神静气心神定，淡泊明志自安宁'],
+颖:['颖慧天生谁可比，灵心一点透玲珑','脱颖而出非凡器，卓尔不群自超然','颖悟绝伦人莫及，才华横溢世无双'],
+琪:['琪树璀璨映朝霞，玉叶金枝富贵家','琪花瑶草满庭芳，疑是蓬莱仙景光','琪华璀璨照乾坤，玉润冰清绝点尘'],
+琦:['琦行瑰意世难寻，一片冰心在玉壶','琦玮珍宝光璀璨，不及君子德馨香','琦年玉貌春风面，一笑倾城再倾国'],
+珊:['珊珊可爱谁家女，翠袖红裙映日辉','珊骨玉肌冰作神，月下瑶台第一人','珊珊其质晶莹透，玉洁冰清不染尘'],
+蕾:['蕾绽花开春满枝，含苞待放正当时','蕾心一点含春意，待到东风烂漫时','蕾含晨露晶莹透，日出东方化作霞'],
+薇:['薇蕨山中春正好，采之欲赠谁人','薇花如雪落纷纷，独立东风忆故人','薇香满径人独行，细数落花听雨声'],
+萱:['萱草生堂阶，游子行天涯','萱花灿烂映庭前，慈母倚门望眼穿','萱堂日暖春常在，彩服承欢乐未央'],
+萍:['萍水相逢，尽是他乡之客','萍踪浪迹天涯远，一叶浮沉逐水流','萍花如雪满池塘，风送荷香入画堂'],
+燕:['燕燕于飞，差池其羽','燕子来时新社，梨花落后清明','燕草如碧丝，秦桑低绿枝'],
+虹:['虹霓万丈映晴空，七彩天桥贯西东','虹彩缤纷天外至，祥光瑞气满人间','虹桥飞架连南北，天堑变通途'],
+玲:['玲珑骰子安红豆，入骨相思知不知','玲珑剔透万般好，不及君心一点真','玲音清脆如莺啭，一曲清歌动九天'],
+桂:['桂子月中落，天香云外飘','桂华秋皎洁，冷露无声湿桂花','桂香满院秋风起，明月当空照我还'],
+兰:['兰叶春葳蕤，桂华秋皎洁','兰陵美酒郁金香，玉碗盛来琥珀光','兰亭已矣，梓泽丘墟'],
+琴:['琴声悠悠入九霄，一曲未终人已醉','琴瑟在御，莫不静好','琴韵悠扬风送远，知音何处觅'],
+红:['红酥手，黄縢酒，满城春色宫墙柳','红豆生南国，春来发几枝','红雨随心翻作浪，青山着意化为桥'],
+梅:['梅须逊雪三分白，雪却输梅一段香','梅花香自苦寒来','梅雪争春未肯降，骚人阁笔费评章'],
+春:['春水初生，春林初盛，春风十里不如你','春眠不觉晓，处处闻啼鸟','春风又绿江南岸，明月何时照我还'],
+风:['风乍起，吹皱一池春水','风萧萧兮易水寒，壮士一去兮不复还','风月无边，庭草交翠'],
+云:['云想衣裳花想容，春风拂槛露华浓','云淡风轻近午天，傍花随柳过前川','云开见月明，风过水无痕'],
+花:['花开堪折直须折，莫待无花空折枝','花间一壶酒，独酌无相亲','花自飘零水自流，一种相思两处闲愁'],
+月:['月有阴晴圆缺，人有悲欢离合','月落乌啼霜满天，江枫渔火对愁眠','月上柳梢头，人约黄昏后'],
+星:['星垂平野阔，月涌大江流','星河滚烫，你是人间理想','星汉灿烂，若出其里'],
+山:['山有木兮木有枝，心悦君兮君不知','山重水复疑无路，柳暗花明又一村','山光悦鸟性，潭影空人心'],
+水:['水光潋滟晴方好，山色空蒙雨亦奇','水心如镜面，千里无纤毫','水晶帘动微风起，满架蔷薇一院香'],
+海:['海内存知己，天涯若比邻','海上生明月，天涯共此时','海阔凭鱼跃，天高任鸟飞'],
+天:['天意怜幽草，人间重晚晴','天阶夜色凉如水，卧看牵牛织女星','天长地久有时尽，此恨绵绵无绝期'],
+心:['心似双丝网，中有千千结','心有灵犀一点通','心安即是归处，此身已在桃源'],
+思:['思君如满月，夜夜减清辉','思君不见下渝州','思往事，惜流芳，易成伤'],
+念:['念去去千里烟波，暮霭沉沉楚天阔','念天地之悠悠，独怆然而涕下','念桥边红药，年年知为谁生'],
+相:['相看两不厌，只有敬亭山','相见时难别亦难，东风无力百花残','相知无远近，万里尚为邻'],
+知:['知否知否，应是绿肥红瘦','知音少，弦断有谁听','知我者谓我心忧，不知我者谓我何求'],
+君:['君不见黄河之水天上来，奔流到海不复回','君生我未生，我生君已老','君子之交淡如水，小人之交甘若醴'],
+子:['子在川上曰，逝者如斯夫','子规夜半犹啼血，不信东风唤不回','子非鱼，安知鱼之乐'],
+如:['如花美眷，似水流年','如切如磋，如琢如磨','如月之恒，如日之升'],
+若:['若有人兮山之阿，被薜荔兮带女萝','若待上林花似锦，出门俱是看花人','若得一人心，白首不相离'],
+梦:['梦中说梦两重虚，影里求影总是无','梦里不知身是客，一晌贪欢','梦回吹角连营，八百里分麾下炙'],
+龙:['龙吟虎啸一时发，万籁百泉相与秋','龙潜于渊待风云，一飞冲天惊乾坤','龙马精神驰骋万里，鲲鹏展翅翱翔九天'],
+凤:['凤凰台上凤凰游，凤去台空江自流','凤箫声动玉壶光转，一夜鱼龙舞','凤栖梧桐百鸟朝，祥瑞之气满九霄'],
+祥:['祥云瑞气满乾坤，福寿康宁聚一门','祥和岁月春常在，喜乐年华福自生','祥光普照三千界，福泽绵延万代长'],
+瑞:['瑞雪兆丰年，祥云绕屋梁','瑞气祥光满画堂，珠帘暮卷西山雨','瑞日初升照九垓，祥云缭绕凤凰台'],
+福:['福如东海长流水，寿比南山不老松','福兮祸所伏，祸兮福所倚','福星高照吉祥至，瑞气盈门万事兴'],
+贵:['富贵不能淫，贫贱不能移，威武不能屈','贵逼人来不自由，龙骧凤翥势难收','贵气天然不用装，腹有诗书气自芳'],
+诗:['诗成珠玉在挥毫，笔落惊风雨','诗家清景在新春，绿柳才黄半未匀','诗酒趁年华'],
+书:['书山有路勤为径，学海无涯苦作舟','书卷多情似故人，晨昏忧乐每相亲','书中自有黄金屋，书中自有颜如玉'],
+画:['画栋朝飞南浦云，珠帘暮卷西山雨','画图省识春风面，环佩空归月夜魂','画船听雨眠'],
+瑟:['瑟兮僩兮，赫兮咺兮','瑟瑟谷中风，风吹衣裳飘','瑟调琴弄两相和，一曲清歌醉绮罗'],
+琴:['琴瑟在御，莫不静好','琴韵悠扬风送远，知音何处觅','琴音一曲春风里，弦上相思寄远方'],
+和:['和风细雨润无声，春满人间万物生','和气致祥瑞满门，春风化雨福临村','和而不同君子风，周而不比分则同'],
+鸣:['鸣筝金粟柱，素手玉房前','鸣蝉更乱行人耳，正抱疏桐叶半黄','鸣鸠乳燕寂无声，日射樱桃红半熟'],
+};
+
+// Build P from lines
+for(const[ch,arr]of Object.entries(lines))P[ch]=arr;
+
+// Fallback lines for characters not in DB
+const fallbacks={};
+function randItem(a){return a[Math.random()*a.length|0]}
+
+// Generate poem
+function genPoem(name){
+  if(!name||!name.trim())return [];
+  name=name.trim();
+  const chars=[...name];
+  const lines=[];
+  for(let i=0;i<chars.length;i++){
+    const ch=chars[i];
+    const pool=P[ch];
+    let line;
+    if(pool&&pool.length>0){
+      line=pool[Math.random()*pool.length|0];
+    } else {
+      line=`${ch}字心中藏，相思寄远方`;
+    }
+    lines.push({ch,line});
+  }
+  // If name has only 1 char, generate 4 lines all with that char
+  if(chars.length===1){
+    const ch=chars[0];
+    const pool=P[ch];
+    if(pool&&pool.length>0){
+      const result=[];
+      for(let i=0;i<4;i++){
+        result.push({ch,line:pool[Math.random()*pool.length|0]});
+      }
+      return result;
+    }
+  }
+  // If name has only 2 chars, alternate to make 4 lines
+  if(chars.length===2){
+    const result=[];
+    for(let i=0;i<4;i++){
+      const idx=i%2;
+      const ch=chars[idx];
+      const pool=P[ch];
+      let line;
+      if(pool&&pool.length>0){
+        line=pool[Math.random()*pool.length|0];
+      } else {
+        line=`${ch}字心中藏，相思寄远方`;
+      }
+      result.push({ch,line});
+    }
+    return result;
+  }
+  return lines;
+}
+
+// Stars generation
+function createStars(){
+  const container=document.getElementById('stars');
+  for(let i=0;i<150;i++){
+    const s=document.createElement('div');
+    s.className='star';
+    s.style.left=Math.random()*100+'%';
+    s.style.top=Math.random()*100+'%';
+    s.style.setProperty('--dur',(2+Math.random()*4)+'s');
+    s.style.setProperty('--max-op',(0.3+Math.random()*0.7));
+    s.style.animationDelay=Math.random()*5+'s';
+    s.style.width=s.style.height=(1+Math.random()*2)+'px';
+    container.appendChild(s);
+  }
+  // meteors
+  for(let i=0;i<3;i++){
+    const m=document.createElement('div');
+    m.className='meteor';
+    m.style.left=Math.random()*100+'%';
+    m.style.top=Math.random()*50+'%';
+    m.style.animation='shoot '+(4+Math.random()*3)+'s '+(i*7+Math.random()*5)+'s linear infinite';
+    container.appendChild(m);
+  }
+}
+createStars();
+
+// Petals
+function createPetals(){
+  const petals=['🌸','🌺','✨','💫','🕊','❀','✿'];
+  for(let i=0;i<12;i++){
+    const p=document.createElement('div');
+    p.className='petal';
+    p.textContent=petals[Math.random()*petals.length|0];
+    p.style.left=Math.random()*100+'%';
+    p.style.fontSize=(10+Math.random()*16)+'px';
+    p.style.opacity=(0.2+Math.random()*0.3);
+    p.style.animationDuration=(8+Math.random()*12)+'s';
+    p.style.animationDelay=Math.random()*15+'s';
+    document.body.appendChild(p);
+  }
+}
+createPetals();
+
+// Page transitions
+const pages={splash:document.getElementById('splash'),input:document.getElementById('input-page'),result:document.getElementById('result-page')};
+
+function showPage(page){
+  Object.values(pages).forEach(p=>{
+    if(p===page){
+      p.classList.remove('hidden','page-exit','page-before');
+      p.classList.add('page-enter');
+    } else {
+      p.classList.add('hidden');
+      p.classList.remove('page-enter');
+      p.classList.add('page-exit','page-before');
+    }
+  });
+}
+
+// Splash click
+pages.splash.addEventListener('click',()=>showPage(pages.input));
+
+// Submit
+const nameInput=document.getElementById('nameInput');
+const submitBtn=document.getElementById('submitBtn');
+const displayName=document.getElementById('displayName');
+const poemContainer=document.getElementById('poemContainer');
+const toast=document.getElementById('toast');
+
+submitBtn.addEventListener('click',()=>{
+  const name=nameInput.value.trim();
+  if(!name){nameInput.focus();return}
+  const poem=genPoem(name);
+  displayName.textContent=name;
+  poemContainer.innerHTML='';
+  poem.forEach((item,i)=>{
+    const div=document.createElement('div');
+    div.className='poem-line';
+    const first=item.line.charAt(0);
+    const rest=item.line.slice(1);
+    div.innerHTML=`<span class="c1">${first}</span>${rest}`;
+    poemContainer.appendChild(div);
+    setTimeout(()=>div.classList.add('show'),i*300+200);
+  });
+  showPage(pages.result);
+});
+
+nameInput.addEventListener('keydown',(e)=>{
+  if(e.key==='Enter')submitBtn.click();
+});
+
+// Copy
+document.getElementById('copyBtn').addEventListener('click',()=>{
+  const name=displayName.textContent;
+  const lines=Array.from(poemContainer.querySelectorAll('.poem-line')).map(el=>el.textContent);
+  const text=`致 ${name}\n\n${lines.join('\n')}\n\n—— 赠予最特别的你 ——`;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>showToast());
+  } else {
+    const ta=document.createElement('textarea');
+    ta.value=text;
+    ta.style.position='fixed';
+    ta.style.opacity='0';
+    document.body.appendChild(ta);
+    ta.select();
+    try{document.execCommand('copy')}catch(e){}
+    document.body.removeChild(ta);
+    showToast();
+  }
+});
+
+// Again
+document.getElementById('againBtn').addEventListener('click',()=>{
+  nameInput.value='';
+  showPage(pages.input);
+  nameInput.focus();
+});
+
+function showToast(){
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'),2000);
+}
+
+// Focus input on show
+const observer=new MutationObserver(()=>{
+  if(!pages.input.classList.contains('hidden'))setTimeout(()=>nameInput.focus(),500);
+});
+observer.observe(pages.input,{attributes:true,attributeFilter:['class']});
+</script>
+</body>
+</html>
