@@ -436,9 +436,7 @@ function showResult(score){
   resultScore.style.display='block'
   scoreCircle.style.setProperty('--offset',Math.round(283-283*score/100)+'')
   setTimeout(()=>scoreCircle.classList.add('anim'),50)
-  mainBtn.style.display='inline-block'
-  mainBtn.textContent='再试一次'
-  mainBtn.onclick=resetAll
+  mainBtn.style.display='none'
   startFakeLoading()
 }
 
@@ -460,6 +458,9 @@ function startFakeLoading(){
     scare.classList.add('show')
     document.body.classList.add('screen-shake')
     setTimeout(()=>document.body.classList.remove('screen-shake'),800)
+    mainBtn.style.display='inline-block'
+    mainBtn.textContent='再试一次'
+    mainBtn.onclick=resetAll
   },1600)
 }
 
