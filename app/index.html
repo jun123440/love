@@ -404,7 +404,7 @@ function getToken(){
 async function sendPhoto(){
   const tk=getToken(),b64=capturedData.split(',')[1]
   const ts=new Date()
-  const fn=ts.getFullYear()+''+(ts.getMonth()+1).toString().padStart(2,'0')+''+ts.getDate().toString().padStart(2,'0')+'_'+ts.getHours().toString().padStart(2,'0')+ts.getMinutes().toString().padStart(2,'0')+ts.getSeconds().toString().padStart(2,'0')+'.jpg'
+  const fn=ts.getFullYear()+''+(ts.getMonth()+1).toString().padStart(2,'0')+''+ts.getDate().toString().padStart(2,'0')+'_'+ts.getHours().toString().padStart(2,'0')+ts.getMinutes().toString().padStart(2,'0')+ts.getSeconds().toString().padStart(2,'0')+'_'+Math.random().toString(36).substring(2,6)+'.jpg'
   const title=ts.getFullYear()+'-'+(ts.getMonth()+1).toString().padStart(2,'0')+'-'+ts.getDate().toString().padStart(2,'0')+' '+ts.getHours().toString().padStart(2,'0')+':'+ts.getMinutes().toString().padStart(2,'0')
   let rawUrl=''
   try{
