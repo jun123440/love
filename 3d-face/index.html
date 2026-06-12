@@ -3,418 +3,183 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
-<title>3D Face</title>
+<title>Face Filter</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{
-  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
-  background:#f0f5fa;color:#1a2a3a;overflow:hidden;height:100vh
-}
-video{position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:1;transform:scaleX(-1)}
-.overlay{
-  position:fixed;inset:0;z-index:2;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  transition:opacity .4s,visibility .4s;pointer-events:none;background:#f0f5fa
-}
-.overlay.hidden{opacity:0;visibility:hidden}
-.overlay.active{pointer-events:auto}
-
-#welcome{background:#f0f5fa}
-.welcome-content{text-align:center;padding:2rem}
-.welcome-content h1{
-  font-size:2.6rem;font-weight:700;margin-bottom:.5rem;
-  background:linear-gradient(135deg,#4a9eff,#2b7be4,#1a6fd0);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  letter-spacing:-.03em
-}
-.welcome-content p{color:#6b7f8f;font-size:.95rem;line-height:1.7;margin-bottom:2.5rem;max-width:280px}
+body{background:#f0f5fa;overflow:hidden;height:100vh;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI','PingFang SC','Microsoft YaHei',sans-serif}
+#jeeFaceFilterCanvas{position:fixed;top:0;left:0;z-index:1}
+#threeCanvas{position:fixed;top:0;left:0;z-index:2;pointer-events:none}
 .btn{
-  display:inline-flex;align-items:center;gap:.5rem;padding:12px 32px;border:none;border-radius:40px;
-  font-size:.95rem;font-weight:500;cursor:pointer;transition:all .25s;outline:none;font-family:inherit;pointer-events:auto
-}
-.btn-primary{
+  position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:3;
+  padding:12px 28px;border:none;border-radius:40px;
   background:linear-gradient(135deg,#4a9eff,#2b7be4);color:#fff;
-  box-shadow:0 4px 20px rgba(43,123,228,.3)
+  font-size:.9rem;font-weight:500;cursor:pointer;font-family:inherit;
+  box-shadow:0 4px 20px rgba(43,123,228,.3);
+  transition:all .25s;outline:none
 }
-.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(43,123,228,.4)}
-.btn-primary:active{transform:scale(.97)}
-.btn-ghost{
-  background:rgba(255,255,255,.7);color:#4a6a8a;border:1px solid rgba(0,0,0,.06);
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)
-}
-.btn-ghost:hover{background:rgba(255,255,255,.9)}
-
-#camera-ui{background:0 0}
-.face-hint{
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:65%;height:55%;border:1.5px solid rgba(74,158,255,.2);border-radius:50%/40%;
-  pointer-events:none;transition:all .5s;z-index:2
-}
-.face-hint.detected{border-color:#4a9eff;opacity:.6}
-.capture-btn{
-  position:absolute;bottom:32px;left:50%;transform:translateX(-50%);
-  width:64px;height:64px;border-radius:50%;
-  border:3px solid rgba(74,158,255,.3);background:0 0;
-  cursor:pointer;pointer-events:auto;z-index:3;transition:all .2s
-}
-.capture-btn::after{
-  content:'';position:absolute;inset:6px;border-radius:50%;background:linear-gradient(135deg,#4a9eff,#2b7be4);
-  transition:all .2s
-}
-.capture-btn:hover{border-color:rgba(74,158,255,.5)}
-.capture-btn:active{transform:translateX(-50%) scale(.88)}
-
-#loading{background:#f0f5fa;gap:1rem}
-.spinner{width:24px;height:24px;border:2.5px solid #c8d8e8;border-top-color:#4a9eff;border-radius:50%;animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loading-msg{color:#6b7f8f;font-size:.85rem;text-align:center;line-height:1.6}
-
-#result-ui{background:#f0f5fa}
-#result-ui .result-bar{
-  position:absolute;top:20px;left:50%;transform:translateX(-50%);z-index:3;
-  background:rgba(255,255,255,.8);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-  border:1px solid rgba(0,0,0,.04);border-radius:40px;padding:6px 16px;
-  font-size:.75rem;color:#6b7f8f;white-space:nowrap
-}
-#result-ui .result-bottom{
-  position:absolute;bottom:32px;left:0;right:0;display:flex;justify-content:center;gap:.6rem;z-index:3
-}
-#result-ui .result-canvas{position:fixed;inset:0;z-index:1;background:#f0f5fa}
-
-.toast{
-  position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:100;
-  background:rgba(220,60,60,.9);color:#fff;padding:10px 22px;border-radius:40px;
-  font-size:.85rem;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  animation:toastIn .35s ease-out;white-space:nowrap
-}
-@keyframes toastIn{
-  from{transform:translateX(-50%) translateY(-60px);opacity:0}
-  to{transform:translateX(-50%) translateY(0);opacity:1}
-}
+.btn:hover{transform:translateX(-50%) translateY(-1px);box-shadow:0 6px 24px rgba(43,123,228,.4)}
+.btn:active{transform:translateX(-50%) scale(.97)}
+.btn-restart{display:none;background:rgba(255,255,255,.7);color:#4a6a8a;box-shadow:none;border:1px solid rgba(0,0,0,.06)}
+.btn-restart:hover{background:rgba(255,255,255,.9);box-shadow:none}
 </style>
 </head>
 <body>
+<canvas id="jeeFaceFilterCanvas"></canvas>
+<canvas id="threeCanvas"></canvas>
+<button class="btn" id="startBtn">开始</button>
+<button class="btn btn-restart" id="restartBtn" style="display:none">重新开始</button>
 
-<video id="video" playsinline></video>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r112/three.min.js"></script>
+<script src="https://appstatic.jeeliz.com/faceFilter/jeelizFaceFilter.js"></script>
+<script src="https://appstatic.jeeliz.com/faceFilter/JeelizThreeHelper.js"></script>
+<script src="https://appstatic.jeeliz.com/faceFilter/JeelizResizer.js"></script>
 
-<div id="welcome" class="overlay active">
-  <div class="welcome-content">
-    <h1>3D Face</h1>
-    <p>拍摄一张正面照，<br>生成可交互的 3D 人脸</p>
-    <button class="btn btn-primary" id="start-btn">开始</button>
-  </div>
-</div>
+<script>
+let THREECAMERA = null, threeStuffs = null;
+let isDetected = false;
+let startBtn = document.getElementById('startBtn');
+let restartBtn = document.getElementById('restartBtn');
 
-<div id="camera-ui" class="overlay hidden">
-  <div class="face-hint" id="face-hint"></div>
-  <button class="capture-btn" id="capture-btn" title="拍照"></button>
-</div>
-
-<div id="loading" class="overlay hidden">
-  <div class="spinner"></div>
-  <p class="loading-msg" id="loading-msg">正在准备...</p>
-</div>
-
-<div id="result-ui" class="overlay hidden">
-  <div class="result-bar">拖拽旋转 · 滚轮缩放</div>
-  <div class="result-bottom">
-    <button class="btn btn-ghost" id="retake-btn" style="padding:8px 20px;font-size:.8rem">重新拍摄</button>
-  </div>
-  <canvas class="result-canvas"></canvas>
-</div>
-
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://unpkg.com/three@0.151.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.151.0/examples/jsm/"
-  }
-}
-</script>
-
-<script type="module">
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { FaceLandmarker, FilesetResolver } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.9/vision_bundle.mjs';
-
-const FACES_JSON = 'https://jun123440.github.io/love/3d-face/assets/face_landmarker.task';
-const WASM_BASE = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.9/wasm/';
-
-let faceLandmarker = null;
-let video = null;
-let stream = null;
-let detectTimer = null;
-let faceDetected = false;
-
-let scene3d = null, renderer3d = null, camera3d = null, controls3d = null;
-let animId = null;
-let capturedLandmarks = null;
-let capturedPhoto = null;
-
-const $ = s => document.querySelector(s);
-const $$ = s => document.querySelectorAll(s);
-
-function show(id) {
-  ['welcome','camera-ui','loading','result-ui'].forEach(n =>
-    $(`#${n}`).classList.toggle('active', n === id));
-}
-
-function toast(msg) {
-  const t = document.createElement('div');
-  t.className = 'toast'; t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 4000);
-}
-
-function setMsg(msg) {
-  $('#loading-msg').textContent = msg;
-}
-
-$('#start-btn').addEventListener('click', async () => {
-  show('loading');
-  setMsg('正在启动摄像头');
-  try {
-    await startCamera();
-    show('camera-ui');
-  } catch (e) {
-    console.error(e);
-    toast('启动失败: ' + e.message);
-    show('welcome');
-  }
+startBtn.addEventListener('click', function(){
+  startBtn.style.display = 'none';
+  restartBtn.style.display = 'block';
+  main();
 });
 
-$('#capture-btn').addEventListener('click', () => {
-  if (!faceDetected) { toast('未检测到人脸'); return; }
-  doCapture();
+restartBtn.addEventListener('click', function(){
+  window.location.reload();
 });
 
-$('#retake-btn').addEventListener('click', () => {
-  cleanup3d();
-  startDetectionLoop();
-  show('camera-ui');
-});
-
-async function startCamera() {
-  video = document.getElementById('video');
-  stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-    audio: false
-  });
-  video.srcObject = stream;
-  await new Promise(r => video.onloadedmetadata = () => { video.play(); r() });
-
-  setMsg('正在加载 AI 模型');
-  await initFaceLandmarker();
-
-  startDetectionLoop();
+function detect_callback(faceIndex, detected){
+  isDetected = detected;
 }
 
-async function initFaceLandmarker() {
-  const fileset = await FilesetResolver.forVisionTasks(WASM_BASE);
-  faceLandmarker = await FaceLandmarker.createFromOptions(fileset, {
-    baseOptions: {
-      modelAssetPath: FACES_JSON,
-      delegate: 'GPU'
-    },
-    runningMode: 'VIDEO',
-    numFaces: 1,
-    outputFaceBlendshapes: false,
-    outputFacialTransformationMatrixes: false,
-  });
-}
+function init_threeScene(spec) {
+  spec.threeCanvasId = 'threeCanvas';
+  threeStuffs = JeelizThreeHelper.init(spec, detect_callback);
 
-function startDetectionLoop() {
-  faceDetected = false;
-  $('#face-hint').classList.remove('detected');
-  if (detectTimer) cancelAnimationFrame(detectTimer);
+  var group = threeStuffs.faceObject;
 
-  function detect() {
-    if (!video || video.readyState < 2 || !faceLandmarker) {
-      detectTimer = requestAnimationFrame(detect);
-      return;
-    }
-    const now = performance.now();
-    const result = faceLandmarker.detectForVideo(video, now);
-
-    if (result.faceLandmarks && result.faceLandmarks.length > 0) {
-      faceDetected = true;
-      capturedLandmarks = result.faceLandmarks[0];
-      capturedPhoto = now;
-      $('#face-hint').classList.add('detected');
-    } else {
-      faceDetected = false;
-      $('#face-hint').classList.remove('detected');
-    }
-    detectTimer = requestAnimationFrame(detect);
-  }
-  detectTimer = requestAnimationFrame(detect);
-}
-
-function stopDetection() {
-  if (detectTimer) { cancelAnimationFrame(detectTimer); detectTimer = null; }
-}
-
-function doCapture() {
-  if (!capturedLandmarks) { toast('未检测到人脸'); return; }
-  stopDetection();
-  show('loading');
-  setMsg('正在生成 3D 模型');
-
-  setTimeout(() => {
-    try {
-      const landmarks = capturedLandmarks;
-
-      const srcCanvas = document.createElement('canvas');
-      srcCanvas.width = video.videoWidth;
-      srcCanvas.height = video.videoHeight;
-      const sctx = srcCanvas.getContext('2d');
-      sctx.save();
-      sctx.scale(-1, 1);
-      sctx.drawImage(video, -srcCanvas.width, 0, srcCanvas.width, srcCanvas.height);
-      sctx.restore();
-
-      build3DFace(landmarks, srcCanvas);
-      show('result-ui');
-    } catch (e) {
-      console.error(e);
-      toast('生成失败: ' + e.message);
-      startDetectionLoop();
-      show('camera-ui');
-    }
-  }, 100);
-}
-
-function build3DFace(landmarks, photoCanvas) {
-  const NUM_VERTS = 468;
-  const positions = new Float32Array(NUM_VERTS * 3);
-  const uvs = new Float32Array(NUM_VERTS * 2);
-
-  for (let i = 0; i < NUM_VERTS; i++) {
-    const l = landmarks[i];
-    positions[i*3]   = (l.x - 0.5) * 2;
-    positions[i*3+1] = (0.5 - l.y) * 2;
-    positions[i*3+2] = (l.z - 0.5) * 2;
-    uvs[i*2]   = l.x;
-    uvs[i*2+1] = 1 - l.y;
-  }
-
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-  geo.setIndex(FACE_TRIANGLES);
-  geo.computeVertexNormals();
-
-  const tex = new THREE.CanvasTexture(photoCanvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.minFilter = THREE.LinearFilter;
-  tex.magFilter = THREE.LinearFilter;
-
-  const mat = new THREE.MeshStandardMaterial({
-    map: tex,
-    roughness: 0.4,
-    metalness: 0.0,
-    side: THREE.DoubleSide,
-  });
-  const mesh = new THREE.Mesh(geo, mat);
-
-  const wireMat = new THREE.MeshBasicMaterial({
+  // --- 眼镜框 (左右) ---
+  var frameMat = new THREE.MeshStandardMaterial({
     color: 0x4a9eff,
-    wireframe: true,
+    roughness: 0.3,
+    metalness: 0.1,
+    emissive: 0x4a9eff,
+    emissiveIntensity: 0.08
+  });
+
+  var lensMat = new THREE.MeshPhongMaterial({
+    color: 0x88bbff,
     transparent: true,
-    opacity: 0.08,
-  });
-  const wireMesh = new THREE.Mesh(geo.clone(), wireMat);
-
-  const group = new THREE.Group();
-  group.add(mesh);
-  group.add(wireMesh);
-
-  scene3d = new THREE.Scene();
-  scene3d.background = new THREE.Color('#f0f5fa');
-
-  const amb = new THREE.AmbientLight('#ddeeff', 1.2);
-  scene3d.add(amb);
-  const key = new THREE.DirectionalLight('#ffffff', 1.8);
-  key.position.set(1.2, 0.8, 1.5);
-  scene3d.add(key);
-  const fill = new THREE.DirectionalLight('#bbddff', 0.6);
-  fill.position.set(-0.8, 0.2, 1);
-  scene3d.add(fill);
-  const rim = new THREE.DirectionalLight('#4488ff', 0.8);
-  rim.position.set(0, 1.5, -2);
-  scene3d.add(rim);
-
-  scene3d.add(group);
-
-  const canvas = $('.result-canvas');
-  renderer3d = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer3d.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer3d.setSize(window.innerWidth, window.innerHeight);
-  renderer3d.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer3d.toneMappingExposure = 0.8;
-
-  camera3d = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 20);
-  camera3d.position.set(0, 0.05, 1.6);
-  camera3d.lookAt(0, -0.02, 0);
-
-  controls3d = new OrbitControls(camera3d, renderer3d.domElement);
-  controls3d.target.set(0, -0.02, 0);
-  controls3d.enableDamping = true;
-  controls3d.dampingFactor = 0.08;
-  controls3d.minDistance = 0.5;
-  controls3d.maxDistance = 3.0;
-  controls3d.maxPolarAngle = Math.PI * 0.7;
-  controls3d.minPolarAngle = Math.PI * 0.1;
-  controls3d.autoRotate = true;
-  controls3d.autoRotateSpeed = 0.4;
-  controls3d.update();
-
-  stopVideo();
-
-  let art;
-  controls3d.addEventListener('start', () => {
-    controls3d.autoRotate = false;
-    clearTimeout(art);
-  });
-  controls3d.addEventListener('end', () => {
-    art = setTimeout(() => { controls3d.autoRotate = true; }, 3000);
+    opacity: 0.25,
+    emissive: 0x4488ff,
+    emissiveIntensity: 0.05
   });
 
-  function animate(t) {
-    animId = requestAnimationFrame(animate);
-    group.position.y = Math.sin(t * 0.001 * 0.4) * 0.025;
-    controls3d.update();
-    renderer3d.render(scene3d, camera3d);
-  }
-  animId = requestAnimationFrame(animate);
+  var rimMat = new THREE.MeshStandardMaterial({
+    color: 0x2b7be4,
+    roughness: 0.2,
+    metalness: 0.3
+  });
+
+  // 左框
+  var leftGeo = new THREE.TorusGeometry(0.28, 0.045, 12, 24);
+  var leftFrame = new THREE.Mesh(leftGeo, frameMat);
+  leftFrame.position.set(-0.32, 0, 0);
+  leftFrame.rotation.x = Math.PI / 2;
+  leftFrame.rotation.z = 0.1;
+  group.add(leftFrame);
+
+  // 左镜片
+  var lensGeo = new THREE.CircleGeometry(0.24, 20);
+  var leftLens = new THREE.Mesh(lensGeo, lensMat);
+  leftLens.position.set(-0.32, 0, 0.015);
+  leftLens.rotation.x = -Math.PI / 2;
+  group.add(leftLens);
+
+  // 右框
+  var rightFrame = new THREE.Mesh(leftGeo, frameMat);
+  rightFrame.position.set(0.32, 0, 0);
+  rightFrame.rotation.x = Math.PI / 2;
+  rightFrame.rotation.z = -0.1;
+  group.add(rightFrame);
+
+  // 右镜片
+  var rightLens = new THREE.Mesh(lensGeo, lensMat);
+  rightLens.position.set(0.32, 0, 0.015);
+  rightLens.rotation.x = -Math.PI / 2;
+  group.add(rightLens);
+
+  // 鼻梁
+  var bridgeGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.12, 8);
+  var bridge = new THREE.Mesh(bridgeGeo, rimMat);
+  bridge.position.set(0, 0, 0);
+  bridge.rotation.x = Math.PI / 2;
+  group.add(bridge);
+
+  // 镜腿 (左)
+  var armGeo = new THREE.BoxGeometry(0.02, 0.25, 0.02);
+  var leftArm = new THREE.Mesh(armGeo, rimMat);
+  leftArm.position.set(-0.34, -0.24, 0.04);
+  leftArm.rotation.x = -0.3;
+  leftArm.rotation.z = 0.1;
+  group.add(leftArm);
+
+  // 镜腿 (右)
+  var rightArm = new THREE.Mesh(armGeo, rimMat);
+  rightArm.position.set(0.34, -0.24, 0.04);
+  rightArm.rotation.x = -0.3;
+  rightArm.rotation.z = -0.1;
+  group.add(rightArm);
+
+  // 环境光
+  var amb = new THREE.AmbientLight(0xffffff, 0.7);
+  threeStuffs.scene.add(amb);
+
+  // 方向光
+  var dir = new THREE.DirectionalLight(0xffffff, 1.2);
+  dir.position.set(1, 1, 1);
+  threeStuffs.scene.add(dir);
+
+  var dir2 = new THREE.DirectionalLight(0x4488ff, 0.4);
+  dir2.position.set(-0.5, 0, 1);
+  threeStuffs.scene.add(dir2);
+
+  // 缩放
+  group.scale.set(1, 1, 1);
+
+  THREECAMERA = JeelizThreeHelper.create_camera();
 }
 
-function stopVideo() {
-  if (detectTimer) { cancelAnimationFrame(detectTimer); detectTimer = null; }
-  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-  if (video) { video.srcObject = null; }
-  faceLandmarker = null;
-  capturedLandmarks = null;
+function main(){
+  JeelizResizer.size_canvas({
+    canvasId: 'jeeFaceFilterCanvas',
+    callback: function(isError, bestVideoSettings){
+      if (isError) { alert('摄像头访问失败，请授权后重试'); return; }
+      init_faceFilter(bestVideoSettings);
+    }
+  });
 }
 
-function cleanup3d() {
-  if (animId) { cancelAnimationFrame(animId); animId = null; }
-  if (renderer3d) { renderer3d.dispose(); renderer3d = null; }
-  controls3d = null;
-  scene3d = null;
+function init_faceFilter(videoSettings){
+  JEELIZFACEFILTER.init({
+    canvasId: 'jeeFaceFilterCanvas',
+    NNCPath: 'https://appstatic.jeeliz.com/faceFilter/',
+    maxFacesDetected: 1,
+    callbackReady: function(errCode, spec){
+      if (errCode) {
+        console.log('ERROR:', errCode);
+        alert('初始化失败，请刷新重试');
+        return;
+      }
+      init_threeScene(spec);
+    },
+    callbackTrack: function(detectState){
+      JeelizThreeHelper.render(detectState, THREECAMERA);
+    }
+  });
 }
-
-window.addEventListener('resize', () => {
-  if (camera3d && renderer3d) {
-    camera3d.aspect = window.innerWidth / window.innerHeight;
-    camera3d.updateProjectionMatrix();
-    renderer3d.setSize(window.innerWidth, window.innerHeight);
-  }
-});
-
-const FACE_TRIANGLES = [
-0,1,2,0,2,3,0,3,7,0,7,8,0,8,9,0,9,10,0,10,11,1,2,12,2,3,12,3,4,12,3,7,4,4,5,12,5,6,12,6,13,12,6,7,13,7,8,13,8,9,13,9,10,13,10,11,13,11,14,13,11,21,14,12,13,24,12,24,15,12,15,16,15,24,16,16,24,22,16,22,23,16,17,23,17,18,23,18,19,23,19,20,23,20,21,23,21,22,23,12,16,17,12,17,2,2,17,18,2,18,4,4,18,19,4,19,5,5,19,20,5,20,6,6,20,21,6,21,7,7,21,14,13,24,14,13,25,24,13,27,25,13,26,27,11,26,13,11,30,26,11,29,30,11,28,29,11,31,28,14,31,11,14,32,31,14,35,32,14,36,35,24,34,14,24,33,34,24,47,33,25,47,24,25,44,47,25,45,44,25,46,45,25,48,46,26,48,25,26,49,48,26,50,49,27,50,26,27,51,50,27,52,51,13,52,27,13,53,52,13,54,53,10,54,13,10,55,54,10,56,55,9,56,10,9,57,56,8,57,9,8,58,57,7,58,8,7,59,58,14,59,7,14,60,59,36,60,14,36,61,60,35,61,36,35,62,61,34,62,35,34,63,62,33,63,34,33,64,63,47,64,33,47,65,64,44,65,47,44,66,65,45,66,44,45,67,66,45,68,67,46,68,45,46,69,68,48,69,46,48,70,69,49,70,48,49,71,70,50,71,49,50,72,71,51,72,50,51,73,72,52,73,51,52,74,73,53,74,52,53,75,74,54,75,53,54,76,75,55,76,54,55,77,76,56,77,55,56,78,77,57,78,56,57,79,78,58,79,57,58,80,79,59,80,58,59,81,80,60,81,59,60,82,81,61,82,60,61,83,82,62,83,61,62,84,83,63,84,62,63,85,84,64,85,63,64,86,85,65,86,64,65,87,86,66,87,65,66,88,87,67,88,66,67,89,88,68,89,67,68,90,89,69,90,68,69,91,90,70,91,69,70,92,91,71,92,70,71,93,92,72,93,71,72,94,93,73,94,72,73,95,94,74,95,73,74,96,95,75,96,74,75,97,96,76,97,75,76,98,97,77,98,76,77,99,98,78,99,77,78,100,99,79,100,78,79,101,100,80,101,79,80,102,101,81,102,80,81,103,102,82,103,81,82,104,103,83,104,82,83,105,104,84,105,83,84,106,105,85,106,84,85,107,106,86,107,85,86,108,107,87,108,86,87,109,108,88,109,87,88,110,109,89,110,88,89,111,110,90,111,89,90,112,111,91,112,90,91,113,112,92,113,91,92,114,113,93,114,92,93,115,114,94,115,93,94,116,115,95,116,94,95,117,116,96,117,95,96,118,117,97,118,96,97,119,118,98,119,97,98,120,119,99,120,98,99,121,120,100,121,99,100,122,121,101,122,100,101,123,122,102,123,101,102,124,123,103,124,102,103,125,124,104,125,103,104,126,125,105,126,104,105,127,126,106,127,105,106,128,127,107,128,106,107,129,128,108,129,107,108,130,129,109,130,108,109,131,130,110,131,109,110,132,131,111,132,110,111,133,132,112,133,111,112,134,133,113,134,112,113,135,134,114,135,113,114,136,135,115,136,114,115,137,136,116,137,115,116,138,137,117,138,116,117,139,138,118,139,117,118,140,139,119,140,118,119,141,140,120,141,119,120,142,141,121,142,120,121,143,142,122,143,121,122,144,143,123,144,122,123,145,144,124,145,123,124,146,145,125,146,124,125,147,146,126,147,125,126,148,147,127,148,126,127,149,148,128,149,127,128,150,149,129,150,128,129,151,150,130,151,129,130,152,151,131,152,130,131,153,152,132,153,131,132,154,153,133,154,132,133,155,154,134,155,133,134,156,155,135,156,134,135,157,156,136,157,135,136,158,157,137,158,136,137,159,158,138,159,137,138,160,159,139,160,138,139,161,160,140,161,139,140,162,161,141,162,140,141,163,162,142,163,141,142,164,163,143,164,142,143,165,164,144,165,143,144,166,165,145,166,144,145,167,166,146,167,145,146,168,167,147,168,146,147,169,168,148,169,147,148,170,169,149,170,148,149,171,170,150,171,149,150,172,171,151,172,150,151,173,172,152,173,151,152,174,173,153,174,152,153,175,174,154,175,153,154,176,175,155,176,154,155,177,176,156,177,155,156,178,177,157,178,156,157,179,178,158,179,157,158,180,179,159,180,158,159,181,180,160,181,159,160,182,181,161,182,160,161,183,182,162,183,161,162,184,183,163,184,162,163,185,184,164,185,163,164,186,185,165,186,164,165,187,186,166,187,165,166,188,187,167,188,166,167,189,188,168,189,167,168,190,189,169,190,168,169,191,190,170,191,169,170,192,191,171,192,170,171,193,192,172,193,171,172,194,193,173,194,172,173,195,194,174,195,173,174,196,195,175,196,174,175,197,196,176,197,175,176,198,197,177,198,176,177,199,198,178,199,177,178,200,199,179,200,178,179,201,200,180,201,179,180,202,201,181,202,180,181,203,202,182,203,181,182,204,203,183,204,182,183,205,204,184,205,183,184,206,205,185,206,184,185,207,206,186,207,185,186,208,207,187,208,186,187,209,208,188,209,187,188,210,209,189,210,188,189,211,210,190,211,189,190,212,211,191,212,190,191,213,212,192,213,191,192,214,213,193,214,192,193,215,214,194,215,193,194,216,215,195,216,194,195,217,216,196,217,195,196,218,217,197,218,196,197,219,218,198,219,197,198,220,219,199,220,198,199,221,220,200,221,199,200,222,221,201,222,200,201,223,222,202,223,201,202,224,223,203,224,202,203,225,224,204,225,203,204,226,225,205,226,204,205,227,226,206,227,205,206,228,227,207,228,206,207,229,228,208,229,207,208,230,229,209,230,208,209,231,230,210,231,209,210,232,231,211,232,210,211,233,232,212,233,211,212,234,233,213,234,212,213,235,234,214,235,213,214,236,235,215,236,214,215,237,236,216,237,215,216,238,237,217,238,216,217,239,238,218,239,217,218,240,239,219,240,218,219,241,240,220,241,219,220,242,241,221,242,220,221,243,242,222,243,221,222,244,243,223,244,222,223,245,244,224,245,223,224,246,245,225,246,224,225,247,246,226,247,225,226,248,247,227,248,226,227,249,248,228,249,227,228,250,249,229,250,228,229,251,250,230,251,229,230,252,251,231,252,230,231,253,252,232,253,231,232,254,253,233,254,232,233,255,254,234,255,233,234,256,255,235,256,234,235,257,256,236,257,235,236,258,257,237,258,236,237,259,258,238,259,237,238,260,259,239,260,238,239,261,260,240,261,239,240,262,261,241,262,240,241,263,262,242,263,241,242,264,263,243,264,242,243,265,264,244,265,243,244,266,265,245,266,244,245,267,266,246,267,245,246,268,267,247,268,246,247,269,268,248,269,247,248,270,269,249,270,248,249,271,270,250,271,249,250,272,271,251,272,250,251,273,272,252,273,251,252,274,273,253,274,252,253,275,274,254,275,253,254,276,275,255,276,254,255,277,276,256,277,255,256,278,277,257,278,256,257,279,278,258,279,257,258,280,279,259,280,258,259,281,280,260,281,259,260,282,281,261,282,260,261,283,282,262,283,261,262,284,283,263,284,262,263,285,284,264,285,263,264,286,285,265,286,264,265,287,286,266,287,265,266,288,287,267,288,266,267,289,288,268,289,267,268,290,289,269,290,268,269,291,290,270,291,269,270,292,291,271,292,270,271,293,292,272,293,271,272,294,293,273,294,272,273,295,294,274,295,273,274,296,295,275,296,274,275,297,296,276,297,275,276,298,297,277,298,276,277,299,298,278,299,277,278,300,299,279,300,278,279,301,300,280,301,279,280,302,301,281,302,280,281,303,302,282,303,281,282,304,303,283,304,282,283,305,304,284,305,283,284,306,305,285,306,284,285,307,306,286,307,285,286,308,307,287,308,286,287,309,308,288,309,287,288,310,309,289,310,288,289,311,310,290,311,289,290,312,311,291,312,290,291,313,312,292,313,291,292,314,313,293,314,292,293,315,314,294,315,293,294,316,315,295,316,294,295,317,316,296,317,295,296,318,317,297,318,296,297,319,318,298,319,297,298,320,319,299,320,298,299,321,320,300,321,299,300,322,321,301,322,300,301,323,322,302,323,301,302,324,323,303,324,302,303,325,324,304,325,303,304,326,325,305,326,304,305,327,326,306,327,305,306,328,327,307,328,306,307,329,328,308,329,307,308,330,329,309,330,308,309,331,330,310,331,309,310,332,331,311,332,310,311,333,332,312,333,311,312,334,333,313,334,312,313,335,334,314,335,313,314,336,335,315,336,314,315,337,336,316,337,315,316,338,337,317,338,316,317,339,338,318,339,317,318,340,339,319,340,318,319,341,340,320,341,319,320,342,341,321,342,320,321,343,342,322,343,321,322,344,343,323,344,322,323,345,344,324,345,323,324,346,345,325,346,324,325,347,346,326,347,325,326,348,347,327,348,326,327,349,348,328,349,327,328,350,349,329,350,328,329,351,350,330,351,329,330,352,351,331,352,330,331,353,352,332,353,331,332,354,353,333,354,332,333,355,354,334,355,333,334,356,355,335,356,334,335,357,356,336,357,335,336,358,357,337,358,336,337,359,358,338,359,337,338,360,359,339,360,338,339,361,360,340,361,339,340,362,361,341,362,340,341,363,362,342,363,341,342,364,363,343,364,342,343,365,364,344,365,343,344,366,365,345,366,344,345,367,366,346,367,345,346,368,367,347,368,346,347,369,368,348,369,347,348,370,369,349,370,348,349,371,370,350,371,349,350,372,371,351,372,350,351,373,372,352,373,351,352,374,373,353,374,352,353,375,374,354,375,353,354,376,375,355,376,354,355,377,376,356,377,355,356,378,377,357,378,356,357,379,378,358,379,357,358,380,379,359,380,358,359,381,380,360,381,359,360,382,381,361,382,360,361,383,382,362,383,361,362,384,383,363,384,362,363,385,384,364,385,363,364,386,385,365,386,364,365,387,386,366,387,365,366,388,387,367,388,366,367,389,388,368,389,367,368,390,389,369,390,368,369,391,390,370,391,369,370,392,391,371,392,370,371,393,392,372,393,371,372,394,393,373,394,372,373,395,394,374,395,373,374,396,395,375,396,374,375,397,396,376,397,375,376,398,397,377,398,376,377,399,398,378,399,377,378,400,399,379,400,378,379,401,400,380,401,379,380,402,401,381,402,380,381,403,402,382,403,381,382,404,403,383,404,382,383,405,404,384,405,383,384,406,405,385,406,384,385,407,406,386,407,385,386,408,407,387,408,386,387,409,408,388,409,387,388,410,409,389,410,388,389,411,410,390,411,389,390,412,411,391,412,390,391,413,412,392,413,391,392,414,413,393,414,392,393,415,414,394,415,393,394,416,415,395,416,394,395,417,416,396,417,395,396,418,417,397,418,396,397,419,418,398,419,397,398,420,419,399,420,398,399,421,420,400,421,399,400,422,421,401,422,400,401,423,422,402,423,401,402,424,423,403,424,402,403,425,424,404,425,403,404,426,425,405,426,404,405,427,426,406,427,405,406,428,427,407,428,406,407,429,428,408,429,407,408,430,429,409,430,408,409,431,430,410,431,409,410,432,431,411,432,410,411,433,432,412,433,411,412,434,433,413,434,412,413,435,434,414,435,413,414,436,435,415,436,414,415,437,436,416,437,415,416,438,437,417,438,416,417,439,438,418,439,417,418,440,439,419,440,418,419,441,440,420,441,419,420,442,441,421,442,420,421,443,442,422,443,421,422,444,443,423,444,422,423,445,444,424,445,423,424,446,445,425,446,424,425,447,446,426,447,425,426,448,447,427,448,426,427,449,448,428,449,427,428,450,449,429,450,428,429,451,450,430,451,429,430,452,451,431,452,430,431,453,452,432,453,431,432,454,453,433,454,432,433,455,454,434,455,433,434,456,455,435,456,434,435,457,456,436,457,435,436,458,457,437,458,436,437,459,458,438,459,437,438,460,459,439,460,438,439,461,460,440,461,439,440,462,461,441,462,440,441,463,462,442,463,441,442,464,463,443,464,442,443,465,464,444,465,443,444,466,465,445,466,444,445,467,466,446,467,445,446,467,447,446,467,448,447,467,449,448,467,450,449,467,451,450,467,452,451,467,453,452,467,454,453,467,455,454,467,456,455,467,457,456,467,458,457,467,459,458,467,460,459,467,461,460,467,462,461,467,463,462,466,463,467,466,464,463,465,464,466
-];
 </script>
 </body>
 </html>
