@@ -109,25 +109,25 @@ body{
 <div id="welcome" class="overlay active">
   <div class="welcome-content">
     <h1>3D Face</h1>
-    <p>鎷嶆憚涓€寮犳闈㈢収锛?br>鐢熸垚鍙氦浜掔殑 3D 浜鸿劯</p>
-    <button class="btn btn-primary" id="start-btn">寮€濮?/button>
+    <p>拍摄一张正面照，<br>生成可交互的 3D 人脸</p>
+    <button class="btn btn-primary" id="start-btn">开始</button>
   </div>
 </div>
 
 <div id="camera-ui" class="overlay hidden">
   <div class="face-hint" id="face-hint"></div>
-  <button class="capture-btn" id="capture-btn" title="鎷嶇収"></button>
+  <button class="capture-btn" id="capture-btn" title="拍照"></button>
 </div>
 
 <div id="loading" class="overlay hidden">
   <div class="loading-dots"><span></span><span></span><span></span></div>
-  <p class="loading-msg" id="loading-msg">姝ｅ湪鍔犺浇 AI 妯″瀷</p>
+  <p class="loading-msg" id="loading-msg">正在加载 AI 模型</p>
 </div>
 
 <div id="result-ui" class="overlay hidden">
-  <div class="result-bar">鎷栨嫿鏃嬭浆 路 婊氳疆缂╂斁</div>
+  <div class="result-bar">拖拽旋转 · 滚轮缩放</div>
   <div class="result-bottom">
-    <button class="btn btn-ghost" id="retake-btn" style="padding:8px 20px;font-size:.8rem">閲嶆柊鎷嶆憚</button>
+    <button class="btn btn-ghost" id="retake-btn" style="padding:8px 20px;font-size:.8rem">重新拍摄</button>
   </div>
 </div>
 
@@ -166,20 +166,20 @@ function toast(msg) {
 
 $('#start-btn').addEventListener('click', async () => {
   show('loading');
-  setMsg('姝ｅ湪鍚姩鎽勫儚澶?);
+  setMsg('正在启动摄像头');
   try {
     await startMindAR();
     show('camera-ui');
   } catch (e) {
     console.error(e);
-    toast('鍚姩澶辫触: ' + e.message);
+    toast('启动失败: ' + e.message);
     show('welcome');
   }
 });
 
 $('#capture-btn').addEventListener('click', async () => {
   $('#capture-btn').classList.add('loading');
-  setMsg('姝ｅ湪鐢熸垚 3D 妯″瀷');
+  setMsg('正在生成 3D 模型');
   show('loading');
   await new Promise(r => setTimeout(r, 200));
   doCapture();
@@ -238,7 +238,7 @@ async function startMindAR() {
 
 function doCapture() {
   if (!mindar || !faceMesh) {
-    toast('璇峰厛鍚姩鎽勫儚澶?);
+    toast('请先启动摄像头');
     return;
   }
 
@@ -371,7 +371,7 @@ function doCapture() {
 
   } catch (e) {
     console.error(e);
-    toast('鐢熸垚澶辫触: ' + e.message);
+    toast('生成失败: ' + e.message);
     show('welcome');
   }
 }
