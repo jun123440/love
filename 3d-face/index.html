@@ -252,61 +252,56 @@
             canvasId: 'canvas',
             CSSFlipX: true,
             isFullScreen: true,
-            callback: function(isError) {
+            callback: function(isError, bestVideoSettings) {
                 if (isError) return;
                 JEELIZFACEFILTER.init({
                     canvasId: 'canvas',
                     NNCPath: 'https://appstatic.jeeliz.com/faceFilter/',
+                    videoSettings: bestVideoSettings,
                     callbackReady: function(err, spec) {
                         if (err) return;
                         initScene(spec);
                     },
                     callbackTrack: function(detectState) {
                         time += 0.016;
-                        if (!isDetected) {
-                            if (threeRenderer) threeRenderer.clear();
-                            return;
-                        }
+                        const mouthOpen = detectState.expressions ? Math.min(Math.max((detectState.expressions[0] - 0.15) * 4, 0), 1) : 0;
 
-                        const mouthOpen = Math.min(Math.max((detectState.expressions[0] - 0.15) * 4, 0), 1);
+                        if (isDetected) {
+                            rings.forEach((ring, i) => {
+                                ring.rotation.y += 0.02 * ring.userData.speed;
+                                ring.rotation.x += 0.005 * ring.userData.speed;
+                                ring.material.opacity = 0.25 + mouthOpen * 0.5 + Math.sin(time * 2 + i) * 0.05;
+                                const s = 1 + mouthOpen * 0.3;
+                                ring.scale.set(s, s, s);
+                            });
 
-                        // Animate rings
-                        rings.forEach((ring, i) => {
-                            ring.rotation.y += 0.02 * ring.userData.speed;
-                            ring.rotation.x += 0.005 * ring.userData.speed;
-                            ring.material.opacity = 0.25 + mouthOpen * 0.5 + Math.sin(time * 2 + i) * 0.05;
-                            const s = 1 + mouthOpen * 0.3;
-                            ring.scale.set(s, s, s);
-                        });
+                            if (mouthOpen > 0.6 && Math.random() < 0.3) {
+                                burstParticles(2);
+                            }
 
-                        // Burst particles on mouth open
-                        if (mouthOpen > 0.6 && Math.random() < 0.3) {
-                            burstParticles(2);
-                        }
-
-                        // Particle animation
-                        for (let i = particles.length - 1; i >= 0; i--) {
-                            const p = particles[i];
-                            if (p.userData.vel) {
-                                p.position.add(p.userData.vel.clone().multiplyScalar(0.03));
-                                p.userData.life -= 0.02;
-                                p.material.opacity = p.userData.life;
-                                const s = p.scale.x + 0.002;
-                                p.scale.set(s, s, 1);
-                                if (p.userData.life <= 0) {
-                                    faceObject.remove(p);
-                                    particles.splice(i, 1);
+                            for (let i = particles.length - 1; i >= 0; i--) {
+                                const p = particles[i];
+                                if (p.userData.vel) {
+                                    p.position.add(p.userData.vel.clone().multiplyScalar(0.03));
+                                    p.userData.life -= 0.02;
+                                    p.material.opacity = p.userData.life;
+                                    const s = p.scale.x + 0.002;
+                                    p.scale.set(s, s, 1);
+                                    if (p.userData.life <= 0) {
+                                        faceObject.remove(p);
+                                        particles.splice(i, 1);
+                                    }
+                                } else if (p.userData.basePos) {
+                                    const ud = p.userData;
+                                    ud.theta += ud.orbitSpeed * 0.02;
+                                    ud.phi += ud.orbitSpeed * 0.01;
+                                    const r = ud.orbit + Math.sin(time * ud.speed + ud.phase) * 0.1;
+                                    p.position.x = r * Math.sin(ud.phi) * Math.cos(ud.theta);
+                                    p.position.y = r * Math.cos(ud.phi) * 0.6;
+                                    p.position.z = r * Math.sin(ud.phi) * Math.sin(ud.theta) - 0.1;
+                                    const pulse = 0.6 + Math.sin(time * ud.speed + ud.phase) * 0.4;
+                                    p.material.opacity = pulse * (0.3 + mouthOpen * 0.5);
                                 }
-                            } else if (p.userData.basePos) {
-                                const ud = p.userData;
-                                ud.theta += ud.orbitSpeed * 0.02;
-                                ud.phi += ud.orbitSpeed * 0.01;
-                                const r = ud.orbit + Math.sin(time * ud.speed + ud.phase) * 0.1;
-                                p.position.x = r * Math.sin(ud.phi) * Math.cos(ud.theta);
-                                p.position.y = r * Math.cos(ud.phi) * 0.6;
-                                p.position.z = r * Math.sin(ud.phi) * Math.sin(ud.theta) - 0.1;
-                                const pulse = 0.6 + Math.sin(time * ud.speed + ud.phase) * 0.4;
-                                p.material.opacity = pulse * (0.3 + mouthOpen * 0.5);
                             }
                         }
 
