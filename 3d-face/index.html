@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>3D 人脸建模</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: #0a0a14;
+  color: #fff;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: opacity .5s, visibility .5s;
+}
+.screen.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#welcome-screen {
+  background: radial-gradient(ellipse at 50% 30%, #1a1a3e 0%, #0a0a14 70%);
+}
+.welcome-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.welcome-bg .orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: float 8s ease-in-out infinite;
+}
+.welcome-bg .orb:nth-child(1) {
+  width: 400px; height: 400px;
+  background: rgba(120,80,200,.25);
+  top: -10%; left: -10%;
+  animation-delay: 0s;
+}
+.welcome-bg .orb:nth-child(2) {
+  width: 300px; height: 300px;
+  background: rgba(200,140,80,.2);
+  bottom: 10%; right: -5%;
+  animation-delay: -3s;
+}
+.welcome-bg .orb:nth-child(3) {
+  width: 250px; height: 250px;
+  background: rgba(80,140,200,.18);
+  top: 50%; left: 60%;
+  animation-delay: -6s;
+}
+@keyframes float {
+  0%, 100% { transform: translate(0,0) scale(1); }
+  33% { transform: translate(30px,-30px) scale(1.1); }
+  66% { transform: translate(-20px,20px) scale(.9); }
+}
+
+.welcome-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 2rem;
+}
+.welcome-content .icon {
+  width: 80px; height: 80px;
+  margin: 0 auto 1.5rem;
+  background: linear-gradient(135deg, #667eea, #f0c27a);
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  box-shadow: 0 20px 60px rgba(100,120,220,.35);
+}
+.welcome-content h1 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: .5rem;
+  background: linear-gradient(135deg, #c9a0ff, #f0c27a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.welcome-content p {
+  color: #8892b0;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 2.5rem;
+  max-width: 320px;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: 14px 36px;
+  border: none;
+  border-radius: 50px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .3s;
+  outline: none;
+  font-family: inherit;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  box-shadow: 0 8px 30px rgba(100,80,200,.4);
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(100,80,200,.55); }
+.btn-primary:active { transform: scale(.97); }
+
+.btn-outline {
+  background: rgba(255,255,255,.08);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.btn-outline:hover { background: rgba(255,255,255,.15); }
+
+#camera-screen { background: #000; }
+.camera-container {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  aspect-ratio: 3/4;
+  max-height: 70vh;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.1), 0 30px 80px rgba(0,0,0,.5);
+}
+.camera-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+.camera-overlay {
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgba(255,255,255,.3);
+  border-radius: 20px;
+  pointer-events: none;
+}
+.face-guide {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: 65%; height: 55%;
+  border: 2px dashed rgba(255,255,255,.25);
+  border-radius: 50% / 40%;
+  pointer-events: none;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { border-color: rgba(255,255,255,.2); }
+  50% { border-color: rgba(255,255,255,.5); }
+}
+
+.camera-controls {
+  position: absolute;
+  bottom: 30px;
+  left: 0; right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  z-index: 10;
+}
+.capture-btn {
+  width: 70px; height: 70px;
+  border-radius: 50%;
+  border: 4px solid #fff;
+  background: rgba(255,255,255,.2);
+  cursor: pointer;
+  transition: all .2s;
+  position: relative;
+}
+.capture-btn::after {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: #fff;
+  transition: all .2s;
+}
+.capture-btn:active { transform: scale(.9); }
+.capture-btn:active::after { transform: scale(.85); }
+
+.camera-back {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+}
+
+#loading-screen {
+  background: #0a0a14;
+  gap: 1.5rem;
+}
+.loader {
+  width: 50px; height: 50px;
+  border: 3px solid rgba(255,255,255,.1);
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#result-screen { background: #0a0a14; }
+#three-canvas { position: fixed; inset: 0; }
+.result-controls {
+  position: fixed;
+  bottom: 40px;
+  left: 0; right: 0;
+  display: flex;
+  justify-content: center;
+  gap: .8rem;
+  z-index: 10;
+  padding: 0 1rem;
+  flex-wrap: wrap;
+}
+.result-hint {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,.4);
+  font-size: .85rem;
+  z-index: 5;
+  pointer-events: none;
+  transition: opacity 1.5s;
+}
+.result-top {
+  position: fixed;
+  top: 20px;
+  left: 0; right: 0;
+  display: flex;
+  justify-content: center;
+  z-index: 10;
+}
+.result-title {
+  background: rgba(255,255,255,.06);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 50px;
+  padding: 8px 20px;
+  font-size: .9rem;
+  color: rgba(255,255,255,.7);
+}
+
+.error-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(220,60,60,.9);
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 50px;
+  z-index: 100;
+  font-size: .9rem;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: slideDown .4s ease-out;
+}
+@keyframes slideDown {
+  from { transform: translateX(-50%) translateY(-80px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+</style>
+</head>
+<body>
+
+<div id="welcome-screen" class="screen">
+  <div class="welcome-bg">
+    <div class="orb"></div><div class="orb"></div><div class="orb"></div>
+  </div>
+  <div class="welcome-content">
+    <div class="icon">&#127775;</div>
+    <h1>3D 人脸建模</h1>
+    <p>使用摄像头捕捉你的形象，<br>即刻生成可交互的 3D 头部模型</p>
+    <button class="btn btn-primary" id="start-btn">&#128247; 开始建模</button>
+  </div>
+</div>
+
+<div id="camera-screen" class="screen hidden">
+  <button class="btn btn-outline camera-back" id="camera-back-btn" style="font-size:.85rem;padding:8px 18px;">&#8592; 返回</button>
+  <div class="camera-container">
+    <video id="video" autoplay playsinline></video>
+    <div class="camera-overlay"></div>
+    <div class="face-guide"></div>
+  </div>
+  <div class="camera-controls">
+    <button class="capture-btn" id="capture-btn" title="拍照"></button>
+  </div>
+</div>
+
+<div id="loading-screen" class="screen hidden">
+  <div class="loader"></div>
+  <p style="color:#8892b0">正在生成 3D 模型...</p>
+</div>
+
+<div id="result-screen" class="screen hidden">
+  <canvas id="three-canvas"></canvas>
+  <div class="result-top">
+    <span class="result-title">&#x1F440; 拖拽旋转 &bull; 滚轮缩放</span>
+  </div>
+  <p class="result-hint" id="result-hint">拖拽鼠标旋转查看 3D 模型</p>
+  <div class="result-controls">
+    <button class="btn btn-outline" id="retake-btn" style="font-size:.85rem;padding:10px 22px;">&#128247; 重新拍摄</button>
+  </div>
+</div>
+
+<canvas id="photo-canvas" style="display:none"></canvas>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+let currentScreen = 'welcome';
+let videoStream = null;
+let animationId = null;
+let sceneData = null;
+
+const $ = (s) => document.querySelector(s);
+const screens = {
+  welcome: $('#welcome-screen'),
+  camera: $('#camera-screen'),
+  loading: $('#loading-screen'),
+  result: $('#result-screen'),
+};
+
+function showScreen(name) {
+  Object.entries(screens).forEach(([k, el]) => {
+    el.classList.toggle('hidden', k !== name);
+  });
+  currentScreen = name;
+}
+
+function showError(msg) {
+  const toast = document.createElement('div');
+  toast.className = 'error-toast';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+$('#start-btn').addEventListener('click', async () => {
+  try {
+    videoStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 1280 } },
+      audio: false,
+    });
+    const video = $('#video');
+    video.srcObject = videoStream;
+    await video.play();
+    showScreen('camera');
+  } catch (e) {
+    if (e.name === 'NotAllowedError') {
+      showError('摄像头权限被拒绝，请在浏览器设置中允许摄像头访问');
+    } else if (e.name === 'NotFoundError') {
+      showError('未检测到摄像头设备');
+    } else {
+      showError('无法访问摄像头: ' + e.message);
+    }
+  }
+});
+
+$('#camera-back-btn').addEventListener('click', () => {
+  if (videoStream) {
+    videoStream.getTracks().forEach(t => t.stop());
+    videoStream = null;
+  }
+  showScreen('welcome');
+});
+
+$('#capture-btn').addEventListener('click', () => {
+  const video = $('#video');
+  const canvas = $('#photo-canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.save();
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+  ctx.restore();
+
+  if (videoStream) {
+    videoStream.getTracks().forEach(t => t.stop());
+    videoStream = null;
+  }
+
+  showScreen('loading');
+  setTimeout(() => initResultScreen(canvas), 600);
+});
+
+$('#retake-btn').addEventListener('click', () => {
+  if (animationId) cancelAnimationFrame(animationId);
+  if (sceneData) {
+    sceneData.renderer.dispose();
+    sceneData = null;
+  }
+  showScreen('welcome');
+});
+
+function getSkinColor(ctx, w, h) {
+  const data = ctx.getImageData(0, 0, w, h).data;
+  let r = 0, g = 0, b = 0, cnt = 0;
+  const sx = Math.floor(w * 0.25), ex = Math.floor(w * 0.75);
+  const sy = Math.floor(h * 0.2), ey = Math.floor(h * 0.6);
+  for (let y = sy; y < ey; y += 6) {
+    for (let x = sx; x < ex; x += 6) {
+      const i = (y * w + x) * 4;
+      r += data[i]; g += data[i + 1]; b += data[i + 2];
+      cnt++;
+    }
+  }
+  if (cnt === 0) return new THREE.Color(0.92, 0.78, 0.65);
+  return new THREE.Color(r / cnt / 255, g / cnt / 255, b / cnt / 255).multiplyScalar(1.1);
+}
+
+function createHeadGeometry() {
+  const pts = [];
+  const h = 1.5;
+  pts.push(new THREE.Vector2(0.0, h));
+  pts.push(new THREE.Vector2(0.28, h - 0.08));
+  pts.push(new THREE.Vector2(0.48, h - 0.22));
+  pts.push(new THREE.Vector2(0.60, h - 0.40));
+  pts.push(new THREE.Vector2(0.65, h - 0.60));
+  pts.push(new THREE.Vector2(0.64, h - 0.78));
+  pts.push(new THREE.Vector2(0.60, h - 0.95));
+  pts.push(new THREE.Vector2(0.63, h - 1.05));
+  pts.push(new THREE.Vector2(0.60, h - 1.18));
+  pts.push(new THREE.Vector2(0.54, h - 1.35));
+  pts.push(new THREE.Vector2(0.42, h - 1.50));
+  pts.push(new THREE.Vector2(0.28, h - 1.62));
+  pts.push(new THREE.Vector2(0.22, h - 1.75));
+  pts.push(new THREE.Vector2(0.20, h - 2.0));
+  return new THREE.LatheGeometry(pts, 56);
+}
+
+function createFaceTexture(canvas) {
+  const tw = 1024, th = 1024;
+  const texCanvas = document.createElement('canvas');
+  texCanvas.width = tw;
+  texCanvas.height = th;
+  const tctx = texCanvas.getContext('2d');
+
+  tctx.fillStyle = '#e8c8a8';
+  tctx.fillRect(0, 0, tw, th);
+
+  const sw = canvas.width, sh = canvas.height;
+  const faceW = sw * 0.5, faceH = sh * 0.6;
+  const faceX = (sw - faceW) / 2, faceY = sh * 0.12;
+
+  tctx.save();
+  tctx.beginPath();
+  tctx.ellipse(tw / 2, th * 0.38, tw * 0.38, th * 0.35, 0, 0, Math.PI * 2);
+  tctx.clip();
+  tctx.drawImage(canvas, faceX, faceY, faceW, faceH, tw * 0.1, th * 0.03, tw * 0.8, th * 0.7);
+  tctx.restore();
+
+  const grad = tctx.createRadialGradient(tw / 2, th * 0.3, tw * 0.15, tw / 2, th * 0.35, tw * 0.55);
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(0.7, 'rgba(0,0,0,0)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.25)');
+  tctx.fillStyle = grad;
+  tctx.fillRect(0, 0, tw, th);
+
+  const texture = new THREE.CanvasTexture(texCanvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = true;
+  return texture;
+}
+
+function createParticles() {
+  const count = 200;
+  const geom = new THREE.BufferGeometry();
+  const positions = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    positions[i * 3] = (Math.random() - 0.5) * 6;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 6;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 4;
+  }
+  geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const mat = new THREE.PointsMaterial({
+    color: 0x667eea,
+    size: 0.015,
+    transparent: true,
+    opacity: 0.5,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  return new THREE.Points(geom, mat);
+}
+
+function initResultScreen(photoCanvas) {
+  showScreen('result');
+
+  const canvas = $('#three-canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
+
+  const scene = new THREE.Scene();
+
+  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 20);
+  camera.position.set(0, 0.85, 3.2);
+  camera.lookAt(0, 0.35, 0);
+
+  scene.background = new THREE.Color('#0a0a14');
+  scene.fog = new THREE.Fog('#0a0a14', 3, 10);
+
+  const ambientLight = new THREE.AmbientLight('#8899cc', 1.5);
+  scene.add(ambientLight);
+
+  const keyLight = new THREE.DirectionalLight('#ffffff', 3.5);
+  keyLight.position.set(2, 1.5, 2.5);
+  keyLight.castShadow = true;
+  keyLight.shadow.mapSize.set(1024, 1024);
+  keyLight.shadow.camera.near = 0.5;
+  keyLight.shadow.camera.far = 15;
+  keyLight.shadow.camera.left = -3;
+  keyLight.shadow.camera.right = 3;
+  keyLight.shadow.camera.top = 3;
+  keyLight.shadow.camera.bottom = -3;
+  keyLight.shadow.bias = -0.0001;
+  scene.add(keyLight);
+
+  const fillLight = new THREE.DirectionalLight('#ccaa88', 1.2);
+  fillLight.position.set(-1, 0.3, 0.8);
+  scene.add(fillLight);
+
+  const rimLight = new THREE.DirectionalLight('#8899ff', 2.0);
+  rimLight.position.set(0, 2, -2.5);
+  scene.add(rimLight);
+
+  const bottomLight = new THREE.DirectionalLight('#4466aa', 0.6);
+  bottomLight.position.set(0, -2, 1);
+  scene.add(bottomLight);
+
+  const particles = createParticles();
+  scene.add(particles);
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 0.4, 0);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.minDistance = 1.5;
+  controls.maxDistance = 5.5;
+  controls.maxPolarAngle = Math.PI * 0.7;
+  controls.minPolarAngle = Math.PI * 0.15;
+  controls.autoRotate = true;
+  controls.autoRotateSpeed = 0.6;
+  controls.update();
+
+  const headGroup = new THREE.Group();
+
+  const ctx = photoCanvas.getContext('2d');
+  const skinColor = getSkinColor(ctx, photoCanvas.width, photoCanvas.height);
+
+  const headGeom = createHeadGeometry();
+  const headMat = new THREE.MeshStandardMaterial({
+    color: skinColor,
+    roughness: 0.55,
+    metalness: 0.03,
+  });
+  const headMesh = new THREE.Mesh(headGeom, headMat);
+  headMesh.castShadow = true;
+  headMesh.receiveShadow = true;
+  headGroup.add(headMesh);
+
+  const faceTexture = createFaceTexture(photoCanvas);
+  const faceGeom = new THREE.SphereGeometry(0.635, 56, 28,
+    -Math.PI * 0.32,
+    Math.PI * 0.64,
+    Math.PI * 0.32,
+    Math.PI * 0.52
+  );
+  const faceMat = new THREE.MeshStandardMaterial({
+    map: faceTexture,
+    roughness: 0.45,
+    metalness: 0.02,
+  });
+  const faceMesh = new THREE.Mesh(faceGeom, faceMat);
+  faceMesh.castShadow = true;
+  headGroup.add(faceMesh);
+
+  const neckGeom = new THREE.CylinderGeometry(0.18, 0.21, 0.6, 32);
+  const neckMesh = new THREE.Mesh(neckGeom, headMat);
+  neckMesh.position.y = -1.7;
+  neckMesh.castShadow = true;
+  headGroup.add(neckMesh);
+
+  scene.add(headGroup);
+
+  sceneData = { scene, camera, renderer, controls, headGroup, particles };
+
+  function animate(time) {
+    animationId = requestAnimationFrame(animate);
+
+    particles.rotation.y += 0.0003;
+    particles.rotation.x += 0.0002;
+
+    const t = time * 0.001;
+    headGroup.position.y = Math.sin(t * 0.8) * 0.04;
+    headGroup.rotation.y += (controls.autoRotate ? 0 : 0);
+
+    controls.update();
+    renderer.render(scene, camera);
+  }
+
+  const hint = $('#result-hint');
+  animationId = requestAnimationFrame(animate);
+  setTimeout(() => { hint.style.opacity = '0'; }, 5000);
+
+  const onResize = () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  };
+  window.addEventListener('resize', onResize);
+
+  let autoRotateTimeout;
+  controls.addEventListener('start', () => {
+    controls.autoRotate = false;
+    hint.style.opacity = '0';
+    clearTimeout(autoRotateTimeout);
+  });
+  controls.addEventListener('end', () => {
+    autoRotateTimeout = setTimeout(() => {
+      controls.autoRotate = true;
+    }, 2500);
+  });
+}
+</script>
+</body>
+</html>
