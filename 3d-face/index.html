@@ -8,94 +8,92 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{
   font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
-  background:#06060b;color:#fff;overflow:hidden;height:100vh
+  background:#f0f5fa;color:#1a2a3a;overflow:hidden;height:100vh
 }
 #container{position:fixed;inset:0;z-index:1}
 #container video{display:none}
+
 .overlay{
   position:fixed;inset:0;z-index:2;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   transition:opacity .4s,visibility .4s;pointer-events:none
 }
-.overlay.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.overlay.hidden{opacity:0;visibility:hidden}
 .overlay.active{pointer-events:auto}
 
 /* Welcome */
-#welcome{background:#06060b}
+#welcome{background:#f0f5fa}
 .welcome-content{text-align:center;padding:2rem}
 .welcome-content h1{
-  font-size:2.4rem;font-weight:700;margin-bottom:.6rem;
-  background:linear-gradient(135deg,#e0d0ff,#a080ff,#6d5ae0);
+  font-size:2.6rem;font-weight:700;margin-bottom:.5rem;
+  background:linear-gradient(135deg,#4a9eff,#2b7be4,#1a6fd0);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  letter-spacing:-.02em
+  letter-spacing:-.03em
 }
-.welcome-content p{color:rgba(255,255,255,.4);font-size:.95rem;line-height:1.6;margin-bottom:2.5rem;max-width:280px}
+.welcome-content p{color:#6b7f8f;font-size:.95rem;line-height:1.7;margin-bottom:2.5rem;max-width:280px}
 .btn{
   display:inline-flex;align-items:center;gap:.5rem;padding:12px 32px;border:none;border-radius:40px;
   font-size:.95rem;font-weight:500;cursor:pointer;transition:all .25s;outline:none;font-family:inherit;
   pointer-events:auto
 }
-.btn-primary{background:#6d5ae0;color:#fff;box-shadow:0 4px 20px rgba(109,90,224,.35)}
-.btn-primary:hover{background:#7d6aee;transform:translateY(-1px)}
+.btn-primary{
+  background:linear-gradient(135deg,#4a9eff,#2b7be4);color:#fff;
+  box-shadow:0 4px 20px rgba(43,123,228,.3)
+}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(43,123,228,.4)}
 .btn-primary:active{transform:scale(.97)}
 .btn-ghost{
-  background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.7);color:#4a6a8a;border:1px solid rgba(0,0,0,.06);
   backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)
 }
-.btn-ghost:hover{background:rgba(255,255,255,.1)}
+.btn-ghost:hover{background:rgba(255,255,255,.9)}
 
 /* Camera UI */
 #camera-ui{background:0 0}
 .face-hint{
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:65%;height:55%;border:1.5px solid rgba(255,255,255,.12);border-radius:50%/40%;
-  pointer-events:none;transition:opacity .8s
+  width:65%;height:55%;border:1.5px solid rgba(74,158,255,.15);border-radius:50%/40%;
+  pointer-events:none;transition:all .6s
 }
-.face-hint.detected{border-color:rgba(109,90,224,.4);opacity:.5}
+.face-hint.detected{border-color:#4a9eff;opacity:.6;box-shadow:0 0 30px rgba(74,158,255,.1)}
 .capture-btn{
   position:absolute;bottom:32px;left:50%;transform:translateX(-50%);
   width:64px;height:64px;border-radius:50%;
-  border:3px solid rgba(255,255,255,.4);background:0 0;
+  border:3px solid rgba(74,158,255,.3);background:0 0;
   cursor:pointer;pointer-events:auto;z-index:3;transition:all .2s
 }
 .capture-btn::after{
-  content:'';position:absolute;inset:6px;border-radius:50%;background:#fff;transition:all .2s
+  content:'';position:absolute;inset:6px;border-radius:50%;background:linear-gradient(135deg,#4a9eff,#2b7be4);
+  transition:all .2s
 }
+.capture-btn:hover{border-color:rgba(74,158,255,.5)}
 .capture-btn:active{transform:translateX(-50%) scale(.88)}
-.capture-btn.loading::after{background:rgba(255,255,255,.3)}
+.capture-btn.loading::after{background:rgba(74,158,255,.3)}
 
 /* Loading */
-#loading{background:#06060b;gap:1rem}
-.loading-dots{display:flex;gap:6px}
-.loading-dots span{
-  width:8px;height:8px;border-radius:50%;background:#6d5ae0;
-  animation:lds 1s ease-in-out infinite
-}
-.loading-dots span:nth-child(2){animation-delay:.15s}
-.loading-dots span:nth-child(3){animation-delay:.3s}
-@keyframes lds{
-  0%,80%,100%{transform:scale(.6);opacity:.3}
-  40%{transform:scale(1);opacity:1}
-}
-.loading-msg{color:rgba(255,255,255,.35);font-size:.85rem;text-align:center;line-height:1.6}
+#loading{background:#f0f5fa;gap:1rem}
+.spinner{width:24px;height:24px;border:2.5px solid #c8d8e8;border-top-color:#4a9eff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-msg{color:#6b7f8f;font-size:.85rem;text-align:center;line-height:1.6}
 
 /* Result */
+#result-ui{background:#f0f5fa}
 #result-ui .result-bar{
   position:absolute;top:20px;left:50%;transform:translateX(-50%);
-  background:rgba(255,255,255,.04);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-  border:1px solid rgba(255,255,255,.06);border-radius:40px;padding:6px 16px;
-  font-size:.75rem;color:rgba(255,255,255,.3);white-space:nowrap
+  background:rgba(255,255,255,.8);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(0,0,0,.04);border-radius:40px;padding:6px 16px;
+  font-size:.75rem;color:#6b7f8f;white-space:nowrap
 }
 #result-ui .result-bottom{
   position:absolute;bottom:32px;left:0;right:0;display:flex;justify-content:center;gap:.6rem
 }
-#result-ui canvas{position:fixed;inset:0;z-index:1}
+#result-ui canvas{position:fixed;inset:0;z-index:1;background:#f0f5fa}
 
 .toast{
   position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:100;
-  background:rgba(220,60,60,.85);color:#fff;padding:10px 22px;border-radius:40px;
+  background:rgba(220,60,60,.9);color:#fff;padding:10px 22px;border-radius:40px;
   font-size:.85rem;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  animation:toastIn .35s ease-out
+  animation:toastIn .35s ease-out;white-space:nowrap
 }
 @keyframes toastIn{
   from{transform:translateX(-50%) translateY(-60px);opacity:0}
@@ -104,6 +102,7 @@ body{
 </style>
 </head>
 <body>
+
 <div id="container"></div>
 
 <div id="welcome" class="overlay active">
@@ -120,8 +119,8 @@ body{
 </div>
 
 <div id="loading" class="overlay hidden">
-  <div class="loading-dots"><span></span><span></span><span></span></div>
-  <p class="loading-msg" id="loading-msg">正在加载 AI 模型</p>
+  <div class="spinner"></div>
+  <p class="loading-msg" id="loading-msg">正在准备...</p>
 </div>
 
 <div id="result-ui" class="overlay hidden">
@@ -129,13 +128,14 @@ body{
   <div class="result-bottom">
     <button class="btn btn-ghost" id="retake-btn" style="padding:8px 20px;font-size:.8rem">重新拍摄</button>
   </div>
+  <canvas></canvas>
 </div>
 
 <script type="importmap">
 {
   "imports": {
-    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+    "three": "https://unpkg.com/three@0.151.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.151.0/examples/jsm/",
     "mindar-face-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-face-three.prod.js"
   }
 }
@@ -146,7 +146,7 @@ import { MindARThree } from 'mindar-face-three';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-let mindar = null, faceMesh = null, aframe = null;
+let mindar = null, faceMesh = null;
 let scene3d = null, renderer3d = null, camera3d = null, controls3d = null;
 let animId = null;
 
@@ -181,8 +181,9 @@ $('#capture-btn').addEventListener('click', async () => {
   $('#capture-btn').classList.add('loading');
   setMsg('正在生成 3D 模型');
   show('loading');
-  await new Promise(r => setTimeout(r, 200));
-  doCapture();
+  setTimeout(() => {
+    doCapture();
+  }, 100);
 });
 
 $('#retake-btn').addEventListener('click', () => {
@@ -239,6 +240,8 @@ async function startMindAR() {
 function doCapture() {
   if (!mindar || !faceMesh) {
     toast('请先启动摄像头');
+    $('#capture-btn').classList.remove('loading');
+    show('camera-ui');
     return;
   }
 
@@ -267,8 +270,11 @@ function doCapture() {
 
     const box = new THREE.Box3().setFromBufferAttribute(geoClone.attributes.position);
     const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
+    const maxDim = Math.max(
+      box.max.x - box.min.x,
+      box.max.y - box.min.y,
+      box.max.z - box.min.z
+    );
 
     const pos = geoClone.attributes.position;
     const invScale = 1 / maxDim;
@@ -289,17 +295,17 @@ function doCapture() {
 
     const mat = new THREE.MeshStandardMaterial({
       map: tex,
-      roughness: 0.45,
-      metalness: 0.02,
+      roughness: 0.4,
+      metalness: 0.0,
       side: THREE.DoubleSide,
     });
     const staticMesh = new THREE.Mesh(geoClone, mat);
 
     const wireMat = new THREE.MeshBasicMaterial({
-      color: 0x6d5ae0,
+      color: 0x4a9eff,
       wireframe: true,
       transparent: true,
-      opacity: 0.06,
+      opacity: 0.08,
     });
     const wireMesh = new THREE.Mesh(geoClone.clone(), wireMat);
 
@@ -308,24 +314,25 @@ function doCapture() {
     group.add(wireMesh);
 
     scene3d = new THREE.Scene();
-    scene3d.background = new THREE.Color('#06060b');
+    scene3d.background = new THREE.Color('#f0f5fa');
 
-    const amb = new THREE.AmbientLight('#ddeeff', 1.8);
+    const amb = new THREE.AmbientLight('#ddeeff', 1.2);
     scene3d.add(amb);
-    const key = new THREE.DirectionalLight('#ffffff', 2.2);
+    const key = new THREE.DirectionalLight('#ffffff', 1.8);
     key.position.set(1.2, 0.8, 1.5);
     scene3d.add(key);
-    const fill = new THREE.DirectionalLight('#ddeeff', 0.6);
+    const fill = new THREE.DirectionalLight('#bbddff', 0.6);
     fill.position.set(-0.8, 0.2, 1);
     scene3d.add(fill);
-    const rim = new THREE.DirectionalLight('#8888ff', 1.0);
+    const rim = new THREE.DirectionalLight('#4488ff', 0.8);
     rim.position.set(0, 1.5, -2);
     scene3d.add(rim);
 
     scene3d.add(group);
 
+    const canvas = $('#result-ui canvas');
     renderer3d = new THREE.WebGLRenderer({
-      canvas: $('#result-ui canvas'),
+      canvas,
       antialias: true,
       alpha: true,
     });
@@ -342,19 +349,20 @@ function doCapture() {
     controls3d.target.set(0, -0.02, 0);
     controls3d.enableDamping = true;
     controls3d.dampingFactor = 0.08;
-    controls3d.minDistance = 0.6;
+    controls3d.minDistance = 0.5;
     controls3d.maxDistance = 3.0;
     controls3d.maxPolarAngle = Math.PI * 0.7;
     controls3d.minPolarAngle = Math.PI * 0.1;
     controls3d.autoRotate = true;
-    controls3d.autoRotateSpeed = 0.5;
+    controls3d.autoRotateSpeed = 0.4;
     controls3d.update();
 
+    $('#capture-btn').classList.remove('loading');
     show('result-ui');
 
     function animate(t) {
       animId = requestAnimationFrame(animate);
-      group.position.y = Math.sin(t * 0.001 * 0.5) * 0.025;
+      group.position.y = Math.sin(t * 0.001 * 0.4) * 0.025;
       controls3d.update();
       renderer3d.render(scene3d, camera3d);
     }
@@ -372,7 +380,8 @@ function doCapture() {
   } catch (e) {
     console.error(e);
     toast('生成失败: ' + e.message);
-    show('welcome');
+    $('#capture-btn').classList.remove('loading');
+    show('camera-ui');
   }
 }
 
@@ -390,9 +399,11 @@ function cleanup() {
   controls3d = null;
   scene3d = null;
   faceMesh = null;
-  document.querySelectorAll('#result-ui canvas').forEach(c => c.remove());
+  const resultUI = document.getElementById('result-ui');
+  const oldCanvas = resultUI.querySelector('canvas');
+  if (oldCanvas) oldCanvas.remove();
   const newCanvas = document.createElement('canvas');
-  document.getElementById('result-ui').appendChild(newCanvas);
+  resultUI.appendChild(newCanvas);
   $('#capture-btn').classList.remove('loading');
 }
 
