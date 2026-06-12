@@ -6,7 +6,6 @@
 <title>3D 人脸建模</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   background: #0a0a14;
@@ -18,151 +17,80 @@ body {
   user-select: none;
   -webkit-user-select: none;
 }
-
 .screen {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
   transition: opacity .5s, visibility .5s;
 }
-.screen.hidden {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
+.screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 
-#welcome-screen {
-  background: radial-gradient(ellipse at 50% 30%, #1a1a3e 0%, #0a0a14 70%);
-}
-.welcome-bg {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
+/* Welcome */
+#welcome-screen { background: radial-gradient(ellipse at 50% 30%, #1a1a3e 0%, #0a0a14 70%); }
+.welcome-bg { position: absolute; inset: 0; overflow: hidden; }
 .welcome-bg .orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
+  position: absolute; border-radius: 50%; filter: blur(80px);
   animation: float 8s ease-in-out infinite;
 }
 .welcome-bg .orb:nth-child(1) {
-  width: 400px; height: 400px;
-  background: rgba(120,80,200,.25);
-  top: -10%; left: -10%;
-  animation-delay: 0s;
+  width: 400px; height: 400px; background: rgba(120,80,200,.25);
+  top: -10%; left: -10%; animation-delay: 0s;
 }
 .welcome-bg .orb:nth-child(2) {
-  width: 300px; height: 300px;
-  background: rgba(200,140,80,.2);
-  bottom: 10%; right: -5%;
-  animation-delay: -3s;
+  width: 300px; height: 300px; background: rgba(200,140,80,.2);
+  bottom: 10%; right: -5%; animation-delay: -3s;
 }
 .welcome-bg .orb:nth-child(3) {
-  width: 250px; height: 250px;
-  background: rgba(80,140,200,.18);
-  top: 50%; left: 60%;
-  animation-delay: -6s;
+  width: 250px; height: 250px; background: rgba(80,140,200,.18);
+  top: 50%; left: 60%; animation-delay: -6s;
 }
 @keyframes float {
   0%, 100% { transform: translate(0,0) scale(1); }
   33% { transform: translate(30px,-30px) scale(1.1); }
   66% { transform: translate(-20px,20px) scale(.9); }
 }
-
-.welcome-content {
-  position: relative;
-  z-index: 1;
-  text-align: center;
-  padding: 2rem;
-}
+.welcome-content { position: relative; z-index: 1; text-align: center; padding: 2rem; }
 .welcome-content .icon {
-  width: 80px; height: 80px;
-  margin: 0 auto 1.5rem;
+  width: 80px; height: 80px; margin: 0 auto 1.5rem;
   background: linear-gradient(135deg, #667eea, #f0c27a);
-  border-radius: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.2rem;
-  box-shadow: 0 20px 60px rgba(100,120,220,.35);
+  border-radius: 24px; display: flex; align-items: center; justify-content: center;
+  font-size: 2.2rem; box-shadow: 0 20px 60px rgba(100,120,220,.35);
 }
 .welcome-content h1 {
-  font-size: 2.2rem;
-  font-weight: 700;
-  margin-bottom: .5rem;
+  font-size: 2.2rem; font-weight: 700; margin-bottom: .5rem;
   background: linear-gradient(135deg, #c9a0ff, #f0c27a);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
-.welcome-content p {
-  color: #8892b0;
-  font-size: 1rem;
-  line-height: 1.6;
-  margin-bottom: 2.5rem;
-  max-width: 320px;
-}
+.welcome-content p { color: #8892b0; font-size: 1rem; line-height: 1.6; margin-bottom: 2.5rem; max-width: 320px; }
 .btn {
-  display: inline-flex;
-  align-items: center;
-  gap: .5rem;
-  padding: 14px 36px;
-  border: none;
-  border-radius: 50px;
-  font-size: 1.05rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all .3s;
-  outline: none;
-  font-family: inherit;
+  display: inline-flex; align-items: center; gap: .5rem;
+  padding: 14px 36px; border: none; border-radius: 50px;
+  font-size: 1.05rem; font-weight: 600; cursor: pointer;
+  transition: all .3s; outline: none; font-family: inherit;
 }
 .btn-primary {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: #fff;
+  background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;
   box-shadow: 0 8px 30px rgba(100,80,200,.4);
 }
 .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(100,80,200,.55); }
 .btn-primary:active { transform: scale(.97); }
-
 .btn-outline {
-  background: rgba(255,255,255,.08);
-  color: #fff;
+  background: rgba(255,255,255,.08); color: #fff;
   border: 1px solid rgba(255,255,255,.2);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
 }
 .btn-outline:hover { background: rgba(255,255,255,.15); }
 
+/* Camera */
 #camera-screen { background: #000; }
 .camera-container {
-  position: relative;
-  width: 100%;
-  max-width: 500px;
-  aspect-ratio: 3/4;
-  max-height: 70vh;
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 0 0 2px rgba(255,255,255,.1), 0 30px 80px rgba(0,0,0,.5);
+  position: relative; width: 100%; max-width: 500px;
+  aspect-ratio: 3/4; max-height: 70vh; border-radius: 20px;
+  overflow: hidden; box-shadow: 0 0 0 2px rgba(255,255,255,.1), 0 30px 80px rgba(0,0,0,.5);
 }
-.camera-container video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transform: scaleX(-1);
-}
-.camera-overlay {
-  position: absolute;
-  inset: 0;
-  border: 2px solid rgba(255,255,255,.3);
-  border-radius: 20px;
-  pointer-events: none;
-}
+.camera-container video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 .face-guide {
-  position: absolute;
-  top: 50%; left: 50%;
+  position: absolute; top: 50%; left: 50%;
   transform: translate(-50%,-50%);
   width: 65%; height: 55%;
   border: 2px dashed rgba(255,255,255,.25);
@@ -174,113 +102,60 @@ body {
   0%, 100% { border-color: rgba(255,255,255,.2); }
   50% { border-color: rgba(255,255,255,.5); }
 }
-
 .camera-controls {
-  position: absolute;
-  bottom: 30px;
-  left: 0; right: 0;
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  z-index: 10;
+  position: absolute; bottom: 30px; left: 0; right: 0;
+  display: flex; justify-content: center; z-index: 10;
 }
 .capture-btn {
-  width: 70px; height: 70px;
-  border-radius: 50%;
-  border: 4px solid #fff;
-  background: rgba(255,255,255,.2);
-  cursor: pointer;
-  transition: all .2s;
-  position: relative;
+  width: 70px; height: 70px; border-radius: 50%;
+  border: 4px solid #fff; background: rgba(255,255,255,.2);
+  cursor: pointer; transition: all .2s; position: relative;
 }
 .capture-btn::after {
-  content: '';
-  position: absolute;
-  inset: 8px;
-  border-radius: 50%;
-  background: #fff;
-  transition: all .2s;
+  content: ''; position: absolute; inset: 8px;
+  border-radius: 50%; background: #fff; transition: all .2s;
 }
 .capture-btn:active { transform: scale(.9); }
 .capture-btn:active::after { transform: scale(.85); }
+.camera-back { position: absolute; top: 20px; left: 20px; z-index: 10; }
 
-.camera-back {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  z-index: 10;
-}
-
-#loading-screen {
-  background: #0a0a14;
-  gap: 1.5rem;
-}
+/* Loading */
+#loading-screen { background: #0a0a14; gap: 1.5rem; }
 .loader {
   width: 50px; height: 50px;
   border: 3px solid rgba(255,255,255,.1);
-  border-top-color: #667eea;
-  border-radius: 50%;
+  border-top-color: #667eea; border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+.loading-msg { color: #8892b0; font-size: .95rem; transition: all .3s; }
 
+/* Result */
 #result-screen { background: #0a0a14; }
 #three-canvas { position: fixed; inset: 0; }
 .result-controls {
-  position: fixed;
-  bottom: 40px;
-  left: 0; right: 0;
-  display: flex;
-  justify-content: center;
-  gap: .8rem;
-  z-index: 10;
-  padding: 0 1rem;
-  flex-wrap: wrap;
-}
-.result-hint {
-  position: fixed;
-  bottom: 100px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: rgba(255,255,255,.4);
-  font-size: .85rem;
-  z-index: 5;
-  pointer-events: none;
-  transition: opacity 1.5s;
+  position: fixed; bottom: 40px; left: 0; right: 0;
+  display: flex; justify-content: center; gap: .8rem;
+  z-index: 10; padding: 0 1rem; flex-wrap: wrap;
 }
 .result-top {
-  position: fixed;
-  top: 20px;
-  left: 0; right: 0;
-  display: flex;
-  justify-content: center;
-  z-index: 10;
+  position: fixed; top: 20px; left: 0; right: 0;
+  display: flex; justify-content: center; z-index: 10;
 }
 .result-title {
   background: rgba(255,255,255,.06);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 50px;
-  padding: 8px 20px;
-  font-size: .9rem;
-  color: rgba(255,255,255,.7);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,.1); border-radius: 50px;
+  padding: 8px 20px; font-size: .9rem; color: rgba(255,255,255,.7);
 }
-
 .error-toast {
-  position: fixed;
-  top: 20px;
-  left: 50%;
+  position: fixed; top: 20px; left: 50%;
   transform: translateX(-50%);
-  background: rgba(220,60,60,.9);
-  color: #fff;
-  padding: 12px 24px;
-  border-radius: 50px;
-  z-index: 100;
+  background: rgba(220,60,60,.9); color: #fff;
+  padding: 12px 24px; border-radius: 50px; z-index: 100;
   font-size: .9rem;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  animation: slideDown .4s ease-out;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  animation: slideDown .4s ease-out; white-space: nowrap;
 }
 @keyframes slideDown {
   from { transform: translateX(-50%) translateY(-80px); opacity: 0; }
@@ -291,13 +166,11 @@ body {
 <body>
 
 <div id="welcome-screen" class="screen">
-  <div class="welcome-bg">
-    <div class="orb"></div><div class="orb"></div><div class="orb"></div>
-  </div>
+  <div class="welcome-bg"><div class="orb"></div><div class="orb"></div><div class="orb"></div></div>
   <div class="welcome-content">
     <div class="icon">&#127775;</div>
-    <h1>3D 人脸建模</h1>
-    <p>使用摄像头捕捉你的形象，<br>即刻生成可交互的 3D 头部模型</p>
+    <h1>3D 人脸重建</h1>
+    <p>调用摄像头拍摄面部，<br>实时生成真实 3D 人脸网格模型</p>
     <button class="btn btn-primary" id="start-btn">&#128247; 开始建模</button>
   </div>
 </div>
@@ -306,17 +179,16 @@ body {
   <button class="btn btn-outline camera-back" id="camera-back-btn" style="font-size:.85rem;padding:8px 18px;">&#8592; 返回</button>
   <div class="camera-container">
     <video id="video" autoplay playsinline></video>
-    <div class="camera-overlay"></div>
     <div class="face-guide"></div>
   </div>
   <div class="camera-controls">
-    <button class="capture-btn" id="capture-btn" title="拍照"></button>
+    <button class="capture-btn" id="capture-btn"></button>
   </div>
 </div>
 
 <div id="loading-screen" class="screen hidden">
   <div class="loader"></div>
-  <p style="color:#8892b0">正在生成 3D 模型...</p>
+  <p class="loading-msg" id="loading-msg">正在初始化人脸检测引擎...</p>
 </div>
 
 <div id="result-screen" class="screen hidden">
@@ -324,13 +196,14 @@ body {
   <div class="result-top">
     <span class="result-title">&#x1F440; 拖拽旋转 &bull; 滚轮缩放</span>
   </div>
-  <p class="result-hint" id="result-hint">拖拽鼠标旋转查看 3D 模型</p>
   <div class="result-controls">
     <button class="btn btn-outline" id="retake-btn" style="font-size:.85rem;padding:10px 22px;">&#128247; 重新拍摄</button>
   </div>
 </div>
 
 <canvas id="photo-canvas" style="display:none"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js" crossorigin="anonymous"></script>
 
 <script type="importmap">
 {
@@ -340,14 +213,18 @@ body {
   }
 }
 </script>
+
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import Delaunator from 'https://cdn.jsdelivr.net/npm/delaunator@5.0.1/+esm';
 
 let currentScreen = 'welcome';
 let videoStream = null;
 let animationId = null;
 let sceneData = null;
+let faceMesh = null;
+let faceMeshReady = false;
 
 const $ = (s) => document.querySelector(s);
 const screens = {
@@ -358,18 +235,62 @@ const screens = {
 };
 
 function showScreen(name) {
-  Object.entries(screens).forEach(([k, el]) => {
-    el.classList.toggle('hidden', k !== name);
-  });
+  Object.entries(screens).forEach(([k, el]) => el.classList.toggle('hidden', k !== name));
   currentScreen = name;
 }
 
 function showError(msg) {
-  const toast = document.createElement('div');
-  toast.className = 'error-toast';
-  toast.textContent = msg;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 3000);
+  const t = document.createElement('div');
+  t.className = 'error-toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+function setLoadingMsg(msg) {
+  $('#loading-msg').textContent = msg;
+}
+
+async function initFaceMesh() {
+  if (faceMeshReady) return;
+  setLoadingMsg('正在加载人脸检测模型...');
+  try {
+    await new Promise((resolve, reject) => {
+      faceMesh = new FaceMesh({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/${file}`
+      });
+      faceMesh.setOptions({
+        maxNumFaces: 1,
+        refineLandmarks: false,
+        minDetectionConfidence: 0.6,
+        minTrackingConfidence: 0.6,
+      });
+      faceMesh.initialize();
+      const check = () => {
+        if (faceMesh && typeof faceMesh.send === 'function') {
+          faceMeshReady = true;
+          resolve();
+        } else {
+          setTimeout(check, 100);
+        }
+      };
+      setTimeout(check, 500);
+      setTimeout(() => resolve(), 8000);
+    });
+    faceMeshReady = true;
+  } catch (e) {
+    throw new Error('人脸检测引擎加载失败: ' + e.message);
+  }
+}
+
+function detectFace(imageElement) {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('检测超时')), 20000);
+    faceMesh.onResults((results) => {
+      clearTimeout(timeout);
+      resolve(results);
+    });
+    faceMesh.send({ image: imageElement }).catch(reject);
+  });
 }
 
 $('#start-btn').addEventListener('click', async () => {
@@ -383,25 +304,25 @@ $('#start-btn').addEventListener('click', async () => {
     await video.play();
     showScreen('camera');
   } catch (e) {
-    if (e.name === 'NotAllowedError') {
-      showError('摄像头权限被拒绝，请在浏览器设置中允许摄像头访问');
-    } else if (e.name === 'NotFoundError') {
-      showError('未检测到摄像头设备');
-    } else {
-      showError('无法访问摄像头: ' + e.message);
-    }
+    if (e.name === 'NotAllowedError') showError('摄像头权限被拒绝，请在浏览器设置中允许摄像头访问');
+    else if (e.name === 'NotFoundError') showError('未检测到摄像头设备');
+    else showError('无法访问摄像头: ' + e.message);
   }
 });
 
 $('#camera-back-btn').addEventListener('click', () => {
+  stopCamera();
+  showScreen('welcome');
+});
+
+function stopCamera() {
   if (videoStream) {
     videoStream.getTracks().forEach(t => t.stop());
     videoStream = null;
   }
-  showScreen('welcome');
-});
+}
 
-$('#capture-btn').addEventListener('click', () => {
+$('#capture-btn').addEventListener('click', async () => {
   const video = $('#video');
   const canvas = $('#photo-canvas');
   canvas.width = video.videoWidth;
@@ -412,118 +333,130 @@ $('#capture-btn').addEventListener('click', () => {
   ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
   ctx.restore();
 
-  if (videoStream) {
-    videoStream.getTracks().forEach(t => t.stop());
-    videoStream = null;
-  }
-
+  stopCamera();
   showScreen('loading');
-  setTimeout(() => initResultScreen(canvas), 600);
+  setLoadingMsg('正在检测人脸...');
+
+  try {
+    await initFaceMesh();
+
+    const img = new Image();
+    img.src = canvas.toDataURL('image/jpeg', 0.95);
+    await img.decode();
+
+    setLoadingMsg('正在分析面部特征点...');
+    const results = await detectFace(img);
+
+    if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
+      showError('未检测到人脸，请确保面部在画面中央');
+      setTimeout(() => showScreen('welcome'), 1500);
+      return;
+    }
+
+    setLoadingMsg('正在生成 3D 网格...');
+    await new Promise(r => setTimeout(r, 200));
+    initResultScreen(canvas, results.multiFaceLandmarks[0]);
+  } catch (e) {
+    showError('处理失败: ' + e.message);
+    setTimeout(() => showScreen('welcome'), 1500);
+  }
 });
 
 $('#retake-btn').addEventListener('click', () => {
   if (animationId) cancelAnimationFrame(animationId);
-  if (sceneData) {
-    sceneData.renderer.dispose();
-    sceneData = null;
-  }
+  if (sceneData) { sceneData.renderer.dispose(); sceneData = null; }
   showScreen('welcome');
 });
 
-function getSkinColor(ctx, w, h) {
-  const data = ctx.getImageData(0, 0, w, h).data;
-  let r = 0, g = 0, b = 0, cnt = 0;
-  const sx = Math.floor(w * 0.25), ex = Math.floor(w * 0.75);
-  const sy = Math.floor(h * 0.2), ey = Math.floor(h * 0.6);
-  for (let y = sy; y < ey; y += 6) {
-    for (let x = sx; x < ex; x += 6) {
-      const i = (y * w + x) * 4;
-      r += data[i]; g += data[i + 1]; b += data[i + 2];
-      cnt++;
-    }
+function buildFaceMesh(landmarks, photoCanvas) {
+  const vertexCount = landmarks.length;
+  const positions = new Float32Array(vertexCount * 3);
+  const uvs = new Float32Array(vertexCount * 2);
+
+  let minX = Infinity, maxX = -Infinity;
+  let minY = Infinity, maxY = -Infinity;
+  let minZ = Infinity, maxZ = -Infinity;
+
+  for (let i = 0; i < vertexCount; i++) {
+    const l = landmarks[i];
+    if (l.x < minX) minX = l.x;
+    if (l.x > maxX) maxX = l.x;
+    if (l.y < minY) minY = l.y;
+    if (l.y > maxY) maxY = l.y;
+    if (l.z < minZ) minZ = l.z;
+    if (l.z > maxZ) maxZ = l.z;
   }
-  if (cnt === 0) return new THREE.Color(0.92, 0.78, 0.65);
-  return new THREE.Color(r / cnt / 255, g / cnt / 255, b / cnt / 255).multiplyScalar(1.1);
-}
 
-function createHeadGeometry() {
-  const pts = [];
-  const h = 1.5;
-  pts.push(new THREE.Vector2(0.0, h));
-  pts.push(new THREE.Vector2(0.28, h - 0.08));
-  pts.push(new THREE.Vector2(0.48, h - 0.22));
-  pts.push(new THREE.Vector2(0.60, h - 0.40));
-  pts.push(new THREE.Vector2(0.65, h - 0.60));
-  pts.push(new THREE.Vector2(0.64, h - 0.78));
-  pts.push(new THREE.Vector2(0.60, h - 0.95));
-  pts.push(new THREE.Vector2(0.63, h - 1.05));
-  pts.push(new THREE.Vector2(0.60, h - 1.18));
-  pts.push(new THREE.Vector2(0.54, h - 1.35));
-  pts.push(new THREE.Vector2(0.42, h - 1.50));
-  pts.push(new THREE.Vector2(0.28, h - 1.62));
-  pts.push(new THREE.Vector2(0.22, h - 1.75));
-  pts.push(new THREE.Vector2(0.20, h - 2.0));
-  return new THREE.LatheGeometry(pts, 56);
-}
+  const rangeX = maxX - minX;
+  const rangeY = maxY - minY;
+  const rangeZ = Math.max(maxZ - minZ, 10);
+  const scale = 1.2 / rangeX;
 
-function createFaceTexture(canvas) {
+  for (let i = 0; i < vertexCount; i++) {
+    const l = landmarks[i];
+    const cx = (l.x - (minX + maxX) / 2) * scale;
+    const cy = -((l.y - (minY + maxY) / 2)) * scale;
+    const cz = (l.z - (minZ + maxZ) / 2) * 0.008;
+    positions[i * 3] = cx;
+    positions[i * 3 + 1] = cy;
+    positions[i * 3 + 2] = cz;
+    uvs[i * 2] = l.x;
+    uvs[i * 2 + 1] = 1.0 - l.y;
+  }
+
+  const pts = landmarks.map(l => [l.x, l.y]);
+  const delaunay = new Delaunator(pts);
+  const indices = delaunay.triangles;
+  const indexCount = indices.length;
+
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geom.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  geom.setIndex(new THREE.BufferAttribute(indices, 1));
+  geom.computeVertexNormals();
+
   const tw = 1024, th = 1024;
   const texCanvas = document.createElement('canvas');
   texCanvas.width = tw;
   texCanvas.height = th;
   const tctx = texCanvas.getContext('2d');
-
-  tctx.fillStyle = '#e8c8a8';
-  tctx.fillRect(0, 0, tw, th);
-
-  const sw = canvas.width, sh = canvas.height;
-  const faceW = sw * 0.5, faceH = sh * 0.6;
-  const faceX = (sw - faceW) / 2, faceY = sh * 0.12;
-
-  tctx.save();
-  tctx.beginPath();
-  tctx.ellipse(tw / 2, th * 0.38, tw * 0.38, th * 0.35, 0, 0, Math.PI * 2);
-  tctx.clip();
-  tctx.drawImage(canvas, faceX, faceY, faceW, faceH, tw * 0.1, th * 0.03, tw * 0.8, th * 0.7);
-  tctx.restore();
-
-  const grad = tctx.createRadialGradient(tw / 2, th * 0.3, tw * 0.15, tw / 2, th * 0.35, tw * 0.55);
-  grad.addColorStop(0, 'rgba(0,0,0,0)');
-  grad.addColorStop(0.7, 'rgba(0,0,0,0)');
-  grad.addColorStop(1, 'rgba(0,0,0,0.25)');
-  tctx.fillStyle = grad;
-  tctx.fillRect(0, 0, tw, th);
+  tctx.drawImage(photoCanvas, 0, 0, tw, th);
 
   const texture = new THREE.CanvasTexture(texCanvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.minFilter = THREE.LinearFilter;
   texture.magFilter = THREE.LinearFilter;
-  texture.generateMipmaps = true;
-  return texture;
-}
+  texture.generateMipmaps = false;
 
-function createParticles() {
-  const count = 200;
-  const geom = new THREE.BufferGeometry();
-  const positions = new Float32Array(count * 3);
-  for (let i = 0; i < count; i++) {
-    positions[i * 3] = (Math.random() - 0.5) * 6;
-    positions[i * 3 + 1] = (Math.random() - 0.5) * 6;
-    positions[i * 3 + 2] = (Math.random() - 0.5) * 4;
-  }
-  geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  const mat = new THREE.PointsMaterial({
-    color: 0x667eea,
-    size: 0.015,
-    transparent: true,
-    opacity: 0.5,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
+  const mat = new THREE.MeshStandardMaterial({
+    map: texture,
+    roughness: 0.5,
+    metalness: 0.05,
+    side: THREE.DoubleSide,
+    shadowSide: THREE.FrontSide,
+    flatShading: true,
   });
-  return new THREE.Points(geom, mat);
+
+  const mesh = new THREE.Mesh(geom, mat);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+
+  const wireMat = new THREE.MeshBasicMaterial({
+    color: 0x667eea,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.08,
+  });
+  const wireMesh = new THREE.Mesh(geom.clone(), wireMat);
+
+  const group = new THREE.Group();
+  group.add(mesh);
+  group.add(wireMesh);
+
+  return group;
 }
 
-function initResultScreen(photoCanvas) {
+function initResultScreen(photoCanvas, landmarks) {
   showScreen('result');
 
   const canvas = $('#three-canvas');
@@ -533,137 +466,89 @@ function initResultScreen(photoCanvas) {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.2;
+  renderer.toneMappingExposure = 1.0;
 
   const scene = new THREE.Scene();
-
-  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 20);
-  camera.position.set(0, 0.85, 3.2);
-  camera.lookAt(0, 0.35, 0);
-
   scene.background = new THREE.Color('#0a0a14');
-  scene.fog = new THREE.Fog('#0a0a14', 3, 10);
+  scene.fog = new THREE.Fog('#0a0a14', 2, 6);
 
-  const ambientLight = new THREE.AmbientLight('#8899cc', 1.5);
-  scene.add(ambientLight);
+  const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 20);
+  camera.position.set(0, -0.1, 2.8);
+  camera.lookAt(0, -0.05, 0);
 
-  const keyLight = new THREE.DirectionalLight('#ffffff', 3.5);
-  keyLight.position.set(2, 1.5, 2.5);
-  keyLight.castShadow = true;
-  keyLight.shadow.mapSize.set(1024, 1024);
-  keyLight.shadow.camera.near = 0.5;
-  keyLight.shadow.camera.far = 15;
-  keyLight.shadow.camera.left = -3;
-  keyLight.shadow.camera.right = 3;
-  keyLight.shadow.camera.top = 3;
-  keyLight.shadow.camera.bottom = -3;
-  keyLight.shadow.bias = -0.0001;
-  scene.add(keyLight);
+  const ambient = new THREE.AmbientLight('#ccddee', 1.2);
+  scene.add(ambient);
 
-  const fillLight = new THREE.DirectionalLight('#ccaa88', 1.2);
-  fillLight.position.set(-1, 0.3, 0.8);
-  scene.add(fillLight);
+  const key = new THREE.DirectionalLight('#ffffff', 2.8);
+  key.position.set(1.2, 0.8, 2.0);
+  key.castShadow = true;
+  scene.add(key);
 
-  const rimLight = new THREE.DirectionalLight('#8899ff', 2.0);
-  rimLight.position.set(0, 2, -2.5);
-  scene.add(rimLight);
+  const fill = new THREE.DirectionalLight('#eeccaa', 0.8);
+  fill.position.set(-0.8, 0.3, 1.5);
+  scene.add(fill);
 
-  const bottomLight = new THREE.DirectionalLight('#4466aa', 0.6);
-  bottomLight.position.set(0, -2, 1);
-  scene.add(bottomLight);
+  const rim = new THREE.DirectionalLight('#aabbff', 1.5);
+  rim.position.set(0, 1.2, -2.0);
+  scene.add(rim);
 
-  const particles = createParticles();
+  const count = 300;
+  const pGeom = new THREE.BufferGeometry();
+  const pPos = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    pPos[i * 3] = (Math.random() - 0.5) * 4;
+    pPos[i * 3 + 1] = (Math.random() - 0.5) * 4;
+    pPos[i * 3 + 2] = (Math.random() - 0.5) * 4;
+  }
+  pGeom.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  const pMat = new THREE.PointsMaterial({
+    color: 0x667eea, size: 0.012, transparent: true, opacity: 0.4,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  const particles = new THREE.Points(pGeom, pMat);
   scene.add(particles);
 
   const controls = new OrbitControls(camera, renderer.domElement);
-  controls.target.set(0, 0.4, 0);
+  controls.target.set(0, -0.05, 0);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
-  controls.minDistance = 1.5;
-  controls.maxDistance = 5.5;
-  controls.maxPolarAngle = Math.PI * 0.7;
-  controls.minPolarAngle = Math.PI * 0.15;
+  controls.minDistance = 1.2;
+  controls.maxDistance = 4.0;
+  controls.maxPolarAngle = Math.PI * 0.75;
+  controls.minPolarAngle = Math.PI * 0.1;
   controls.autoRotate = true;
-  controls.autoRotateSpeed = 0.6;
+  controls.autoRotateSpeed = 0.8;
   controls.update();
 
-  const headGroup = new THREE.Group();
-
-  const ctx = photoCanvas.getContext('2d');
-  const skinColor = getSkinColor(ctx, photoCanvas.width, photoCanvas.height);
-
-  const headGeom = createHeadGeometry();
-  const headMat = new THREE.MeshStandardMaterial({
-    color: skinColor,
-    roughness: 0.55,
-    metalness: 0.03,
-  });
-  const headMesh = new THREE.Mesh(headGeom, headMat);
-  headMesh.castShadow = true;
-  headMesh.receiveShadow = true;
-  headGroup.add(headMesh);
-
-  const faceTexture = createFaceTexture(photoCanvas);
-  const faceGeom = new THREE.SphereGeometry(0.635, 56, 28,
-    -Math.PI * 0.32,
-    Math.PI * 0.64,
-    Math.PI * 0.32,
-    Math.PI * 0.52
-  );
-  const faceMat = new THREE.MeshStandardMaterial({
-    map: faceTexture,
-    roughness: 0.45,
-    metalness: 0.02,
-  });
-  const faceMesh = new THREE.Mesh(faceGeom, faceMat);
-  faceMesh.castShadow = true;
-  headGroup.add(faceMesh);
-
-  const neckGeom = new THREE.CylinderGeometry(0.18, 0.21, 0.6, 32);
-  const neckMesh = new THREE.Mesh(neckGeom, headMat);
-  neckMesh.position.y = -1.7;
-  neckMesh.castShadow = true;
-  headGroup.add(neckMesh);
-
+  const headGroup = buildFaceMesh(landmarks, photoCanvas);
   scene.add(headGroup);
 
   sceneData = { scene, camera, renderer, controls, headGroup, particles };
 
   function animate(time) {
     animationId = requestAnimationFrame(animate);
-
-    particles.rotation.y += 0.0003;
-    particles.rotation.x += 0.0002;
-
+    particles.rotation.y += 0.0004;
     const t = time * 0.001;
-    headGroup.position.y = Math.sin(t * 0.8) * 0.04;
-    headGroup.rotation.y += (controls.autoRotate ? 0 : 0);
-
+    headGroup.position.y = Math.sin(t * 0.7) * 0.03;
     controls.update();
     renderer.render(scene, camera);
   }
 
-  const hint = $('#result-hint');
   animationId = requestAnimationFrame(animate);
-  setTimeout(() => { hint.style.opacity = '0'; }, 5000);
 
-  const onResize = () => {
+  window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
-  };
-  window.addEventListener('resize', onResize);
+  });
 
   let autoRotateTimeout;
   controls.addEventListener('start', () => {
     controls.autoRotate = false;
-    hint.style.opacity = '0';
     clearTimeout(autoRotateTimeout);
   });
   controls.addEventListener('end', () => {
-    autoRotateTimeout = setTimeout(() => {
-      controls.autoRotate = true;
-    }, 2500);
+    autoRotateTimeout = setTimeout(() => { controls.autoRotate = true; }, 3000);
   });
 }
 </script>
