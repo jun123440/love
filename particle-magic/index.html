@@ -112,7 +112,7 @@ const COLOR_PALETTE = [
   '#e040fb','#00e676','#ffab00','#448aff','#ff4081',
 ];
 
-const PARTICLE_COUNT = 25000;
+const PARTICLE_COUNT = 10000;
 const FORMATION_DURATION = 1.1;
 const HOLD_DURATION = 3.0;
 const GESTURE_CONFIRM_FRAMES = 8;
@@ -261,7 +261,7 @@ function onHandResults(results) {
     if (!gestureVotes[fc]) gestureVotes[fc] = 0;
     gestureVotes[fc]++;
     for (const k of Object.keys(gestureVotes)) {
-      if (+k !== fc) gestureVotes[k] = Math.max(0, gestureVotes[k] - 4);
+      if (+k !== fc) gestureVotes[k] = Math.max(0, gestureVotes[k] - 1);
     }
     for (const [cnt, votes] of Object.entries(gestureVotes)) {
       if (votes >= GESTURE_CONFIRM_FRAMES && +cnt !== confirmedGesture) {
@@ -277,7 +277,7 @@ function onHandResults(results) {
     if (Math.max(...Object.values(gestureVotes), 0) > 60) gestureVotes = {};
   } else {
     handDetected = false;
-    for (const k of Object.keys(gestureVotes)) gestureVotes[k] = Math.max(0, gestureVotes[k] - 4);
+    for (const k of Object.keys(gestureVotes)) gestureVotes[k] = Math.max(0, gestureVotes[k] - 1);
     if (Math.max(...Object.values(gestureVotes), 0) < 2) {
       gestureVotes = {};
       if (confirmedGesture !== null && now - lastHandTime > .5) {
@@ -357,24 +357,29 @@ function update(dt) {
       p.vx *= .978; p.vy *= .978;
       p.x += p.vx + noise(p.x, p.y, globalTime) * 2;
       p.y += p.vy + noise(p.x + 700, p.y + 700, globalTime) * 2;
-      if (p.x < 0) { p.x = 0; p.vx *= -.4; }
-      if (p.x > stage.width) { p.x = stage.width; p.vx *= -.4; }
-      if (p.y < 0) { p.y = 0; p.vy *= -.4; }
-      if (p.y > stage.height) { p.y = stage.height; p.vy *= -.4; }
+      if (p.x < 0) { p.x = 0; p.vx *= -.85; }
+      if (p.x > stage.width) { p.x = stage.width; p.vx *= -.85; }
+      if (p.y < 0) { p.y = 0; p.vy *= -.85; }
+      if (p.y > stage.height) { p.y = stage.height; p.vy *= -.85; }
     }
     if (now - returnStartTime > 1.5) appState = 'idle';
   } else {
+    const em = 80;
     for (const p of particles) {
       p.vx += noise(p.x, p.y, globalTime) * .06;
       p.vy += noise(p.x + 500, p.y + 500, globalTime) * .06;
       p.vx *= .992; p.vy *= .992;
       const sp = Math.hypot(p.vx, p.vy);
       if (sp > 3.5) { const s = 3.5 / sp; p.vx *= s; p.vy *= s; }
+      if (p.x < em) p.vx += (em - p.x) / em * .15;
+      if (p.x > stage.width - em) p.vx -= (p.x - (stage.width - em)) / em * .15;
+      if (p.y < em) p.vy += (em - p.y) / em * .15;
+      if (p.y > stage.height - em) p.vy -= (p.y - (stage.height - em)) / em * .15;
       p.x += p.vx; p.y += p.vy;
-      if (p.x < 0) { p.x = 0; p.vx *= -.4; }
-      if (p.x > stage.width) { p.x = stage.width; p.vx *= -.4; }
-      if (p.y < 0) { p.y = 0; p.vy *= -.4; }
-      if (p.y > stage.height) { p.y = stage.height; p.vy *= -.4; }
+      if (p.x < 0) { p.x = 0; p.vx *= -.85; }
+      if (p.x > stage.width) { p.x = stage.width; p.vx *= -.85; }
+      if (p.y < 0) { p.y = 0; p.vy *= -.85; }
+      if (p.y > stage.height) { p.y = stage.height; p.vy *= -.85; }
     }
   }
 }
@@ -407,7 +412,7 @@ function render() {
   fpsFrames++;
   const now = performance.now();
   if (now - fpsTime >= 1000) {
-    fpsEl.textContent = Math.round(fpsFrames / ((now - fpsTime) / 1000)) + ' FPS | 25000 particles';
+    fpsEl.textContent = Math.round(fpsFrames / ((now - fpsTime) / 1000)) + ' FPS | 10000 particles';
     fpsFrames = 0; fpsTime = now;
   }
 }
@@ -474,7 +479,7 @@ lastTimestamp = performance.now();
 fpsTime = performance.now();
 requestAnimationFrame(animate);
 
-console.log('%c✨ 粒子魔法已就绪 %c| %c25000粒子 + 手势1-5',
+console.log('%c✨ 粒子魔法已就绪 %c| %c10000粒子 + 手势1-5',
   'color:#ff6b9d;font-size:1.2em;', '', 'color:#aaa;');
 })();
 </script>
