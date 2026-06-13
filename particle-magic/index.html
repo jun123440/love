@@ -69,6 +69,11 @@ canvas#stage { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
   color: rgba(255,255,255,.4); font-size: .7rem; z-index: 20;
   background: rgba(0,0,0,.3); padding: 4px 10px; border-radius: 10px;
 }
+#raw-count {
+  position: fixed; top: 50px; left: 22px;
+  color: rgba(255,200,80,.9); font-size: .75rem; z-index: 20;
+  background: rgba(0,0,0,.3); padding: 4px 10px; border-radius: 10px;
+}
 @keyframes gradientShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
 @keyframes btnPulse { 0%,100%{box-shadow:0 4px 35px rgba(255,107,107,.5)} 50%{box-shadow:0 4px 55px rgba(255,107,107,.8)} }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
@@ -77,6 +82,7 @@ canvas#stage { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
 <body>
 <canvas id="stage"></canvas>
 <div id="fps-display"></div>
+<div id="raw-count"></div>
 <div id="ui">
   <div id="guide-title">粒子魔法</div>
   <div id="guide-subtitle">伸出你的手，比个数字吧！</div>
@@ -102,6 +108,7 @@ const detectedNum = document.getElementById('detected-num');
 const cameraStatus = document.getElementById('camera-status');
 const cameraPreview = document.getElementById('camera-preview');
 const fpsEl = document.getElementById('fps-display');
+const rawCountEl = document.getElementById('raw-count');
 
 const COLOR_PALETTE = [
   '#ff006e','#ff5e00','#ffbe0b','#00f5d4','#00bbf9',
@@ -259,6 +266,7 @@ function onHandResults(results) {
     handDetected = true;
     lastHandTime = now;
     const fc = countFingers(results.multiHandLandmarks[0]);
+    rawCountEl.textContent = 'raw: ' + fc;
     if (!gestureVotes[fc]) gestureVotes[fc] = 0;
     gestureVotes[fc]++;
     for (const k of Object.keys(gestureVotes)) {
@@ -278,6 +286,7 @@ function onHandResults(results) {
     if (Math.max(...Object.values(gestureVotes), 0) > 60) gestureVotes = {};
   } else {
     handDetected = false;
+    rawCountEl.textContent = 'raw: -';
     for (const k of Object.keys(gestureVotes)) gestureVotes[k] = Math.max(0, gestureVotes[k] - 1);
     if (Math.max(...Object.values(gestureVotes), 0) < 2) {
       gestureVotes = {};
