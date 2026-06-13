@@ -245,9 +245,11 @@ function countFingers(landmarks) {
     const tip = landmarks[tips[i]];
     if (tip.y < landmarks[pips[i]].y && tip.y < landmarks[mcps[i]].y) count++;
   }
-  const handSize = Math.hypot(landmarks[0].x - landmarks[9].x, landmarks[0].y - landmarks[9].y);
-  const d = Math.hypot(landmarks[4].x - landmarks[5].x, landmarks[4].y - landmarks[5].y);
-  if (d > handSize * .55) count++;
+  if (count === 4) {
+    const hs = Math.hypot(landmarks[0].x - landmarks[9].x, landmarks[0].y - landmarks[9].y);
+    const d = Math.hypot(landmarks[4].x - landmarks[5].x, landmarks[4].y - landmarks[5].y);
+    if (d > hs * .45) count++;
+  }
   return count;
 }
 
