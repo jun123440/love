@@ -112,10 +112,10 @@ const COLOR_PALETTE = [
   '#e040fb','#00e676','#ffab00','#448aff','#ff4081',
 ];
 
-const PARTICLE_COUNT = 10000;
-const FORMATION_DURATION = 1.1;
+const PARTICLE_COUNT = 15000;
+const FORMATION_DURATION = 2.2;
 const HOLD_DURATION = 3.0;
-const GESTURE_CONFIRM_FRAMES = 8;
+const GESTURE_CONFIRM_FRAMES = 12;
 
 let particles = [];
 let appState = 'idle';
@@ -238,17 +238,23 @@ function initParticles() {
 
 function countFingers(landmarks) {
   let count = 0;
-  // 四指: tip 必须在 PIP 和 MCP 上方才算伸展
   const tips = [8, 12, 16, 20];
   const pips = [6, 10, 14, 18];
   const mcps = [5, 9, 13, 17];
   for (let i = 0; i < 4; i++) {
     const tip = landmarks[tips[i]];
-    if (tip.y < landmarks[pips[i]].y && tip.y < landmarks[mcps[i]].y) count++;
+    const pip = landmarks[pips[i]];
+    const mcp = landmarks[mcps[i]];
+    if (tip.y < pip.y && tip.y < mcp.y) { count++; continue; }
+    const vx = pip.x - mcp.x, vy = pip.y - mcp.y;
+    const l1 = Math.hypot(vx, vy);
+    const wx = tip.x - pip.x, wy = tip.y - pip.y;
+    const l2 = Math.hypot(wx, wy);
+    if (l1 > .01 && l2 > .01 && (vx * wx + vy * wy) / (l1 * l2) > .25) count++;
   }
-  // 拇指: 距离食指根部大于阈值
-  const d = Math.hypot(landmarks[4].x - landmarks[5].x, landmarks[4].y - landmarks[5].y);
-  if (d > .15) count++;
+  const handSize = Math.hypot(landmarks[0].x - landmarks[9].x, landmarks[0].y - landmarks[9].y);
+  const thumbDist = Math.hypot(landmarks[4].x - landmarks[5].x, landmarks[4].y - landmarks[5].y);
+  if (thumbDist > handSize * .35) count++;
   return count;
 }
 
@@ -412,7 +418,7 @@ function render() {
   fpsFrames++;
   const now = performance.now();
   if (now - fpsTime >= 1000) {
-    fpsEl.textContent = Math.round(fpsFrames / ((now - fpsTime) / 1000)) + ' FPS | 10000 particles';
+    fpsEl.textContent = Math.round(fpsFrames / ((now - fpsTime) / 1000)) + ' FPS | 15000 particles';
     fpsFrames = 0; fpsTime = now;
   }
 }
@@ -438,8 +444,8 @@ async function startCamera() {
     hands.setOptions({
       maxNumHands: 1,
       modelComplexity: 1,
-      minDetectionConfidence: .5,
-      minTrackingConfidence: .5,
+      minDetectionConfidence: .4,
+      minTrackingConfidence: .4,
     });
     hands.onResults(onHandResults);
 
@@ -479,7 +485,7 @@ lastTimestamp = performance.now();
 fpsTime = performance.now();
 requestAnimationFrame(animate);
 
-console.log('%c✨ 粒子魔法已就绪 %c| %c10000粒子 + 手势1-5',
+console.log('%c✨ 粒子魔法已就绪 %c| %c15000粒子 + 手势1-5',
   'color:#ff6b9d;font-size:1.2em;', '', 'color:#aaa;');
 })();
 </script>
