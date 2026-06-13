@@ -122,7 +122,7 @@ const COLOR_PALETTE = [
 const PARTICLE_COUNT = 15000;
 const FORMATION_DURATION = 2.2;
 const HOLD_DURATION = 3.0;
-const GESTURE_CONFIRM_FRAMES = 6;
+const GESTURE_CONFIRM_FRAMES = 12;
 
 let particles = [];
 let appState = 'idle';
@@ -136,7 +136,6 @@ let handDetected = false;
 let lastHandTime = 0;
 let gestureVotes = {};
 let confirmedGesture = null;
-let noHandFrames = 0;
 let hands = null;
 let cameraInstance = null;
 let cameraReady = false;
@@ -266,7 +265,6 @@ function onHandResults(results) {
   if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
     handDetected = true;
     lastHandTime = now;
-    noHandFrames = 0;
     const fc = countFingers(results.multiHandLandmarks[0]);
     rawCountEl.textContent = 'raw: ' + fc;
     if (!gestureVotes[fc]) gestureVotes[fc] = 0;
@@ -289,13 +287,10 @@ function onHandResults(results) {
   } else {
     handDetected = false;
     rawCountEl.textContent = 'raw: -';
-    noHandFrames++;
-    if (noHandFrames % 3 === 0) {
-      for (const k of Object.keys(gestureVotes)) gestureVotes[k] = Math.max(0, gestureVotes[k] - 1);
-    }
+    for (const k of Object.keys(gestureVotes)) gestureVotes[k] = Math.max(0, gestureVotes[k] - 1);
     if (Math.max(...Object.values(gestureVotes), 0) < 2) {
       gestureVotes = {};
-      if (confirmedGesture !== null && now - lastHandTime > .8) {
+      if (confirmedGesture !== null && now - lastHandTime > .5) {
         returnToIdle();
         confirmedGesture = null;
       }
@@ -452,8 +447,8 @@ async function startCamera() {
     });
     hands.setOptions({
       maxNumHands: 1,
-      modelComplexity: 2,
-      minDetectionConfidence: .45,
+      modelComplexity: 1,
+      minDetectionConfidence: .5,
       minTrackingConfidence: .5,
     });
     hands.onResults(onHandResults);
