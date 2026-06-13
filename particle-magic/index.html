@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>绮掑瓙榄旀硶 - 鎵嬪娍璇嗗埆</title>
+<title>粒子魔法 - 手势识别</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -76,13 +76,13 @@ canvas#stage { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
 <canvas id="stage"></canvas>
 
 <div id="ui">
-  <div id="guide-title">绮掑瓙榄旀硶</div>
-  <div id="guide-subtitle">浼稿嚭浣犵殑鎵嬶紝姣斾釜鏁板瓧鍚э紒</div>
+  <div id="guide-title">粒子魔法</div>
+  <div id="guide-subtitle">伸出你的手，比个数字吧！</div>
   <div id="detected-num"></div>
-  <button id="start-btn">寮€鍚憚鍍忓ご浣撻獙</button>
+  <button id="start-btn">开启摄像头体验</button>
 </div>
 
-<div id="camera-status"><div id="camera-dot"></div><span>鎽勫儚澶村凡寮€鍚?/span></div>
+<div id="camera-status"><div id="camera-dot"></div><span>摄像头已开启</span></div>
 <div id="camera-preview"><video id="video" autoplay playsinline></video></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js" crossorigin="anonymous"></script>
@@ -285,7 +285,7 @@ function handleGesture(number) {
   appState = 'forming';
   formationStartTime = performance.now() / 1000;
   transitionProgress = 0;
-  const cn = ['', '涓€', '浜?, '涓?, '鍥?];
+  const cn = ['', '一', '二', '三', '四'];
   if (number === 5) { detectedNum.textContent = 'BEAUTY'; detectedNum.style.color = '#ff6b9d'; }
   else { detectedNum.textContent = cn[number]; detectedNum.style.color = '#fff'; }
   guideSubtitle.style.opacity = '0.3';
@@ -429,24 +429,24 @@ async function startCamera() {
 
     cameraStatus.style.display = 'flex';
     cameraPreview.style.display = 'block';
-    startBtn.textContent = '鉁?鎽勫儚澶村凡灏辩华';
+    startBtn.textContent = '✓ 摄像头已就绪';
     startBtn.classList.add('ready');
     startBtn.disabled = false;
-    detectedNum.textContent = '姣斾釜鏁板瓧璇曡瘯鍚э紒';
+    detectedNum.textContent = '比个数字试试吧！';
     detectedNum.style.fontSize = 'clamp(.9rem,1.6vw,1.3rem)';
     detectedNum.style.color = 'rgba(255,255,255,.7)';
   } catch (err) {
     console.warn('Camera error:', err);
-    detectedNum.textContent = '鈿?鏃犳硶璁块棶鎽勫儚澶达紝璇峰厑璁告潈闄愬悗鍒锋柊椤甸潰';
+    detectedNum.textContent = '⚠ 无法访问摄像头，请允许权限后刷新页面';
     detectedNum.style.color = '#ff6b6b';
-    startBtn.textContent = '閲嶆柊灏濊瘯';
+    startBtn.textContent = '重新尝试';
     startBtn.disabled = false;
   }
 }
 
 startBtn.addEventListener('click', () => {
   if (cameraReady) return;
-  startBtn.textContent = '姝ｅ湪鍚姩...';
+  startBtn.textContent = '正在启动...';
   startBtn.disabled = true;
   startCamera();
 });
@@ -455,7 +455,7 @@ initParticles();
 lastTimestamp = performance.now();
 requestAnimationFrame(animate);
 
-console.log('%c鉁?绮掑瓙榄旀硶宸插氨缁?%c| %c8000绮掑瓙 + 鎵嬪娍1-5',
+console.log('%c✨ 粒子魔法已就绪 %c| %c8000粒子 + 手势1-5',
   'color:#ff6b9d;font-size:1.2em;', '', 'color:#aaa;');
 })();
 </script>
