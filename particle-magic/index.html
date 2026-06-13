@@ -487,6 +487,7 @@ startBtn.addEventListener('click', () => {
 initParticles();
 lastTimestamp = performance.now();
 fpsTime = performance.now();
+rawCountEl.textContent = 'raw: -';
 requestAnimationFrame(animate);
 
 console.log('%c✨ 粒子魔法已就绪 %c| %c15000粒子 + 手势1-5',
