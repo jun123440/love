@@ -240,21 +240,12 @@ function countFingers(landmarks) {
   let count = 0;
   const tips = [8, 12, 16, 20];
   const pips = [6, 10, 14, 18];
-  const mcps = [5, 9, 13, 17];
   for (let i = 0; i < 4; i++) {
-    const tip = landmarks[tips[i]];
-    const pip = landmarks[pips[i]];
-    const mcp = landmarks[mcps[i]];
-    if (tip.y < pip.y && tip.y < mcp.y) { count++; continue; }
-    const vx = pip.x - mcp.x, vy = pip.y - mcp.y;
-    const l1 = Math.hypot(vx, vy);
-    const wx = tip.x - pip.x, wy = tip.y - pip.y;
-    const l2 = Math.hypot(wx, wy);
-    if (l1 > .01 && l2 > .01 && (vx * wx + vy * wy) / (l1 * l2) > .25) count++;
+    if (landmarks[tips[i]].y < landmarks[pips[i]].y) count++;
   }
-  const handSize = Math.hypot(landmarks[0].x - landmarks[9].x, landmarks[0].y - landmarks[9].y);
+  const handSize = Math.hypot(landmarks[0].x - landmarks[9].x, landmarks[0].y - landmarks[9].y) || .01;
   const thumbDist = Math.hypot(landmarks[4].x - landmarks[5].x, landmarks[4].y - landmarks[5].y);
-  if (thumbDist > handSize * .35) count++;
+  if (thumbDist > handSize * .4) count++;
   return count;
 }
 
@@ -444,8 +435,8 @@ async function startCamera() {
     hands.setOptions({
       maxNumHands: 1,
       modelComplexity: 1,
-      minDetectionConfidence: .4,
-      minTrackingConfidence: .4,
+      minDetectionConfidence: .5,
+      minTrackingConfidence: .5,
     });
     hands.onResults(onHandResults);
 
