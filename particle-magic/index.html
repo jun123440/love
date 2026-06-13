@@ -112,10 +112,10 @@ const COLOR_PALETTE = [
   '#e040fb','#00e676','#ffab00','#448aff','#ff4081',
 ];
 
-const PARTICLE_COUNT = 20000;
-const FORMATION_DURATION = 1.2;
+const PARTICLE_COUNT = 25000;
+const FORMATION_DURATION = 1.1;
 const HOLD_DURATION = 3.0;
-const GESTURE_CONFIRM_FRAMES = 10;
+const GESTURE_CONFIRM_FRAMES = 8;
 
 let particles = [];
 let appState = 'idle';
@@ -133,8 +133,7 @@ let hands = null;
 let cameraInstance = null;
 let cameraReady = false;
 let lastTimestamp = 0;
-
-let fpsFrames = 0, fpsTime = 0, fps = 0;
+let fpsFrames = 0, fpsTime = 0;
 
 function resizeStage() {
   stage.width = window.innerWidth;
@@ -143,7 +142,7 @@ function resizeStage() {
 resizeStage();
 window.addEventListener('resize', () => {
   resizeStage();
-  for (const k of Object.keys(shapeCache)) delete shapeCache[k];
+  shapeCache = {};
   if (appState === 'formed' && currentNumber !== null) {
     const txt = currentNumber === 5 ? 'BEAUTY' : String(currentNumber);
     shapeTargets = generateShapePositions(txt);
@@ -169,10 +168,7 @@ function noise(x, y, t) {
 
 function precomputeColor(hex) {
   const rgb = hexToRgb(hex);
-  return {
-    r: rgb.r, g: rgb.g, b: rgb.b,
-    full: `rgba(${rgb.r},${rgb.g},${rgb.b},1)`,
-  };
+  return { r: rgb.r, g: rgb.g, b: rgb.b };
 }
 const COLORS_RGB = COLOR_PALETTE.map(precomputeColor);
 
@@ -182,19 +178,19 @@ class Particle {
     this.x = Math.random() * stage.width;
     this.y = Math.random() * stage.height;
     this.tx = null; this.ty = null; this.sx = 0; this.sy = 0;
-    this.vx = (Math.random() - .5) * 2;
-    this.vy = (Math.random() - .5) * 2;
-    this.size = .5 + Math.random() * 2.3;
+    this.vx = (Math.random() - .5) * 1.5;
+    this.vy = (Math.random() - .5) * 1.5;
+    this.size = .3 + Math.random() * 1.2;
     const c = COLORS_RGB[Math.floor(Math.random() * COLORS_RGB.length)];
     this.r = c.r; this.g = c.g; this.b = c.b;
-    this.alpha = .45 + Math.random() * .55;
+    this.alpha = .35 + Math.random() * .65;
     this.phase = Math.random() * Math.PI * 2;
   }
   setIdle() { this.tx = null; this.ty = null; }
   setTarget(tx, ty) { this.tx = tx; this.ty = ty; this.sx = this.x; this.sy = this.y; }
 }
 
-const shapeCache = {};
+let shapeCache = {};
 function generateShapePositions(text) {
   if (shapeCache[text]) return shapeCache[text];
   const oc = document.createElement('canvas');
@@ -212,7 +208,7 @@ function generateShapePositions(text) {
   const positions = [];
   for (let y = 0; y < oc.height; y += 2) {
     for (let x = 0; x < oc.width; x += 2) {
-      if (px[(y * oc.width + x) * 4 + 3] > 80) positions.push({x, y});
+      if (px[(y * oc.width + x) * 4 + 3] > 60) positions.push({x, y});
     }
   }
   const result = [];
@@ -221,14 +217,14 @@ function generateShapePositions(text) {
     for (let i = 0; i < need; i++) {
       const j = i + Math.floor(Math.random() * (positions.length - i));
       [positions[i], positions[j]] = [positions[j], positions[i]];
-      result.push({ x: positions[i].x + (Math.random() - .5) * 5, y: positions[i].y + (Math.random() - .5) * 5 });
+      result.push({ x: positions[i].x + (Math.random() - .5) * 4, y: positions[i].y + (Math.random() - .5) * 4 });
     }
   } else {
     for (let i = 0; i < positions.length; i++)
-      result.push({ x: positions[i].x + (Math.random() - .5) * 4, y: positions[i].y + (Math.random() - .5) * 4 });
+      result.push({ x: positions[i].x + (Math.random() - .5) * 3, y: positions[i].y + (Math.random() - .5) * 3 });
     while (result.length < need) {
       const p = positions[Math.floor(Math.random() * positions.length)];
-      result.push({ x: p.x + (Math.random() - .5) * 8, y: p.y + (Math.random() - .5) * 8 });
+      result.push({ x: p.x + (Math.random() - .5) * 6, y: p.y + (Math.random() - .5) * 6 });
     }
   }
   shapeCache[text] = result;
@@ -242,17 +238,17 @@ function initParticles() {
 
 function countFingers(landmarks) {
   let count = 0;
+  // 四指: tip 必须在 PIP 和 MCP 上方才算伸展
   const tips = [8, 12, 16, 20];
   const pips = [6, 10, 14, 18];
   const mcps = [5, 9, 13, 17];
   for (let i = 0; i < 4; i++) {
     const tip = landmarks[tips[i]];
-    const pip = landmarks[pips[i]];
-    const mcp = landmarks[mcps[i]];
-    if (tip.y < pip.y - .003 && tip.y < mcp.y) count++;
+    if (tip.y < landmarks[pips[i]].y && tip.y < landmarks[mcps[i]].y) count++;
   }
-  const thumbDist = Math.hypot(landmarks[4].x - landmarks[5].x, landmarks[4].y - landmarks[5].y);
-  if (thumbDist > .18) count++;
+  // 拇指: 距离食指根部大于阈值
+  const d = Math.hypot(landmarks[4].x - landmarks[5].x, landmarks[4].y - landmarks[5].y);
+  if (d > .15) count++;
   return count;
 }
 
@@ -265,7 +261,7 @@ function onHandResults(results) {
     if (!gestureVotes[fc]) gestureVotes[fc] = 0;
     gestureVotes[fc]++;
     for (const k of Object.keys(gestureVotes)) {
-      if (+k !== fc) gestureVotes[k] = Math.max(0, gestureVotes[k] - 3);
+      if (+k !== fc) gestureVotes[k] = Math.max(0, gestureVotes[k] - 4);
     }
     for (const [cnt, votes] of Object.entries(gestureVotes)) {
       if (votes >= GESTURE_CONFIRM_FRAMES && +cnt !== confirmedGesture) {
@@ -281,10 +277,10 @@ function onHandResults(results) {
     if (Math.max(...Object.values(gestureVotes), 0) > 60) gestureVotes = {};
   } else {
     handDetected = false;
-    for (const k of Object.keys(gestureVotes)) gestureVotes[k] = Math.max(0, gestureVotes[k] - 3);
+    for (const k of Object.keys(gestureVotes)) gestureVotes[k] = Math.max(0, gestureVotes[k] - 4);
     if (Math.max(...Object.values(gestureVotes), 0) < 2) {
       gestureVotes = {};
-      if (confirmedGesture !== null && now - lastHandTime > .6) {
+      if (confirmedGesture !== null && now - lastHandTime > .5) {
         returnToIdle();
         confirmedGesture = null;
       }
@@ -297,14 +293,12 @@ function handleGesture(number) {
   const targetText = number === 5 ? 'BEAUTY' : String(number);
   currentNumber = number;
   shapeTargets = generateShapePositions(targetText);
-  const shuffled = new Array(particles.length);
-  for (let i = 0; i < particles.length; i++) shuffled[i] = particles[i];
-  for (let i = shuffled.length - 1; i > 0; i--) {
+  for (let i = particles.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    [particles[i], particles[j]] = [particles[j], particles[i]];
   }
   for (let i = 0; i < particles.length; i++)
-    shuffled[i].setTarget(shapeTargets[i % shapeTargets.length].x, shapeTargets[i % shapeTargets.length].y);
+    particles[i].setTarget(shapeTargets[i % shapeTargets.length].x, shapeTargets[i % shapeTargets.length].y);
   appState = 'forming';
   formationStartTime = performance.now() / 1000;
   const cn = ['', '一', '二', '三', '四'];
@@ -324,8 +318,8 @@ function returnToIdle() {
   for (const p of particles) {
     const dx = p.x - cx, dy = p.y - cy;
     const d = Math.hypot(dx, dy) || 1;
-    p.vx = dx / d * (1 + Math.random() * 6);
-    p.vy = dy / d * (1 + Math.random() * 6);
+    p.vx = dx / d * (1.5 + Math.random() * 5);
+    p.vy = dy / d * (1.5 + Math.random() * 5);
     p.setIdle();
   }
   detectedNum.textContent = '';
@@ -341,71 +335,69 @@ function update(dt) {
     for (const p of particles) {
       if (p.tx !== null) {
         const t = easeOutBack(progress);
-        const j = (1 - t) * 3;
-        p.x = p.sx + (p.tx - p.sx) * t + (Math.random() - .5) * j;
-        p.y = p.sy + (p.ty - p.sy) * t + (Math.random() - .5) * j;
+        p.x = p.sx + (p.tx - p.sx) * t + (Math.random() - .5) * (1 - t) * 2;
+        p.y = p.sy + (p.ty - p.sy) * t + (Math.random() - .5) * (1 - t) * 2;
       }
     }
     if (progress >= 1) {
       appState = 'formed';
       formedStartTime = now;
-      for (const p of particles) { if (p.tx !== null) { p.x = p.tx; p.y = p.ty; } }
+      for (const p of particles) if (p.tx !== null) { p.x = p.tx; p.y = p.ty; }
     }
   } else if (appState === 'formed') {
-    const pulse = currentNumber === 5 ? 1 + Math.sin(globalTime * 2.5) * .2 : 1;
     for (const p of particles) {
       if (p.tx !== null) {
-        p.x = p.tx + Math.sin(globalTime * 3.5 + p.phase) * .8 * pulse;
-        p.y = p.ty + Math.cos(globalTime * 3.2 + p.phase) * .8 * pulse;
+        p.x = p.tx + Math.sin(globalTime * 3.5 + p.phase) * .6;
+        p.y = p.ty + Math.cos(globalTime * 3.2 + p.phase) * .6;
       }
     }
     if (now - formedStartTime > HOLD_DURATION && !handDetected) returnToIdle();
   } else if (appState === 'returning') {
     for (const p of particles) {
-      p.vx *= .98; p.vy *= .98;
-      p.x += p.vx + noise(p.x, p.y, globalTime) * 1.8;
-      p.y += p.vy + noise(p.x + 700, p.y + 700, globalTime) * 1.8;
-      if (p.x < -80) p.x = stage.width + 80;
-      if (p.x > stage.width + 80) p.x = -80;
-      if (p.y < -80) p.y = stage.height + 80;
-      if (p.y > stage.height + 80) p.y = -80;
+      p.vx *= .978; p.vy *= .978;
+      p.x += p.vx + noise(p.x, p.y, globalTime) * 2;
+      p.y += p.vy + noise(p.x + 700, p.y + 700, globalTime) * 2;
+      if (p.x < 0) { p.x = 0; p.vx *= -.4; }
+      if (p.x > stage.width) { p.x = stage.width; p.vx *= -.4; }
+      if (p.y < 0) { p.y = 0; p.vy *= -.4; }
+      if (p.y > stage.height) { p.y = stage.height; p.vy *= -.4; }
     }
-    if (now - returnStartTime > 2) appState = 'idle';
+    if (now - returnStartTime > 1.5) appState = 'idle';
   } else {
     for (const p of particles) {
       p.vx += noise(p.x, p.y, globalTime) * .06;
       p.vy += noise(p.x + 500, p.y + 500, globalTime) * .06;
-      p.vx *= .993; p.vy *= .993;
+      p.vx *= .992; p.vy *= .992;
       const sp = Math.hypot(p.vx, p.vy);
-      if (sp > 4) { const s = 4 / sp; p.vx *= s; p.vy *= s; }
+      if (sp > 3.5) { const s = 3.5 / sp; p.vx *= s; p.vy *= s; }
       p.x += p.vx; p.y += p.vy;
-      if (p.x < -80) p.x = stage.width + 80;
-      if (p.x > stage.width + 80) p.x = -80;
-      if (p.y < -80) p.y = stage.height + 80;
-      if (p.y > stage.height + 80) p.y = -80;
+      if (p.x < 0) { p.x = 0; p.vx *= -.4; }
+      if (p.x > stage.width) { p.x = stage.width; p.vx *= -.4; }
+      if (p.y < 0) { p.y = 0; p.vy *= -.4; }
+      if (p.y > stage.height) { p.y = stage.height; p.vy *= -.4; }
     }
   }
 }
 
 function render() {
   ctx.globalCompositeOperation = 'source-over';
-  ctx.fillStyle = 'rgba(6,6,24,.08)';
+  ctx.fillStyle = 'rgba(6,6,24,.06)';
   ctx.fillRect(0, 0, stage.width, stage.height);
 
   ctx.globalCompositeOperation = 'lighter';
+  const isBeauty = appState === 'formed' && currentNumber === 5;
 
   for (let i = 0; i < particles.length; i++) {
     const p = particles[i];
-    const s = (appState === 'formed' && currentNumber === 5)
-      ? p.size * (1 + Math.sin(globalTime * 2.5 + p.phase) * .25) : p.size;
+    const s = isBeauty ? p.size * (1 + Math.sin(globalTime * 2.5 + p.phase) * .2) : p.size;
 
     ctx.beginPath();
-    ctx.arc(p.x, p.y, s * 1.6, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(${p.r},${p.g},${p.b},${p.alpha * .15})`;
+    ctx.arc(p.x, p.y, s * 1.5, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${p.r},${p.g},${p.b},${p.alpha * .12})`;
     ctx.fill();
 
     ctx.beginPath();
-    ctx.arc(p.x, p.y, s * .3, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, s * .25, 0, Math.PI * 2);
     ctx.fillStyle = `rgba(${p.r},${p.g},${p.b},${p.alpha})`;
     ctx.fill();
   }
@@ -415,10 +407,8 @@ function render() {
   fpsFrames++;
   const now = performance.now();
   if (now - fpsTime >= 1000) {
-    fps = fpsFrames;
-    fpsFrames = 0;
-    fpsTime = now;
-    fpsEl.textContent = fps + ' FPS | 20000 particles';
+    fpsEl.textContent = Math.round(fpsFrames / ((now - fpsTime) / 1000)) + ' FPS | 25000 particles';
+    fpsFrames = 0; fpsTime = now;
   }
 }
 
@@ -484,7 +474,7 @@ lastTimestamp = performance.now();
 fpsTime = performance.now();
 requestAnimationFrame(animate);
 
-console.log('%c✨ 粒子魔法已就绪 %c| %c20000粒子 + 手势1-5',
+console.log('%c✨ 粒子魔法已就绪 %c| %c25000粒子 + 手势1-5',
   'color:#ff6b9d;font-size:1.2em;', '', 'color:#aaa;');
 })();
 </script>
