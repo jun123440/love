@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>粒子魔法 - 手势识别</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #060618;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+canvas#stage {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+}
+#ui {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 10;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+}
+#guide-title {
+  font-size: clamp(2rem, 5vw, 4.5rem);
+  font-weight: 900;
+  background: linear-gradient(135deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #f093fb, #ff6b6b);
+  background-size: 400% 400%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientShift 3s ease infinite;
+  letter-spacing: 0.06em;
+  filter: drop-shadow(0 0 25px rgba(255,255,255,0.25));
+}
+#guide-subtitle {
+  font-size: clamp(0.9rem, 2vw, 1.6rem);
+  color: rgba(255,255,255,0.75);
+  margin-top: 0.6em;
+  letter-spacing: 0.25em;
+  font-weight: 300;
+  transition: opacity 0.5s;
+}
+#detected-num {
+  font-size: clamp(1.2rem, 2.5vw, 2.2rem);
+  color: #fff;
+  margin-top: 0.8em;
+  min-height: 2.2em;
+  font-weight: 700;
+  text-shadow: 0 0 30px rgba(255,255,255,0.7), 0 0 60px rgba(100,200,255,0.5);
+  transition: all 0.4s;
+}
+#start-btn {
+  pointer-events: auto; margin-top: 1.6em;
+  padding: 0.85em 2.6em; font-size: 1.1rem; font-weight: 700;
+  border: none; border-radius: 50px; cursor: pointer;
+  background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+  color: #fff; letter-spacing: 0.08em;
+  box-shadow: 0 4px 35px rgba(255,107,107,0.5);
+  transition: all 0.35s; animation: btnPulse 2s ease infinite;
+}
+#start-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 45px rgba(255,107,107,0.7); }
+#start-btn:active { transform: scale(0.95); }
+#start-btn:disabled { opacity: 0.6; cursor: not-allowed; animation: none; }
+#start-btn.ready {
+  background: linear-gradient(135deg, #6bcb77, #4d96ff);
+  animation: none; box-shadow: 0 4px 35px rgba(107,203,119,0.5);
+}
+#camera-status {
+  position: fixed; top: 18px; right: 22px;
+  color: rgba(255,255,255,0.55); font-size: 0.8rem; z-index: 20;
+  display: none; align-items: center; gap: 7px;
+  background: rgba(0,0,0,0.35); padding: 6px 14px; border-radius: 20px;
+  backdrop-filter: blur(8px);
+}
+#camera-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: #4f4;
+  animation: blink 1.5s ease infinite;
+}
+#camera-preview {
+  position: fixed; bottom: 18px; right: 18px;
+  width: 160px; height: 120px; border-radius: 14px;
+  border: 2px solid rgba(255,255,255,0.25);
+  overflow: hidden; z-index: 20; display: none;
+  box-shadow: 0 4px 25px rgba(0,0,0,0.5);
+}
+#camera-preview video {
+  width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);
+}
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+@keyframes btnPulse {
+  0%, 100% { box-shadow: 0 4px 35px rgba(255,107,107,0.5); }
+  50% { box-shadow: 0 4px 55px rgba(255,107,107,0.8); }
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+
+<div id="ui">
+  <div id="guide-title">粒子魔法</div>
+  <div id="guide-subtitle">伸出你的手，比个数字吧！</div>
+  <div id="detected-num"></div>
+  <button id="start-btn">开启摄像头体验</button>
+</div>
+
+<div id="camera-status"><div id="camera-dot"></div><span>摄像头已开启</span></div>
+<div id="camera-preview"><video id="video" autoplay playsinline></video></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js" crossorigin="anonymous"></script>
+
+<script>
+(function() {
+'use strict';
+
+const stage = document.getElementById('stage');
+const ctx = stage.getContext('2d');
+const video = document.getElementById('video');
+const startBtn = document.getElementById('start-btn');
+const guideSubtitle = document.getElementById('guide-subtitle');
+const detectedNum = document.getElementById('detected-num');
+const cameraStatus = document.getElementById('camera-status');
+const cameraPreview = document.getElementById('camera-preview');
+
+const COLOR_PALETTE = [
+  '#ff006e','#ff5e00','#ffbe0b','#00f5d4','#00bbf9',
+  '#9b5de5','#f15bb5','#fee440','#8338ec','#ff9500',
+  '#00e5ff','#ff2d55','#5856d6','#ffcc00','#5eff6f',
+  '#ff6b9d','#00d4aa','#ff9f43','#6c5ce7','#ff7675',
+];
+
+const PARTICLE_COUNT = Math.min(4000, Math.floor(window.innerWidth * window.innerHeight / 500));
+const FORMATION_DURATION = 1.4;
+const HOLD_DURATION = 3.0;
+const GESTURE_CONFIRM_FRAMES = 12;
+
+let particles = [];
+let appState = 'idle';
+let currentNumber = null;
+let formationStartTime = 0;
+let formedStartTime = 0;
+let returnStartTime = 0;
+let transitionProgress = 0;
+let shapeTargets = [];
+let time = 0;
+let handDetected = false;
+let lastHandTime = 0;
+let gestureVotes = {};
+let confirmedGesture = null;
+let hands = null;
+let cameraInstance = null;
+let cameraReady = false;
+let lastTimestamp = 0;
+
+function resizeStage() {
+  stage.width = window.innerWidth;
+  stage.height = window.innerHeight;
+}
+resizeStage();
+window.addEventListener('resize', () => {
+  resizeStage();
+  for (const k of Object.keys(shapeCache)) delete shapeCache[k];
+  if (appState === 'formed' && currentNumber !== null) {
+    const txt = currentNumber === 5 ? 'BEAUTY' : String(currentNumber);
+    shapeTargets = generateShapePositions(txt);
+    for (let i = 0; i < particles.length; i++) {
+      const t = shapeTargets[i % shapeTargets.length];
+      particles[i].x = t.x;
+      particles[i].y = t.y;
+      particles[i].tx = t.x;
+      particles[i].ty = t.y;
+    }
+  }
+});
+
+function hexToRgb(h) {
+  const r = parseInt(h.slice(1,3),16);
+  const g = parseInt(h.slice(3,5),16);
+  const b = parseInt(h.slice(5,7),16);
+  return {r,g,b};
+}
+
+function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+
+function easeOutExpo(t) { return t >= 1 ? 1 : 1 - Math.pow(2, -10 * t); }
+function easeOutBack(t) { const c1 = 1.70158; const c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
+
+function noise(x, y, t) {
+  return Math.sin(x * 0.007 + t * 0.6) * Math.cos(y * 0.005 + t * 0.45) * 0.5 +
+         Math.sin(x * 0.012 - t * 0.35) * Math.cos(y * 0.01 + t * 0.55) * 0.35 +
+         Math.cos(x * 0.008 + y * 0.006 + t * 0.3) * 0.3;
+}
+
+class Particle {
+  constructor() {
+    this.reset();
+  }
+  reset() {
+    this.x = Math.random() * stage.width;
+    this.y = Math.random() * stage.height;
+    this.tx = null;
+    this.ty = null;
+    this.sx = 0;
+    this.sy = 0;
+    this.vx = (Math.random() - 0.5) * 2;
+    this.vy = (Math.random() - 0.5) * 2;
+    this.size = 0.7 + Math.random() * 2.5;
+    const hex = COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)];
+    const rgb = hexToRgb(hex);
+    this.r = rgb.r; this.g = rgb.g; this.b = rgb.b;
+    this.alpha = 0.55 + Math.random() * 0.45;
+    this.phase = Math.random() * Math.PI * 2;
+  }
+  setIdle() {
+    this.tx = null; this.ty = null;
+  }
+  setTarget(tx, ty) {
+    this.tx = tx; this.ty = ty;
+    this.sx = this.x; this.sy = this.y;
+  }
+}
+
+const shapeCache = {};
+function generateShapePositions(text) {
+  if (shapeCache[text]) return shapeCache[text];
+  const oc = document.createElement('canvas');
+  oc.width = stage.width; oc.height = stage.height;
+  const octx = oc.getContext('2d');
+  octx.fillStyle = '#fff';
+  let fs;
+  if (text === 'BEAUTY') {
+    fs = Math.min(stage.width / 5.5, stage.height / 2.8);
+  } else {
+    fs = Math.min(stage.width / 2, stage.height * 0.7);
+  }
+  octx.font = `900 ${Math.floor(fs)}px "Arial Black","Arial","PingFang SC","Microsoft YaHei",sans-serif`;
+  octx.textAlign = 'center';
+  octx.textBaseline = 'middle';
+  octx.fillText(text, oc.width / 2, oc.height / 2);
+  const img = octx.getImageData(0, 0, oc.width, oc.height);
+  const px = img.data;
+  const positions = [];
+  const step = 2;
+  for (let y = 0; y < oc.height; y += step) {
+    for (let x = 0; x < oc.width; x += step) {
+      if (px[(y * oc.width + x) * 4 + 3] > 100) {
+        positions.push({x, y});
+      }
+    }
+  }
+  const result = [];
+  const need = PARTICLE_COUNT;
+  if (positions.length >= need) {
+    for (let i = 0; i < need; i++) {
+      const j = i + Math.floor(Math.random() * (positions.length - i));
+      [positions[i], positions[j]] = [positions[j], positions[i]];
+      result.push({
+        x: positions[i].x + (Math.random() - 0.5) * 6,
+        y: positions[i].y + (Math.random() - 0.5) * 6,
+      });
+    }
+  } else {
+    for (let i = 0; i < positions.length; i++) {
+      result.push({
+        x: positions[i].x + (Math.random() - 0.5) * 5,
+        y: positions[i].y + (Math.random() - 0.5) * 5,
+      });
+    }
+    while (result.length < need) {
+      const p = positions[Math.floor(Math.random() * positions.length)];
+      result.push({
+        x: p.x + (Math.random() - 0.5) * 10,
+        y: p.y + (Math.random() - 0.5) * 10,
+      });
+    }
+  }
+  shapeCache[text] = result;
+  return result;
+}
+
+function initParticles() {
+  particles = [];
+  for (let i = 0; i < PARTICLE_COUNT; i++) particles.push(new Particle());
+}
+
+function countFingers(landmarks) {
+  const wrist = landmarks[0];
+  let count = 0;
+  const tips = [4, 8, 12, 16, 20];
+  const bases = [3, 6, 10, 14, 18];
+  for (let i = 0; i < 5; i++) {
+    if (dist(landmarks[tips[i]], wrist) > dist(landmarks[bases[i]], wrist) * 1.03) count++;
+  }
+  return count;
+}
+
+function onHandResults(results) {
+  const now = performance.now() / 1000;
+  if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+    handDetected = true;
+    lastHandTime = now;
+    const fc = countFingers(results.multiHandLandmarks[0]);
+    if (!gestureVotes[fc]) gestureVotes[fc] = 0;
+    gestureVotes[fc]++;
+    for (const [cnt, votes] of Object.entries(gestureVotes)) {
+      if (votes >= GESTURE_CONFIRM_FRAMES && parseInt(cnt) !== confirmedGesture) {
+        const num = parseInt(cnt);
+        if (num >= 1 && num <= 5) {
+          handleGesture(num);
+          confirmedGesture = num;
+          gestureVotes = {};
+        }
+      }
+    }
+    const top = Math.max(...Object.values(gestureVotes), 0);
+    if (top > 80) { gestureVotes = {}; }
+  } else {
+    handDetected = false;
+    const mx = Math.max(...Object.values(gestureVotes), 0);
+    if (mx < 2) {
+      gestureVotes = {};
+      if (confirmedGesture !== null && now - lastHandTime > 0.8) {
+        returnToIdle();
+        confirmedGesture = null;
+      }
+    }
+  }
+}
+
+function handleGesture(number) {
+  const targetText = number === 5 ? 'BEAUTY' : String(number);
+  currentNumber = number;
+  shapeTargets = generateShapePositions(targetText);
+  const shuffled = [...particles].sort(() => Math.random() - 0.5);
+  for (let i = 0; i < particles.length; i++) {
+    shuffled[i].setTarget(shapeTargets[i % shapeTargets.length].x, shapeTargets[i % shapeTargets.length].y);
+  }
+  appState = 'forming';
+  formationStartTime = performance.now() / 1000;
+  transitionProgress = 0;
+  const cn = ['', '一', '二', '三', '四'];
+  if (number === 5) {
+    detectedNum.textContent = 'BEAUTY';
+    detectedNum.style.color = '#ff6b9d';
+  } else {
+    detectedNum.textContent = cn[number];
+    detectedNum.style.color = '#fff';
+  }
+  guideSubtitle.style.opacity = '0.3';
+}
+
+function returnToIdle() {
+  if (appState === 'returning' || appState === 'idle') return;
+  appState = 'returning';
+  currentNumber = null;
+  confirmedGesture = null;
+  gestureVotes = {};
+  returnStartTime = performance.now() / 1000;
+  let cx = stage.width / 2, cy = stage.height / 2;
+  for (const p of particles) {
+    const dx = p.x - cx, dy = p.y - cy;
+    const d = Math.hypot(dx, dy) || 1;
+    p.vx = (dx / d) * (1.5 + Math.random() * 4);
+    p.vy = (dy / d) * (1.5 + Math.random() * 4);
+    p.setIdle();
+  }
+  detectedNum.textContent = '';
+  guideSubtitle.style.opacity = '1';
+}
+
+function update(dt) {
+  time += dt;
+  const now = performance.now() / 1000;
+
+  if (appState === 'forming') {
+    transitionProgress = Math.min(1, (now - formationStartTime) / FORMATION_DURATION);
+    for (const p of particles) {
+      if (p.tx !== null) {
+        const t = easeOutBack(transitionProgress);
+        const j = (1 - t) * 4;
+        p.x = p.sx + (p.tx - p.sx) * t + (Math.random() - 0.5) * j;
+        p.y = p.sy + (p.ty - p.sy) * t + (Math.random() - 0.5) * j;
+      }
+    }
+    if (transitionProgress >= 1) {
+      appState = 'formed';
+      formedStartTime = now;
+      for (const p of particles) {
+        if (p.tx !== null) { p.x = p.tx; p.y = p.ty; }
+      }
+    }
+  } else if (appState === 'formed') {
+    const pulse = (currentNumber === 5) ? (1 + Math.sin(time * 2.5) * 0.2) : 1;
+    for (const p of particles) {
+      if (p.tx !== null) {
+        p.x = p.tx + Math.sin(time * 3.5 + p.phase) * 1.2 * pulse;
+        p.y = p.ty + Math.cos(time * 3.2 + p.phase) * 1.2 * pulse;
+      }
+    }
+    if (now - formedStartTime > HOLD_DURATION && !handDetected) returnToIdle();
+  } else if (appState === 'returning') {
+    for (const p of particles) {
+      p.vx *= 0.985; p.vy *= 0.985;
+      p.x += p.vx + noise(p.x, p.y, time) * 1.2;
+      p.y += p.vy + noise(p.x + 700, p.y + 700, time) * 1.2;
+      if (p.x < -60) p.x = stage.width + 60;
+      if (p.x > stage.width + 60) p.x = -60;
+      if (p.y < -60) p.y = stage.height + 60;
+      if (p.y > stage.height + 60) p.y = -60;
+    }
+    if (now - returnStartTime > 2.0) {
+      appState = 'idle';
+    }
+  } else {
+    for (const p of particles) {
+      p.vx += noise(p.x, p.y, time) * 0.04;
+      p.vy += noise(p.x + 500, p.y + 500, time) * 0.04;
+      p.vx *= 0.995; p.vy *= 0.995;
+      const sp = Math.hypot(p.vx, p.vy);
+      if (sp > 3) { p.vx = p.vx / sp * 3; p.vy = p.vy / sp * 3; }
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < -60) p.x = stage.width + 60;
+      if (p.x > stage.width + 60) p.x = -60;
+      if (p.y < -60) p.y = stage.height + 60;
+      if (p.y > stage.height + 60) p.y = -60;
+    }
+  }
+}
+
+function render() {
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = 'rgba(6, 6, 24, 0.12)';
+  ctx.fillRect(0, 0, stage.width, stage.height);
+
+  ctx.globalCompositeOperation = 'lighter';
+  for (const p of particles) {
+    const ss = appState === 'formed' && currentNumber === 5
+      ? p.size * (1 + Math.sin(time * 2.5 + p.phase) * 0.25) : p.size;
+
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, ss * 2.2, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${p.r},${p.g},${p.b},${p.alpha * 0.12})`;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, ss * 0.9, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${p.r},${p.g},${p.b},${p.alpha * 0.45})`;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, ss * 0.35, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${p.r},${p.g},${p.b},${p.alpha})`;
+    ctx.fill();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function animate(ts) {
+  const dt = Math.min(0.05, (ts - lastTimestamp) / 1000);
+  lastTimestamp = ts;
+  update(dt);
+  render();
+  requestAnimationFrame(animate);
+}
+
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 640, height: 480, facingMode: 'user' }
+    });
+    video.srcObject = stream;
+    await video.play();
+
+    hands = new Hands({
+      locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${f}`
+    });
+    hands.setOptions({
+      maxNumHands: 1,
+      modelComplexity: 1,
+      minDetectionConfidence: 0.7,
+      minTrackingConfidence: 0.7,
+    });
+    hands.onResults(onHandResults);
+
+    cameraInstance = new Camera(video, {
+      onFrame: async () => { if (hands) await hands.send({ image: video }); },
+      width: 640, height: 480,
+    });
+    await cameraInstance.start();
+    cameraReady = true;
+
+    cameraStatus.style.display = 'flex';
+    cameraPreview.style.display = 'block';
+    startBtn.textContent = '✓ 摄像头已就绪';
+    startBtn.classList.add('ready');
+    startBtn.disabled = false;
+    detectedNum.textContent = '比个数字试试吧！';
+    detectedNum.style.fontSize = 'clamp(0.9rem, 1.6vw, 1.3rem)';
+    detectedNum.style.color = 'rgba(255,255,255,0.7)';
+  } catch (err) {
+    console.warn('Camera error:', err);
+    detectedNum.textContent = '⚠ 无法访问摄像头，请允许权限后刷新页面';
+    detectedNum.style.color = '#ff6b6b';
+    detectedNum.style.fontSize = 'clamp(0.8rem, 1.4vw, 1.1rem)';
+    startBtn.textContent = '重新尝试';
+    startBtn.disabled = false;
+  }
+}
+
+startBtn.addEventListener('click', () => {
+  if (cameraReady) return;
+  startBtn.textContent = '正在启动...';
+  startBtn.disabled = true;
+  startCamera();
+});
+
+initParticles();
+lastTimestamp = performance.now();
+requestAnimationFrame(animate);
+
+console.log('%c✨ 粒子魔法已就绪 %c| %c伸出你的手，比个数字吧！',
+  'color:#ff6b9d;font-size:1.2em;', '', 'color:#aaa;');
+})();
+</script>
+</body>
+</html>
