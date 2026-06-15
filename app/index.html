@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -444,7 +444,7 @@ function startFakeLoading(){
   setTimeout(()=>{
     fitCanvas()
     const scareData=pickScareType()
-    drawScare(scareCanvas,scareData)
+    drawScare(scareCanvas,scareCanvas.width,scareCanvas.height,scareData)
     scare.classList.add('show')
     document.body.classList.add('screen-shake')
     setTimeout(()=>document.body.classList.remove('screen-shake'),800)
