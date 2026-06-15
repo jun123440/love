@@ -15,31 +15,31 @@ html,body{width:100%;height:100%;overflow:hidden;background:transparent;font-fam
 .star{position:absolute;width:3px;height:3px;background:#fff;border-radius:50%;animation:twinkle var(--d) ease-in-out infinite alternate}
 @keyframes twinkle{0%{opacity:0;transform:scale(.5)}100%{opacity:var(--o);transform:scale(1)}}
 
-.pet-wrap{position:fixed;z-index:10;top:50%;left:50%;transform:translate(-50%,-50%);width:320px;height:440px;display:flex;align-items:center;justify-content:center;transition:top .1s,left .1s}
+.pet-wrap{position:fixed;z-index:10;top:50%;left:50%;transform:translate(-50%,-50%);transition:top .1s,left .1s}
 .pet-wrap.dragging{transition:none}
 
-#canvasPet{position:relative;z-index:2;cursor:pointer;image-rendering:pixelated}
+canvas#petCanvas{display:block;cursor:pointer;image-rendering:pixelated;width:192px;height:208px}
 
-.at-ring{position:absolute;width:260px;height:260px;border-radius:50%;border:2px solid rgba(100,200,255,.08);z-index:1;pointer-events:none;opacity:0;transition:opacity .6s;animation:atSpin 8s linear infinite}
+.at-ring{position:absolute;top:50%;left:50%;translate:-50% -50%;width:240px;height:240px;border-radius:50%;border:2px solid rgba(100,200,255,.08);z-index:1;pointer-events:none;opacity:0;transition:opacity .6s;animation:atSpin 8s linear infinite}
 .at-ring.show{opacity:1}
-.at-ring2{width:220px;height:220px;border-radius:50%;border:1px solid rgba(100,200,255,.06);z-index:1;pointer-events:none;opacity:0;transition:opacity .6s;animation:atSpin 12s linear infinite reverse}
+.at-ring2{position:absolute;top:50%;left:50%;translate:-50% -50%;width:200px;height:200px;border-radius:50%;border:1px solid rgba(100,200,255,.06);z-index:1;pointer-events:none;opacity:0;transition:opacity .6s;animation:atSpin 12s linear infinite reverse}
 .at-ring2.show{opacity:1}
 @keyframes atSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 
-.bubble{position:absolute;top:20px;left:50%;transform:translateX(-50%);background:#fff;padding:6px 14px;border-radius:14px 14px 14px 3px;box-shadow:0 2px 12px rgba(0,0,0,.06);font-size:12px;color:#555;white-space:nowrap;opacity:0;transition:all .3s;z-index:20;pointer-events:none;font-family:'Segoe UI','PingFang SC',sans-serif}
-.bubble::after{content:'';position:absolute;bottom:-5px;left:24px;width:8px;height:8px;background:#fff;transform:rotate(45deg);border-radius:2px}
-.bubble.show{opacity:1;top:10px}
-.bubble.big{font-size:16px;padding:7px 15px}
+.bubble{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#fff;padding:5px 12px;border-radius:12px 12px 12px 3px;box-shadow:0 2px 12px rgba(0,0,0,.06);font-size:12px;color:#555;white-space:nowrap;opacity:0;transition:all .3s;z-index:20;pointer-events:none}
+.bubble::after{content:'';position:absolute;bottom:-4px;left:20px;width:7px;height:7px;background:#fff;transform:rotate(45deg);border-radius:1px}
+.bubble.show{opacity:1;top:-18px}
+.bubble.big{font-size:15px;padding:6px 14px}
 
-.controls{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:30;display:flex;gap:8px;align-items:center;background:rgba(255,255,255,.6);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);padding:7px 14px;border-radius:40px;box-shadow:0 2px 20px rgba(0,0,0,.05);border:1px solid rgba(255,255,255,.4)}
-.controls button{width:34px;height:34px;border:none;border-radius:50%;background:rgba(255,255,255,.5);cursor:pointer;font-size:15px;transition:all .2s;display:flex;align-items:center;justify-content:center;color:#5a6070}
+.controls{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:30;display:flex;gap:6px;align-items:center;background:rgba(255,255,255,.6);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);padding:6px 12px;border-radius:30px;box-shadow:0 2px 20px rgba(0,0,0,.05);border:1px solid rgba(255,255,255,.4)}
+.controls button{width:32px;height:32px;border:none;border-radius:50%;background:rgba(255,255,255,.5);cursor:pointer;font-size:14px;transition:all .2s;display:flex;align-items:center;justify-content:center;color:#5a6070}
 .controls button:hover{background:rgba(100,170,220,.25);transform:scale(1.1)}
 .controls button:active{transform:scale(.92)}
 
 @media(max-width:400px){
   .pet-wrap{transform:translate(-50%,-50%) scale(.8)}
-  .controls{bottom:12px;padding:6px 12px;gap:5px}
-  .controls button{width:30px;height:30px;font-size:13px}
+  .controls{bottom:12px;padding:5px 10px;gap:4px}
+  .controls button{width:28px;height:28px;font-size:12px}
 }
 </style>
 </head>
@@ -52,7 +52,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:transparent;font-fam
 <div class="pet-wrap" id="petWrap">
   <div class="at-ring" id="atRing"></div>
   <div class="at-ring2" id="atRing2"></div>
-  <canvas id="canvasPet" width="200" height="300"></canvas>
+  <canvas id="petCanvas" width="192" height="208"></canvas>
   <div class="bubble" id="bubble"></div>
 </div>
 
@@ -60,13 +60,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:transparent;font-fam
   <button id="moodBtn" title="表情">🎭</button>
   <button id="atBtn" title="AT力场">🔷</button>
   <button id="nightBtn" title="昼夜">🌙</button>
-  <button id="resetBtn" title="重置位置">📍</button>
+  <button id="resetBtn" title="重置">📍</button>
 </div>
 
 <script>
-const canvas = document.getElementById('canvasPet')
+const SPRITESHEET_URL = 'https://codexpethub.com/assets/pets/ayanami-rei/v1/spritesheet-1808f9086c100c0b.webp'
+
+const canvas = document.getElementById('petCanvas')
 const ctx = canvas.getContext('2d')
-const W = 200, H = 300
+const W = 192, H = 208
 const bubble = document.getElementById('bubble')
 const petWrap = document.getElementById('petWrap')
 const bg = document.getElementById('bg')
@@ -86,474 +88,74 @@ for (let i = 0; i < 40; i++) {
   stars.appendChild(s)
 }
 
-// State
-const state = {
-  blink: 0,        // 0=open, 0-1=closing/opening
-  mood: 'normal',  // normal, happy, love, sleepy
-  waveArm: 0,
-  breath: 0,
-  smileAmount: 0,
-  glanceX: 0,
-  glanceTimer: 0,
-  blinkTimer: 0,
-  waveTimer: 0,
-  angry: false,
-}
+// States from pet.json
+const STATES = [
+  { name: 'idle', row: 0, frames: 6, speed: 180 },
+  { name: 'running-right', row: 1, frames: 8, speed: 100 },
+  { name: 'running-left', row: 2, frames: 8, speed: 100 },
+  { name: 'waving', row: 3, frames: 4, speed: 120 },
+  { name: 'jumping', row: 4, frames: 5, speed: 100 },
+  { name: 'failed', row: 5, frames: 8, speed: 80 },
+  { name: 'waiting', row: 6, frames: 6, speed: 200 },
+  { name: 'running', row: 7, frames: 6, speed: 100 },
+  { name: 'review', row: 8, frames: 6, speed: 150 },
+]
 
-// ===================== DRAW REI =====================
-function drawRei() {
+let spritesheet = new Image()
+let loaded = false
+let currentState = STATES[6] // waiting (calm, sleepy desk presence)
+let frameIndex = 0
+let lastFrameTime = 0
+let isNight = false
+
+// Load spritesheet
+spritesheet.onload = () => { loaded = true; drawFrame() }
+spritesheet.src = SPRITESHEET_URL
+
+function drawFrame() {
+  if (!loaded) return
+  const cell = STATES.find(s => s.name === currentState.name) || currentState
+  const col = frameIndex % cell.frames
+  const row = cell.row
   ctx.clearRect(0, 0, W, H)
-  const cx = W / 2, baseY = 50
-
-  // Breathing
-  const breathe = Math.sin(state.breath) * 1.5
-  const headY = baseY + breathe
-
-  // Mood parameters
-  const sleepFactor = state.mood === 'sleepy' ? 1 : 0
-  const smileFactor = state.mood === 'happy' ? 1 : (state.mood === 'love' ? 0.5 : 0)
-  const eyeOpen = state.blink > 0 ? Math.max(0, 1 - state.blink * 2) : 1
-
-  // ===== HAIR BACK =====
-  ctx.save()
-  ctx.fillStyle = '#6ba3d6'
-  ctx.beginPath()
-  ctx.ellipse(cx, headY + 72, 55, 68, 0, 0, Math.PI * 2)
-  ctx.fill()
-  // Hair back bottom
-  ctx.beginPath()
-  ctx.ellipse(cx - 8, headY + 132, 38, 16, 0.1, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.beginPath()
-  ctx.ellipse(cx + 8, headY + 130, 36, 14, -0.1, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.restore()
-
-  // ===== BODY (sailor uniform) =====
-  ctx.save()
-  // Skirt
-  ctx.fillStyle = '#0d2b5e'
-  ctx.beginPath()
-  ctx.moveTo(cx - 38, headY + 138)
-  ctx.quadraticCurveTo(cx - 50, headY + 178, cx - 38, headY + 186)
-  ctx.quadraticCurveTo(cx, headY + 194, cx + 38, headY + 186)
-  ctx.quadraticCurveTo(cx + 50, headY + 178, cx + 38, headY + 138)
-  ctx.fill()
-
-  // Skirt folds
-  ctx.strokeStyle = 'rgba(255,255,255,0.04)'
-  ctx.lineWidth = 1
-  for (const x of [-28, -14, 0, 14, 28]) {
-    ctx.beginPath()
-    ctx.moveTo(cx + x, headY + 140)
-    ctx.lineTo(cx + x + (x > 0 ? 2 : -2), headY + 186)
-    ctx.stroke()
-  }
-
-  // Legs
-  ctx.fillStyle = '#fdf6f0'
-  for (const side of [-1, 1]) {
-    ctx.beginPath()
-    ctx.ellipse(cx + side * 9, headY + 192, 6, 10, 0, 0, Math.PI * 2)
-    ctx.fill()
-  }
-
-  // Shoes
-  ctx.fillStyle = '#1a1a2e'
-  for (const side of [-1, 1]) {
-    ctx.beginPath()
-    ctx.ellipse(cx + side * 9, headY + 202, 8, 4, 0, 0, Math.PI * 2)
-    ctx.fill()
-  }
-
-  // Body (white top)
-  ctx.fillStyle = '#f8f6f4'
-  ctx.beginPath()
-  ctx.moveTo(cx - 32, headY + 90)
-  ctx.quadraticCurveTo(cx - 38, headY + 116, cx - 34, headY + 138)
-  ctx.quadraticCurveTo(cx, headY + 146, cx + 34, headY + 138)
-  ctx.quadraticCurveTo(cx + 38, headY + 116, cx + 32, headY + 90)
-  ctx.fill()
-
-  // Sailor collar
-  ctx.fillStyle = '#0d2b5e'
-  ctx.beginPath()
-  ctx.moveTo(cx - 30, headY + 92)
-  ctx.quadraticCurveTo(cx - 42, headY + 108, cx - 36, headY + 130)
-  ctx.quadraticCurveTo(cx - 28, headY + 122, cx - 22, headY + 110)
-  ctx.quadraticCurveTo(cx, headY + 106, cx + 22, headY + 110)
-  ctx.quadraticCurveTo(cx + 28, headY + 122, cx + 36, headY + 130)
-  ctx.quadraticCurveTo(cx + 42, headY + 108, cx + 30, headY + 92)
-  ctx.fill()
-
-  // Collar stripes
-  ctx.strokeStyle = 'rgba(255,255,255,0.08)'
-  ctx.lineWidth = 1.5
-  ctx.beginPath()
-  ctx.moveTo(cx - 28, headY + 100)
-  ctx.lineTo(cx - 32, headY + 124)
-  ctx.stroke()
-  ctx.beginPath()
-  ctx.moveTo(cx + 28, headY + 100)
-  ctx.lineTo(cx + 32, headY + 124)
-  ctx.stroke()
-
-  // Collar neckline
-  ctx.fillStyle = '#0d2b5e'
-  ctx.beginPath()
-  ctx.moveTo(cx - 18, headY + 90)
-  ctx.quadraticCurveTo(cx, headY + 86, cx + 18, headY + 90)
-  ctx.quadraticCurveTo(cx, headY + 96, cx - 18, headY + 90)
-  ctx.fill()
-
-  // Red ribbon
-  ctx.fillStyle = '#cc2222'
-  // Left bow
-  ctx.save()
-  ctx.translate(cx - 10, headY + 93)
-  ctx.rotate(-0.5)
-  ctx.beginPath()
-  ctx.ellipse(0, 0, 8, 5, 0, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.restore()
-  // Right bow
-  ctx.save()
-  ctx.translate(cx + 10, headY + 93)
-  ctx.rotate(0.5)
-  ctx.beginPath()
-  ctx.ellipse(0, 0, 8, 5, 0, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.restore()
-  // Center
-  ctx.fillStyle = '#ee2222'
-  ctx.beginPath()
-  ctx.arc(cx, headY + 92, 3, 0, Math.PI * 2)
-  ctx.fill()
-
-  // Arms
-  const waveOffset = Math.sin(state.waveArm) * (state.mood !== 'normal' ? 12 : 0)
-  ctx.fillStyle = '#f8f6f4'
-  for (const side of [-1, 1]) {
-    const wx = (side === -1 && state.waveArm > 0) ? waveOffset * 0.5 : 0
-    ctx.save()
-    ctx.translate(cx + side * 30 + wx, headY + 107)
-    ctx.rotate(side * 0.12 + (side === -1 ? 0 : 0) - (side === 1 ? state.waveArm * 0.4 : 0))
-    ctx.beginPath()
-    ctx.ellipse(0, 14, 8, 14, 0, 0, Math.PI * 2)
-    ctx.fill()
-    // Hand
-    ctx.fillStyle = '#fdf6f0'
-    ctx.beginPath()
-    ctx.arc(0, 24, 5, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.fillStyle = '#f8f6f4'
-    ctx.restore()
-  }
-  ctx.restore()
-
-  // ===== HEAD =====
-  ctx.save()
-
-  // Face
-  const skinTone = state.mood === 'sleepy' ? '#f8f2ef' : '#fdf6f0'
-  ctx.fillStyle = skinTone
-  ctx.beginPath()
-  ctx.ellipse(cx, headY + 62, 44, 48, 0, 0, Math.PI * 2)
-  ctx.fill()
-
-  // ===== HAIR (front) =====
-  // Main hair volume
-  ctx.fillStyle = '#6ba3d6'
-  ctx.beginPath()
-  ctx.ellipse(cx, headY + 50, 50, 54, 0.05, 0, Math.PI * 2)
-  ctx.fill()
-
-  // Hair top
-  ctx.beginPath()
-  ctx.ellipse(cx, headY + 24, 38, 22, 0, 0, Math.PI * 2)
-  ctx.fill()
-
-  // Side hair
-  ctx.fillStyle = '#5b9bd5'
-  ctx.beginPath()
-  ctx.ellipse(cx - 42, headY + 60, 10, 38, -0.15, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.beginPath()
-  ctx.ellipse(cx + 42, headY + 58, 9, 35, 0.15, 0, Math.PI * 2)
-  ctx.fill()
-
-  // Hair highlights
-  ctx.fillStyle = 'rgba(180,220,255,0.2)'
-  ctx.beginPath()
-  ctx.ellipse(cx - 16, headY + 30, 16, 28, 0, 0, Math.PI * 2)
-  ctx.fill()
-
-  // === Bangs (asymmetric - Rei's iconic look) ===
-  ctx.fillStyle = '#6ba3d6'
-
-  // Left bang - shorter
-  ctx.beginPath()
-  ctx.moveTo(cx - 42, headY + 28)
-  ctx.quadraticCurveTo(cx - 22, headY + 24, cx - 10, headY + 46)
-  ctx.quadraticCurveTo(cx - 24, headY + 48, cx - 42, headY + 32)
-  ctx.fill()
-
-  // Center-left bangs (the key asymmetry - longer on left side)
-  ctx.beginPath()
-  ctx.moveTo(cx - 30, headY + 24)
-  ctx.quadraticCurveTo(cx - 8, headY + 20, cx + 4, headY + 54)
-  ctx.quadraticCurveTo(cx - 12, headY + 52, cx - 30, headY + 28)
-  ctx.fill()
-
-  // The long iconic left strand that almost reaches the eye
-  ctx.fillStyle = '#5b9bd5'
-  ctx.beginPath()
-  ctx.moveTo(cx - 18, headY + 22)
-  ctx.quadraticCurveTo(cx + 2, headY + 22, cx + 14, headY + 52)
-  ctx.quadraticCurveTo(cx, headY + 60, cx - 8, headY + 58)
-  ctx.quadraticCurveTo(cx - 12, headY + 42, cx - 18, headY + 24)
-  ctx.fill()
-
-  // Right bangs - neater, swept to the side
-  ctx.fillStyle = '#6ba3d6'
-  ctx.beginPath()
-  ctx.moveTo(cx + 8, headY + 22)
-  ctx.quadraticCurveTo(cx + 28, headY + 18, cx + 44, headY + 32)
-  ctx.quadraticCurveTo(cx + 30, headY + 42, cx + 16, headY + 48)
-  ctx.quadraticCurveTo(cx + 12, headY + 40, cx + 8, headY + 24)
-  ctx.fill()
-
-  // Small hair tufts on top
-  ctx.fillStyle = '#7ec8e3'
-  for (const [dx, dy] of [[-6, 8], [4, 6], [14, 10]]) {
-    ctx.beginPath()
-    ctx.ellipse(cx + dx, headY + dy, 3, 6, 0.2, 0, Math.PI * 2)
-    ctx.fill()
-  }
-
-  // ===== EYES =====
-  if (eyeOpen > 0.05) {
-    const eyeH = 18 * eyeOpen
-    const eyeW = 22
-    const eyeY = headY + 54 + (state.mood === 'sleepy' ? 4 : 0)
-    const glance = state.glanceX
-
-    for (const side of [-1, 1]) {
-      const ex = cx + side * 16
-
-      // Eye white
-      ctx.fillStyle = '#fff'
-      ctx.beginPath()
-      ctx.ellipse(ex + glance, eyeY, eyeW, eyeH, 0, 0, Math.PI * 2)
-      ctx.fill()
-
-      // Red iris
-      const irisH = eyeH * 0.7
-      const irisW = eyeW * 0.75
-      ctx.fillStyle = state.mood === 'love' ? '#e85050' : '#c0392b'
-      ctx.beginPath()
-      ctx.ellipse(ex + glance * 0.5, eyeY + 1, irisW, irisH, 0, 0, Math.PI * 2)
-      ctx.fill()
-
-      // Pupil
-      ctx.fillStyle = '#1a0808'
-      ctx.beginPath()
-      ctx.ellipse(ex + glance * 0.3, eyeY + 2, irisW * 0.45, irisH * 0.6, 0, 0, Math.PI * 2)
-      ctx.fill()
-
-      // Eye highlight - main
-      ctx.fillStyle = 'rgba(255,255,255,0.9)'
-      ctx.beginPath()
-      ctx.ellipse(ex + 4 + glance * 0.2, eyeY - 4, 5, 5, 0, 0, Math.PI * 2)
-      ctx.fill()
-
-      // Eye highlight - secondary
-      ctx.fillStyle = 'rgba(255,255,255,0.5)'
-      ctx.beginPath()
-      ctx.ellipse(ex - 4 + glance * 0.2, eyeY + 3, 2.5, 2.5, 0, 0, Math.PI * 2)
-      ctx.fill()
-
-      // Upper eyelid shadow
-      ctx.fillStyle = 'rgba(0,0,0,0.06)'
-      ctx.beginPath()
-      ctx.ellipse(ex + glance, eyeY - eyeH * 0.2, eyeW * 0.85, eyeH * 0.2, 0, 0, Math.PI)
-      ctx.fill()
-
-      // Eyelashes (top)
-      ctx.strokeStyle = 'rgba(40,30,25,0.4)'
-      ctx.lineWidth = 1.5
-      ctx.beginPath()
-      ctx.ellipse(ex + glance, eyeY - eyeH + 2, eyeW - 2, 3, 0, Math.PI, Math.PI * 2)
-      ctx.stroke()
-
-      // Lower eye line (subtle)
-      ctx.strokeStyle = 'rgba(0,0,0,0.05)'
-      ctx.beginPath()
-      ctx.ellipse(ex + glance, eyeY + eyeH - 2, eyeW - 3, 2, 0, 0, Math.PI)
-      ctx.stroke()
-    }
-
-    // Eyebrows
-    const browY = eyeY - eyeH - 6
-    ctx.strokeStyle = state.mood === 'sleepy' ? 'rgba(80,70,90,0.3)' : 'rgba(90,100,140,0.45)'
-    ctx.lineWidth = 1.8
-    ctx.lineCap = 'round'
-    for (const side of [-1, 1]) {
-      const bx = cx + side * 16
-      ctx.beginPath()
-      if (state.mood === 'sleepy') {
-        ctx.moveTo(bx - 10, browY + 3)
-        ctx.quadraticCurveTo(bx, browY + 1, bx + 10, browY + 3)
-      } else {
-        ctx.moveTo(bx - 10, browY + 1)
-        ctx.quadraticCurveTo(bx, browY - 2, bx + 10, browY + 1)
-      }
-      ctx.stroke()
-    }
-  } else {
-    // Blink/closed eyes - simple line
-    ctx.strokeStyle = 'rgba(40,30,25,0.5)'
-    ctx.lineWidth = 1.8
-    ctx.lineCap = 'round'
-    for (const side of [-1, 1]) {
-      const ex = cx + side * 16
-      ctx.beginPath()
-      ctx.moveTo(ex - 12, headY + 56)
-      ctx.quadraticCurveTo(ex, headY + 53, ex + 12, headY + 56)
-      ctx.stroke()
-    }
-  }
-
-  // ===== BLUSH (very subtle) =====
-  if (state.mood !== 'sleepy') {
-    const blushAlpha = state.mood === 'love' ? 0.15 : (state.mood === 'happy' ? 0.1 : 0.04)
-    ctx.fillStyle = `rgba(255,150,150,${blushAlpha})`
-    for (const side of [-1, 1]) {
-      ctx.beginPath()
-      ctx.ellipse(cx + side * 28, headY + 64, 12, 6, 0, 0, Math.PI * 2)
-      ctx.fill()
-    }
-  }
-
-  // ===== NOSE =====
-  ctx.fillStyle = '#e8d0c8'
-  ctx.beginPath()
-  ctx.ellipse(cx + 1, headY + 66, 2.5, 2, 0, 0, Math.PI * 2)
-  ctx.fill()
-
-  // ===== MOUTH =====
-  const mouthY = headY + 74
-  const smile = smileFactor
-
-  ctx.strokeStyle = state.mood === 'sleepy' ? 'rgba(160,130,125,0.3)' : 'rgba(170,130,122,0.5)'
-  ctx.lineWidth = 1.5
-  ctx.lineCap = 'round'
-  ctx.beginPath()
-
-  if (smile > 0) {
-    // Small smile
-    ctx.moveTo(cx - 7, mouthY)
-    ctx.quadraticCurveTo(cx, mouthY - 2 - smile * 2, cx + 7, mouthY)
-  } else if (state.mood === 'sleepy') {
-    ctx.moveTo(cx - 5, mouthY + 1)
-    ctx.quadraticCurveTo(cx, mouthY - 1, cx + 5, mouthY + 1)
-  } else {
-    // Neutral - tiny flat line
-    ctx.moveTo(cx - 5, mouthY)
-    ctx.lineTo(cx + 5, mouthY)
-  }
-  ctx.stroke()
-
-  // ===== LCL glow effect =====
-  if (state.mood === 'love') {
-    const glow = Math.sin(state.breath * 2) * 0.5 + 0.5
-    ctx.fillStyle = `rgba(100,200,255,${glow * 0.04})`
-    ctx.beginPath()
-    ctx.ellipse(cx, headY + 62, 52, 56, 0, 0, Math.PI * 2)
-    ctx.fill()
-  }
-
-  ctx.restore()
+  ctx.drawImage(spritesheet, col * W, row * H, W, H, 0, 0, W, H)
 }
 
-// ===================== ANIMATION LOOP =====================
-let time = 0
-let blinkCountdown = 2000 + Math.random() * 3000
+function setState(name) {
+  const s = STATES.find(st => st.name === name)
+  if (!s) return
+  currentState = s
+  frameIndex = 0
+  lastFrameTime = 0
+}
 
-function animate(timestamp) {
-  time++
-  state.breath += 0.025
-
-  // Blink timer
-  blinkCountdown -= 16
-  if (blinkCountdown <= 0) {
-    state.blink = 1
-    blinkCountdown = 150 + Math.random() * 100 + (state.mood === 'sleepy' ? 500 : 0)
+// Animation loop
+function animate(time) {
+  if (!loaded) { requestAnimationFrame(animate); return }
+  const cell = currentState
+  const delay = cell.speed
+  if (time - lastFrameTime > delay) {
+    frameIndex = (frameIndex + 1) % cell.frames
+    lastFrameTime = time
+    drawFrame()
   }
-  if (state.blink > 0) {
-    state.blink += 0.08
-    if (state.blink >= 1.5) {
-      state.blink = -0.2
-    }
-    if (state.blink < 0) {
-      state.blink = 0
-    }
-  }
-
-  // Glance
-  if (state.mood !== 'sleepy') {
-    state.glanceTimer += 16
-    if (state.glanceTimer > 3000 + Math.random() * 4000) {
-      state.glanceTimer = 0
-      state.glanceX = (Math.random() * 4 - 2) * (Math.random() > 0.5 ? 1 : 0)
-      setTimeout(() => { state.glanceX = 0 }, 200)
-    }
-  }
-
-  // Wave
-  if (state.waveArm > 0) {
-    state.waveArm += 0.08
-    if (state.waveArm > Math.PI) {
-      state.waveArm = 0
-    }
-  }
-
-  drawRei()
   requestAnimationFrame(animate)
 }
+requestAnimationFrame(animate)
 
-// ===================== MOODS =====================
-function setMood(mood) {
-  state.mood = mood
-  if (mood === 'happy') {
-    showBubble('……（微かに頷く）')
-    setTimeout(() => { if (state.mood === 'happy') state.mood = 'normal' }, 3000)
-  } else if (mood === 'love') {
-    showBubble('…あなたの存在を…感じる')
-    setTimeout(() => { if (state.mood === 'love') state.mood = 'normal' }, 3000)
-  } else if (mood === 'sleepy') {
-    showBubble('………眠い')
-    setTimeout(() => { if (state.mood === 'sleepy') state.mood = 'normal' }, 6000)
-  } else {
-    showBubble('……')
-  }
-}
+// ===== INTERACTIONS =====
+const lines = [
+  '……', 'はい', '任務を続行します', '了解',
+  '…何？', '私は綾波', '……', '…いいえ',
+  '…あなたは誰？', '… LCLの匂いがする'
+]
 
-let moodIndex = 0
-const moods = ['normal', 'happy', 'love', 'sleepy']
-
-function nextMood() {
-  moodIndex = (moodIndex + 1) % moods.length
-  setMood(moods[moodIndex])
-}
-
-// ===================== BUBBLE =====================
 let bubbleTimer = null
 function showBubble(text) {
   bubble.textContent = text
   bubble.className = 'bubble show'
   clearTimeout(bubbleTimer)
-  bubbleTimer = setTimeout(() => bubble.classList.remove('show'), 2200)
+  bubbleTimer = setTimeout(() => bubble.classList.remove('show'), 2000)
 }
 
 function showBigBubble(text) {
@@ -563,38 +165,29 @@ function showBigBubble(text) {
   bubbleTimer = setTimeout(() => bubble.classList.remove('show'), 2500)
 }
 
-// ===================== INTERACTION =====================
-const lines = [
-  '……', 'はい', '任務を続行します', '了解',
-  '…何？', '私は綾波', '……', '…いいえ',
-  '…あなたは誰？', '… LCLの匂いがする', '…シンジ君は？'
-]
+// Click
 let lastClick = 0
-
 petWrap.addEventListener('click', (e) => {
   if (e.target.closest('.controls')) return
   const now = Date.now()
   if (now - lastClick < 300) {
-    state.mood = 'love'
     showBigBubble('………（ATフィールド展開）')
-    atRing.classList.add('show')
-    atRing2.classList.add('show')
+    atRing.classList.add('show'); atRing2.classList.add('show')
+    setState('jumping')
     setTimeout(() => {
-      atRing.classList.remove('show')
-      atRing2.classList.remove('show')
-      if (state.mood === 'love') state.mood = 'normal'
-    }, 2000)
-    setTimeout(() => { state.waveArm = 0.1 }, 100)
+      atRing.classList.remove('show'); atRing2.classList.remove('show')
+      setState('waiting')
+    }, 1500)
     return
   }
   lastClick = now
   showBubble(lines[Math.floor(Math.random() * lines.length)])
-  state.waveArm = 0.1
+  setState('waving')
+  setTimeout(() => setState('waiting'), 800)
 })
 
-// ===================== DRAG =====================
-let isDragging = false
-let startX, startY, origX, origY
+// Drag
+let isDragging = false, startX, startY, origX, origY
 
 petWrap.addEventListener('mousedown', (e) => {
   if (e.target.closest('.controls')) return
@@ -646,34 +239,51 @@ document.addEventListener('touchend', () => {
   petWrap.classList.remove('dragging')
 })
 
-// ===================== CONTROLS =====================
-document.getElementById('moodBtn').addEventListener('click', nextMood)
+// Controls
+let moodIdx = 0
+const moodStates = ['waiting', 'idle', 'running-right', 'running-left']
+
+document.getElementById('moodBtn').addEventListener('click', () => {
+  moodIdx = (moodIdx + 1) % moodStates.length
+  setState(moodStates[moodIdx])
+  showBubble(['……', '…はい', '…移動する', '…こちらへ'][moodIdx])
+})
 
 document.getElementById('atBtn').addEventListener('click', () => {
   const on = atRing.classList.toggle('show')
   atRing2.classList.toggle('show')
   showBubble(on ? 'ATフィールド…展開' : 'ATフィールド…解除')
+  if (on) { setState('idle'); setTimeout(() => setState('waiting'), 2000) }
 })
 
-let isNight = false
 document.getElementById('nightBtn').addEventListener('click', () => {
   isNight = !isNight
   bg.classList.toggle('night')
   document.getElementById('nightBtn').textContent = isNight ? '☀️' : '🌙'
   showBubble(isNight ? '…おやすみ' : '…起きる')
-  state.mood = isNight ? 'sleepy' : 'normal'
+  setState(isNight ? 'failed' : 'waiting')
+  setTimeout(() => setState('waiting'), 1500)
 })
 
 document.getElementById('resetBtn').addEventListener('click', () => {
-  petWrap.style.left = ''
-  petWrap.style.top = ''
-  petWrap.style.transform = ''
+  petWrap.style.left = ''; petWrap.style.top = ''; petWrap.style.transform = ''
   showBubble('…戻った')
 })
 
-// ===================== START =====================
-animate()
-setTimeout(() => showBubble('…初めまして、綾波です'), 600)
+// Auto idle animation switching
+function autoSwitch() {
+  if (!isDragging) {
+    const acts = ['waiting', 'idle', 'waving']
+    const a = acts[Math.floor(Math.random() * acts.length)]
+    setState(a)
+    showBubble(['……', '……', '…こんにちは'][acts.indexOf(a)])
+    if (a === 'waving') setTimeout(() => setState('waiting'), 1200)
+  }
+  setTimeout(autoSwitch, 8000 + Math.random() * 12000)
+}
+setTimeout(autoSwitch, 4000)
+
+setTimeout(() => showBubble('…初めまして、綾波です'), 800)
 </script>
 </body>
 </html>
