@@ -7,9 +7,9 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#0d0d0d;color:#e0e0e0;font-family:'Segoe UI','PingFang SC',sans-serif;min-height:100vh}
-.header{padding:32px 24px 16px;max-width:1200px;margin:0 auto}
+.header{padding:32px 24px 16px;max-width:1200px;margin:0 auto;display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .header h1{font-size:24px;font-weight:300;letter-spacing:4px;color:#fff}
-.header p{font-size:13px;color:#666;margin-top:6px;letter-spacing:1px}
+.header .sub{font-size:12px;color:#444;font-family:monospace;letter-spacing:0}
 .actions{padding:0 24px 24px;max-width:1200px;margin:0 auto;display:flex;gap:12px;flex-wrap:wrap}
 .btn{padding:8px 24px;border:1px solid #333;background:transparent;color:#ccc;border-radius:6px;cursor:pointer;font-size:13px;transition:.2s;font-family:inherit;letter-spacing:1px}
 .btn:hover{background:#1a1a1a;color:#fff;border-color:#555}
@@ -20,6 +20,7 @@ body{background:#0d0d0d;color:#e0e0e0;font-family:'Segoe UI','PingFang SC',sans-
 .card{background:#141414;border-radius:10px;overflow:hidden;border:1px solid #222;transition:.2s;position:relative}
 .card:hover{border-color:#444}
 .card img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;cursor:pointer;background:#1a1a1a}
+.card.new{border-color:#4a4;box-shadow:0 0 0 1px #4a4}
 .card-info{padding:12px 14px 14px;display:flex;align-items:center;justify-content:space-between}
 .card-info .name{font-size:12px;color:#888;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .card-info .size{font-size:11px;color:#555;margin-left:8px}
@@ -27,8 +28,10 @@ body{background:#0d0d0d;color:#e0e0e0;font-family:'Segoe UI','PingFang SC',sans-
 .card-info .dl-btn:hover{background:#fff;color:#0d0d0d;border-color:#fff}
 .empty{grid-column:1/-1;text-align:center;padding:80px 24px;color:#555;font-size:14px;letter-spacing:1px}
 .loading{grid-column:1/-1;text-align:center;padding:80px 24px;color:#555;font-size:13px;letter-spacing:2px}
-.status-bar{position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;border-top:1px solid #1a1a1a;padding:10px 24px;font-size:12px;color:#555;display:flex;justify-content:space-between;align-items:center}
+.status-bar{position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;border-top:1px solid #1a1a1a;padding:10px 24px;font-size:12px;color:#555;display:flex;justify-content:space-between;align-items:center;z-index:50}
 .status-bar .count{color:#888}
+.status-bar .poll-status{color:#444;font-family:monospace;font-size:11px}
+.status-bar .poll-status.live{color:#4a4}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:100;display:none;align-items:center;justify-content:center;cursor:pointer}
 .modal.show{display:flex}
 .modal img{max-width:95vw;max-height:95vh;object-fit:contain;border-radius:4px}
@@ -45,8 +48,11 @@ body{background:#0d0d0d;color:#e0e0e0;font-family:'Segoe UI','PingFang SC',sans-
 <body>
 
 <div class="header">
-  <h1>提取照片</h1>
-  <p id="statusText">加载中...</p>
+  <div>
+    <h1>提取照片</h1>
+    <p id="statusText">加载中...</p>
+  </div>
+  <span class="sub" id="pollIndicator"></span>
 </div>
 
 <div class="actions" id="actionsBar" style="display:none">
@@ -62,6 +68,7 @@ body{background:#0d0d0d;color:#e0e0e0;font-family:'Segoe UI','PingFang SC',sans-
 <div class="status-bar" id="statusBar" style="display:none">
   <span class="count" id="fileCount"></span>
   <span id="totalSize"></span>
+  <span class="poll-status" id="pollStatus"></span>
 </div>
 
 <div class="modal" id="modal">
@@ -71,7 +78,6 @@ body{background:#0d0d0d;color:#e0e0e0;font-family:'Segoe UI','PingFang SC',sans-
 </div>
 
 <script>
-// Token
 const TOKEN_KEY='d0wnl04d_k3y_2024'
 const TOKEN_BYTES=[3,88,24,49,62,100,4,0,22,37,124,41,59,115,120,5,12,43,98,54,8,91,67,5,60,11,44,100,41,37,102,119,99,89,84,88,69,56,11,103]
 function getToken(){
@@ -82,75 +88,98 @@ const TOKEN=getToken()
 const REPO='jun123440/face-captures'
 const AUTH={Authorization:'Bearer '+TOKEN,'User-Agent':'extract'}
 let allFiles=[],selected=new Set()
-let loading=false
+let etag=null,knownNames=new Set()
+let loading=false,modalOpen=false
+let pollTimer=null,lastPoll=0
 
-async function loadPhotos(){
+async function loadPhotos(silent){
   const grid=document.getElementById('grid')
   const statusText=document.getElementById('statusText')
   const actionsBar=document.getElementById('actionsBar')
   const statusBar=document.getElementById('statusBar')
+  const pollStatus=document.getElementById('pollStatus')
   loading=true
-  grid.innerHTML='<div class="loading">加载中...</div>'
-  statusText.textContent='正在从私有仓库加载...'
+  if(!silent){
+    grid.innerHTML='<div class="loading">加载中...</div>'
+    statusText.textContent='正在从私有仓库加载...'
+  }
   try{
-    // Try to list photos directory
-    let res=await fetch('https://api.github.com/repos/'+REPO+'/contents/photos',{headers:AUTH})
+    let headers={...AUTH}
+    if(etag)headers['If-None-Match']=etag
+    let res=await fetch('https://api.github.com/repos/'+REPO+'/contents/photos',{headers})
+    if(res.status===304){
+      updatePollStatus()
+      loading=false
+      return
+    }
+    etag=res.headers.get('etag')||null
     if(!res.ok){
-      // Maybe no photos dir yet
       if(res.status===404){
-        grid.innerHTML='<div class="empty">暂无照片</div>'
-        statusText.textContent='暂无照片'
-        actionsBar.style.display='none'
-        statusBar.style.display='none'
+        if(!silent){
+          grid.innerHTML='<div class="empty">暂无照片</div>'
+          statusText.textContent='暂无照片'
+          actionsBar.style.display='none'
+          statusBar.style.display='none'
+        }
+        knownNames.clear()
         loading=false
         return
       }
       throw new Error('HTTP '+res.status)
     }
     let files=await res.json()
-    // Filter to images only
-    allFiles=files.filter(f=>f.type==='file'&&/\.(jpg|jpeg|png|webp)$/i.test(f.name))
-    if(allFiles.length===0){
-      grid.innerHTML='<div class="empty">暂无照片</div>'
-      statusText.textContent='暂无照片'
-      actionsBar.style.display='none'
-      statusBar.style.display='none'
+    let newFiles=files.filter(f=>f.type==='file'&&/\.(jpg|jpeg|png|webp)$/i.test(f.name))
+    newFiles.sort((a,b)=>b.name.localeCompare(a.name))
+    let newNames=new Set(newFiles.map(f=>f.name))
+    if(setsEqual(newNames,knownNames)&&allFiles.length>0){
+      updatePollStatus()
       loading=false
       return
     }
-    // Sort by name descending (newest first)
-    allFiles.sort((a,b)=>b.name.localeCompare(a.name))
+    let added=[]
+    if(!silent&&allFiles.length>0){
+      added=newFiles.filter(f=>!knownNames.has(f.name))
+    }
+    allFiles=newFiles
+    knownNames=newNames
     selected.clear()
     updateUI()
-    renderGrid()
+    renderGrid(added.map(f=>f.path))
     statusText.textContent='共 '+allFiles.length+' 张照片'
     actionsBar.style.display='flex'
     statusBar.style.display='flex'
     updateStatusBar()
   }catch(e){
-    grid.innerHTML='<div class="empty">加载失败：'+e.message+'</div>'
-    statusText.textContent='加载失败'
+    if(!silent){
+      grid.innerHTML='<div class="empty">加载失败：'+e.message+'</div>'
+      statusText.textContent='加载失败'
+    }
   }
   loading=false
+  updatePollStatus()
 }
 
-function renderGrid(){
+function setsEqual(a,b){
+  if(a.size!==b.size)return false
+  for(let v of a)if(!b.has(v))return false
+  return true
+}
+
+function renderGrid(newPaths){
   const grid=document.getElementById('grid')
   grid.innerHTML=''
+  const newSet=new Set(newPaths||[])
   for(const file of allFiles){
     const card=document.createElement('div')
-    card.className='card'
-    // Thumbnail via API
+    card.className='card'+(newSet.has(file.path)?' new':'')
     const thumbPromise=getDataUrl(file.path)
     card.innerHTML='<div class="select-overlay" data-path="'+file.path+'" onclick="toggleSelect(event,\''+file.path+'\')"></div><img src="" alt="'+file.name+'" data-path="'+file.path+'" onclick="openModal(\''+file.path+'\')">'+
       '<div class="card-info"><span class="name" title="'+file.name+'">'+file.name+'</span><span class="size">'+formatSize(file.size)+'</span><a class="dl-btn" href="#" data-path="'+file.path+'" download="'+file.name+'">下载</a></div>'
     grid.appendChild(card)
-    // Load thumbnail async
     thumbPromise.then(url=>{
       const img=card.querySelector('img')
       if(img)img.src=url
     })
-    // Wire download
     const dlBtn=card.querySelector('.dl-btn')
     dlBtn.addEventListener('click',async function(e){
       e.stopPropagation()
@@ -168,7 +197,6 @@ async function getDataUrl(path){
   try{
     let res=await fetch('https://api.github.com/repos/'+REPO+'/contents/'+path,{headers:AUTH})
     let data=await res.json()
-    // Determine MIME type
     const ext=path.split('.').pop().toLowerCase()
     const mime={jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp'}[ext]||'image/jpeg'
     return 'data:'+mime+';base64,'+data.content
@@ -201,26 +229,35 @@ function updateStatusBar(){
   document.getElementById('totalSize').textContent=formatSize(total)
 }
 
+function updatePollStatus(){
+  const el=document.getElementById('pollStatus')
+  const indicator=document.getElementById('pollIndicator')
+  if(allFiles.length===0){
+    el.textContent=''
+    indicator.textContent=''
+    return
+  }
+  const secs=Math.floor((Date.now()-lastPoll)/1000)
+  const text=secs<5?'● 实时':(secs<30?'● '+(secs-1)+'s':'○ '+(secs-1)+'s')
+  el.textContent=text
+  el.className='poll-status'+(secs<5?' live':'')
+  indicator.textContent=text
+}
+
 function formatSize(bytes){
   if(bytes<1024)return bytes+' B'
   if(bytes<1024*1024)return (bytes/1024).toFixed(1)+' KB'
   return (bytes/(1024*1024)).toFixed(1)+' MB'
 }
 
-function formatDate(iso){
-  const d=new Date(iso)
-  return d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0')+'-'+d.getDate().toString().padStart(2,'0')+' '+d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0')
-}
-
-// Modal
 function openModal(path){
+  modalOpen=true
   const modal=document.getElementById('modal')
   const img=document.getElementById('modalImg')
   const dlBtn=document.getElementById('modalDlBtn')
   modal.classList.add('show')
   img.src=''
   dlBtn.removeAttribute('href')
-  // Determine filename
   const file=allFiles.find(f=>f.path===path)
   const name=file?file.name:'photo.jpg'
   getDataUrl(path).then(url=>{
@@ -231,6 +268,7 @@ function openModal(path){
 }
 
 function closeModal(){
+  modalOpen=false
   document.getElementById('modal').classList.remove('show')
 }
 
@@ -242,7 +280,6 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Escape')closeModal()
 })
 
-// Select all
 document.getElementById('selectAllBtn').addEventListener('click',function(){
   if(selected.size===allFiles.length){
     selected.clear()
@@ -252,13 +289,11 @@ document.getElementById('selectAllBtn').addEventListener('click',function(){
   updateUI()
 })
 
-// Download selected
 document.getElementById('downloadSelectedBtn').addEventListener('click',async function(){
   if(selected.size===0)return
   this.disabled=true
   this.textContent='准备中...'
   const paths=[...selected]
-  // Download one by one
   for(const path of paths){
     const file=allFiles.find(f=>f.path===path)
     const name=file?file.name:'photo.jpg'
@@ -267,18 +302,32 @@ document.getElementById('downloadSelectedBtn').addEventListener('click',async fu
     a.href=url
     a.download=name
     a.click()
-    // Small delay between triggers
     await new Promise(r=>setTimeout(r,300))
   }
   this.disabled=false
   this.textContent='下载选中 ('+selected.size+')'
 })
 
-// Refresh
-document.getElementById('refreshBtn').addEventListener('click',loadPhotos)
+document.getElementById('refreshBtn').addEventListener('click',function(){
+  loadPhotos(false)
+})
 
-// Init
-loadPhotos()
+function startPolling(){
+  async function tick(){
+    if(!modalOpen){
+      lastPoll=Date.now()
+      await loadPhotos(true)
+    }
+    updatePollStatus()
+    pollTimer=setTimeout(tick,5000)
+  }
+  tick()
+}
+
+loadPhotos(false).then(()=>{
+  lastPoll=Date.now()
+  startPolling()
+})
 </script>
 </body>
 </html>
