@@ -56,33 +56,37 @@ function submit() {
 }
 
 function gen(name) {
-  clear()
-  background(0)
-  fill(255)
-  noStroke()
-  textAlign(CENTER, CENTER)
-  textStyle(BOLD)
+  let d = pixelDensity(), w2 = round(width * d), h2 = round(height * d)
+  let oc = document.createElement('canvas')
+  oc.width = w2; oc.height = h2
+  let ctx = oc.getContext('2d')
+  ctx.fillStyle = '#000'
+  ctx.fillRect(0, 0, w2, h2)
+  ctx.fillStyle = '#fff'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
   let fs = name.length <= 2 ? 220 : name.length <= 4 ? 170 : 120
-  textSize(fs)
-  text(name, width / 2, height / 2)
-  loadPixels()
-  let step = 1.5, sc = 1.2, src = [], d = pixelDensity(), w2 = width * d, h2 = height * d
+  ctx.font = `bold ${fs * d}px sans-serif`
+  ctx.fillText(name, w2 / 2, h2 / 2)
+  let imgData = ctx.getImageData(0, 0, w2, h2)
+  let data = imgData.data
+  let step = 1, sc = 1.2, src = []
   for (let x = 0; x < w2; x += step * d) {
     for (let y = 0; y < h2; y += step * d) {
       let idx = floor(x + y * w2) * 4
-      if (pixels[idx] > 128) {
+      if (data[idx] > 128) {
         src.push({ ox: (x / d - width / 2) * sc, oy: (y / d - height / 2) * sc })
       }
     }
   }
   let realN = shuffle(src).length
-  let missing = max(0, 5000 - realN)
+  let missing = max(0, 10000 - realN)
   for (let i = 0; i < missing; i++) {
     let ci = floor(random(name.length))
     src.push({ ox: (ci - (name.length - 1) / 2) * 38 + random(-15, 15), oy: random(-40, 40), fb: 1 })
   }
-  shuffle(src)
-  let N = min(5000, src.length)
+  src.sort(() => Math.random() - 0.5)
+  let N = min(10000, src.length)
   particles = []
   for (let i = 0; i < N; i++) {
     let p = src[i], a = random(TWO_PI), sv = random(80, 200), ts = random(2, 5)
