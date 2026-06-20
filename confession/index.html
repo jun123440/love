@@ -29,7 +29,7 @@ canvas{display:block}
   </div>
 </div>
 <script>
-let phase='idle',startTime=0,rotation=0,particles=[],phaseTimer=0
+let phase='idle',startTime=0,rotation=0,particles=[]
 const tilt=radians(15),focal=500
 
 function setup(){
@@ -48,80 +48,87 @@ function submit(){
 }
 
 function build(n){
-  let g=createGraphics(500,200)
-  g.textAlign(CENTER,CENTER);g.textSize(56);g.fill(255);g.background(0,0)
-  g.text(n,250,100);g.loadPixels()
-  let src=[]
-  for(let y=0;y<200;y+=2)for(let x=0;x<500;x+=2){
-    let i=(x+y*500)*4
-    if(g.pixels[i]>200)src.push({x:x-250,y:y-100})
+  background(10,0,0)
+  let W=min(width,600),H=min(height*0.5,180)
+  fill(255);noStroke();textSize(56);textAlign(CENTER,CENTER)
+  text(n,W/2,H/2)
+  let src=[],step=2
+  loadPixels()
+  for(let y=0;y<H;y+=step)for(let x=0;x<W;x+=step){
+    let i=(x+y*width)*4
+    if(pixels[i]>220)src.push({x:x-W/2,y:y-H/2})
   }
-  g.remove()
+  
+  if(src.length<30){
+    src=[]
+    for(let i=0;i<n.length;i++)for(let j=0;j<100;j++){
+      let px=(i-(n.length-1)/2)*50+random(-20,20)
+      let py=random(-30,30)
+      src.push({x:px,y:py})
+    }
+  }
+  if(src.length<30)for(let i=0;i<300;i++)src.push({x:random(-80,80),y:random(-30,30)})
+  
   let N=min(1200,src.length)
   shuffle(src)
-  let cx=width/2,cy=height*0.48
   
-  // rose params - 6 layers from outer to inner
-  let layers=[{n:18,r1:220,r2:160,h:12},{n:16,r1:160,r2:110,h:24},{n:14,r1:110,r2:70,h:36},{n:12,r1:70,r2:40,h:46},{n:10,r1:40,r2:20,h:54},{n:8,r1:20,r2:4,h:60}]
+  let layers=[
+    {n:20,r1:235,r2:170,h:6},
+    {n:18,r1:170,r2:120,h:16},
+    {n:16,r1:120,r2:80,h:26},
+    {n:14,r1:80,r2:50,h:36},
+    {n:12,r1:50,r2:28,h:46},
+    {n:10,r1:28,r2:5,h:54}
+  ]
   let pidx=0
-  
   particles=[]
+  
   for(let li=0;li<layers.length;li++){
-    let l=layers[li],ppl=floor(N*l.n/78),pidx0=pidx
-    for(let j=0;j<ppl&&pidx<src.length&&pidx<pidx0+ppl;j++){
+    let l=layers[li],ppl=max(1,floor(N*l.n/90))
+    for(let j=0;j<ppl&&pidx<N;j++){
       let t=j/ppl
-      let baseA=j*2.3999+li*0.8
-      let aOff=(random()-0.5)*PI/(l.n*0.5)
-      let r=lerp(l.r2,l.r1,t)+random(-8,8)
-      let a=baseA+aOff
-      let h=l.h*(1-t*0.3)+random(-2,2)
-      let colT=li/6
-      let ri=lerp(180,245,colT)+random(-5,5)
-      let gi=lerp(25,170,colT)+random(-8,12)
-      let bi=lerp(30,160,colT)+random(-8,12)
+      let baseA=j*2.3999+li*0.7
+      let r=lerp(l.r2,l.r1,t)+random(-6,6)
+      let a=baseA+(random()-0.5)*PI/(l.n*1.2)
+      let h=l.h*(1-t*0.3)+random(-1.5,1.5)
+      let ct=li/6
       particles.push({
         sx:src[pidx].x,sy:src[pidx].y,
-        ta:a,tr:r,th:h,
-        cr:ri,cg:gi,cb:bi,
-        sz:1.8+random()*1.2,
-        ca:0,crr:0,chh:0,
-        ap:0,dl:0.3+pidx*0.002+random()*0.4,
-        st:0
+        ta:a,tr:r,th:max(h,0.5),
+        cr:lerp(175,245,ct)+random(-5,5),
+        cg:lerp(20,175,ct)+random(-6,10),
+        cb:lerp(25,165,ct)+random(-6,10),
+        sz:1.2+random()*1.8,
+        ap:0,dl:0.15+pidx*0.0015+random()*0.4
       })
       pidx++
     }
   }
-  let stemN=floor(particles.length*0.1)
-  for(let i=0;i<stemN&&pidx<src.length;i++){
+  
+  let stemN=floor(N*0.08)
+  for(let i=0;i<stemN&&pidx<N;i++){
     let t=i/stemN
-    let a=-PI*0.3+t*PI*0.5
-    let r=20+t*140+random(-5,5)
-    let h=2*(1-t)+random(0,1.5)
+    let a=-PI*0.25+t*PI*0.5
     particles.push({
       sx:src[pidx].x,sy:src[pidx].y,
-      ta:a,tr:r,th:h,
-      cr:lerp(50,120,1-t),cg:lerp(80,175,1-t),cb:lerp(30,70,1-t),
-      sz:1.8+random()*1.2,
-      ca:0,crr:0,chh:0,
-      ap:0,dl:0.5+pidx*0.002+random()*0.3,
-      st:1,sw:i*0.08
+      ta:a,tr:20+t*130,th:2.5*(1-t)+random(0,1),
+      cr:lerp(55,125,1-t)+random(-5,5),
+      cg:lerp(85,180,1-t)+random(-8,10),
+      cb:lerp(35,72,1-t)+random(-5,8),
+      sz:1.5+random()*1.2,
+      ap:0,dl:0.3+pidx*0.0015,
+      st:1,sw:i*0.1
     })
     pidx++
   }
-  // remaining particles as fill
-  while(pidx<src.length){
-    let a=random(TWO_PI),r=random(4,220),h=random(2,60)
-    let t=r/220
+  while(pidx<N){
+    let a=random(TWO_PI),r=random(5,220),h=random(2,50)
     particles.push({
       sx:src[pidx].x,sy:src[pidx].y,
       ta:a,tr:r,th:h,
-      cr:lerp(245,180,t)+random(-5,5),
-      cg:lerp(170,25,t)+random(-8,12),
-      cb:lerp(160,30,t)+random(-8,12),
-      sz:1+random()*2,
-      ca:0,crr:0,chh:0,
-      ap:0,dl:0.3+pidx*0.0015,
-      st:0
+      cr:220,cg:80,cb:60,
+      sz:1.2+random()*1.8,
+      ap:0,dl:0.15+pidx*0.002
     })
     pidx++
   }
@@ -130,63 +137,53 @@ function build(n){
 function draw(){
   bg()
   rotation+=0.005
-  let cx=width/2,cy=height*0.48
   let el=(millis()-startTime)/1000
-  
   if(phase==='burst'){
     let allDone=true
     for(let p of particles){
-      let delay=p.dl
-      let raw=max(0,(el-delay)/1.2)
+      let raw=max(0,(el-p.dl)/0.9)
       let e=raw<1?1-pow(2,-8*raw):1
       if(e<1)allDone=false
-      if(e>0){
-        p.ap=e
-        p.crr=p.tr*e
-        p.chh=p.th*e
-        p.ca=p.ta+rotation*e
-      }else{p.ap=0;p.crr=0;p.chh=0}
+      p.ap=e
     }
-    if(allDone&&el>particles[particles.length-1].dl+1)
-      {phase='disp';startTime=millis()}
-    render(cx,cy)
-  }else if(phase==='disp'){
-    for(let p of particles){p.ap=1;p.crr=p.tr;p.chh=p.th}
-    render(cx,cy)
+    if(allDone&&el>particles.length*0.002+2){phase='disp'}
   }
+  render()
 }
 
-function render(cx,cy){
-  let depthSorted=[]
-  for(let i=0;i<particles.length;i++){
-    let p=particles[i];if(p.ap<=0)continue
+function render(){
+  let cx=width/2,cy=height*0.48
+  let buf=[]
+  for(let p of particles){
+    if(p.ap<=0)continue
     let a,r,h
     if(p.st){
-      let sw=sin(rotation*0.25+p.sw)*0.2
-      a=p.ta+sw*0.04;r=p.crr;h=p.chh
-    }else{a=p.ca;r=p.crr;h=p.chh}
+      let sw=sin(rotation*0.25+p.sw)*0.3
+      a=p.ta+sw*0.04;r=p.tr*p.ap;h=p.th*p.ap
+    }else{
+      a=p.ta+rotation*p.ap
+      r=p.tr*p.ap;h=p.th*p.ap
+    }
     let x=r*cos(a),yf=r*sin(a),z=h
     let sy=yf*cos(tilt)-z*sin(tilt),dp=yf*sin(tilt)+z*cos(tilt)
     let pf=focal/(focal+dp+30)
-    let sx=cx+x*pf,sy2=cy+sy*pf,sz=p.sz*pf*(1+z*0.008)
-    let sd=1;if(yf<0)sd=0.5+0.5*pow(1+yf/160,0.6)
-    let al=255*pf*sd*p.ap;if(p.st)al*=0.8
-    depthSorted.push({sx,sy:sy2,sz,al,r:p.cr,g:p.cg,b:p.cb,i})
+    let sx=cx+x*pf,sy2=cy+sy*pf
+    let sd=1;if(yf<0)sd=0.6+0.4*pow(1+yf/160,0.6)
+    let al=min(255,255*pf*sd*p.ap)
+    buf.push({x:sx,y:sy2,s:p.sz*pf*(1+z*0.008),a:al,r:p.cr,g:p.cg,b:p.cb})
   }
-  depthSorted.sort((a,b)=>b.sy-a.sy)
-  for(let d of depthSorted){
-    let p=particles[d.i]
-    push();translate(d.sx,d.sy)
-    fill(d.r,d.g,d.b,d.al*0.15);noStroke();circle(0,0,d.sz*3)
-    fill(d.r,d.g,d.b,d.al);circle(0,0,d.sz)
+  buf.sort((a,b)=>a.y-b.y)
+  for(let d of buf){
+    push();translate(d.x,d.y)
+    fill(d.r,d.g,d.b,d.a*0.12);noStroke();circle(0,0,d.s*4)
+    fill(d.r,d.g,d.b,d.a);circle(0,0,d.s)
     pop()
   }
 }
 
 function bg(){
   for(let y=0;y<height;y+=4){
-    let r=lerp(10,3,y/height)
-    noStroke();fill(r,0,0);rect(0,y,width,4)
+    fill(lerp(10,3,y/height),0,0);noStroke();rect(0,y,width,4)
   }
 }
 
