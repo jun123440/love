@@ -38,7 +38,7 @@ canvas{display:block;position:fixed;top:0;left:0}
 </div>
 
 <script>
-let ph='input',phT=0,ang=0,pls=0,pts=[],dust=[],nm=''
+let ph='input',phT=0,ang=0,pls=0,pts=[],sp=[],dust=[],nm=''
 
 function setup(){
   let c=createCanvas(windowWidth,windowHeight)
@@ -74,6 +74,7 @@ function gen(name){
   }
   g.remove()
   rose()
+  stemP()
 }
 
 function rose(){
@@ -99,6 +100,31 @@ function rose(){
     pts[i].tx=r*cos(a2);pts[i].ty=r*sin(a2)
     pts[i].clr=[240+random(-15,15),60+random(-10,20),80+random(-10,20)]
     pts[i].s=random(1,2)
+  }
+}
+
+function stemP(){
+  sp=[]
+  let cx=width/2,cy=height/2
+  
+  for(let i=0;i<300;i++){
+    let t2=i/300
+    let x=cx-5+10*t2+random(-4,4)+5*pow(t2,2)
+    let y=cy+200+180*t2+random(-3,3)
+    sp.push({x,y,ox:x-cx,oy:y-cy,s:random(2,4),a:200,clr:[20+random(-10,20),80+random(-20,30),25+random(-10,15)]})
+  }
+  
+  for(let lf=0;lf<3;lf++){
+    let baseT=[0.25,0.55,0.82][lf],dir=[-1,1,-1][lf]
+    let lx=cx-5+10*baseT+5*pow(baseT,2),ly=cy+200+180*baseT
+    let ls=random(18,30)
+    for(let j=0;j<40;j++){
+      let t3=j/40
+      let lw=ls*(0.5*sin(t3*PI)+0.3*random())
+      let px=lx+dir*(ls*t3*0.7+random(-3,3))
+      let py=ly-ls*t3*0.4+random(-3,3)+(1-t3)*8
+      sp.push({x:px,y:py,ox:px-cx,oy:py-cy,s:random(2,4),a:180,clr:[30+random(-10,15),110+random(-30,40),35+random(-10,15)]})
+    }
   }
 }
 
@@ -128,7 +154,7 @@ function du(){
   }
 }
 
-function dr(){
+function drRose(){
   noStroke()
   for(let p of pts){
     let[r,g,b]=p.clr;fill(r,g,b,p.a);circle(p.x,p.y,p.s)
@@ -136,10 +162,18 @@ function dr(){
   }
 }
 
+function drStem(){
+  noStroke()
+  for(let p of sp){
+    let[r,g,b]=p.clr;fill(r,g,b,p.a);circle(p.x,p.y,p.s)
+  }
+}
+
 function upA(){
   let el=(millis()-phT)/1000,pr=constrain(el/1.8,0,1)
   for(let p of pts){p.x=width/2+p.ox;p.y=height/2+p.oy;p.a=255*e(pr);p.s=(1.2+random(-.3,.3))*e(pr)}
-  dr()
+  drStem()
+  drRose()
   if(el>2.8){ph='xfrm';phT=millis()}
 }
 
@@ -156,7 +190,8 @@ function upX(){
     p.a=lerp(180,230,t2)
     p.s=lerp(1.5,2.3+random(-.3,.3),t2)
   }
-  dr()
+  drStem()
+  drRose()
   if(pr>=1){ph='disp';phT=millis()}
 }
 
@@ -168,60 +203,9 @@ function upD(){
     p.a=220+35*sin(pls+p.r2)
   }
   for(let k=3;k>0;k--){fill(180,0,0,8/k);let sz=(350+30*sin(pls*.8))*(4-k)*.2;ellipse(cx,cy,sz,sz)}
-  stem();dr();ang+=.004
-}
-
-function stem(){
-  let cx=width/2,cy=height/2
-  let sx=cx,st=cy+235,sb=cy+420,sr=cx+45
-  
-  noFill();strokeWeight(4)
-  stroke(25,85,30,220)
-  beginShape()
-  vertex(sx,st)
-  bezierVertex(sx-20,st+55,sx+35,st+110,sr,sb)
-  endShape()
-  
-  strokeWeight(2.5)
-  beginShape()
-  vertex(sx-5,st+15)
-  bezierVertex(sx-22,st+45,sx+25,st+95,sr-5,sb-10)
-  endShape()
-  
-  strokeWeight(1.5)
-  beginShape()
-  vertex(sx+3,st+30)
-  bezierVertex(sx+10,st+60,sx+15,st+75,sr-8,sb-5)
-  endShape()
-  
-  noStroke()
-  for(let lf=0;lf<3;lf++){
-    let lx,ly,dir,sz
-    if(lf===0){lx=sx-12;ly=st+75;dir=-1;sz=26}
-    else if(lf===1){lx=sx+10;ly=st+130;dir=1;sz=32}
-    else{lx=sr-15;ly=st+200;dir=-1;sz=22}
-    fill(30,110,35,200)
-    push();translate(lx,ly);rotate(dir*0.6)
-    beginShape()
-    vertex(0,0);bezierVertex(sz*0.4,-sz*0.3,sz*0.8,-sz*0.15,sz*0.9,-0.1*sz)
-    bezierVertex(sz*0.6,-sz*0.1,sz*0.3,sz*0.1,0,0)
-    endShape(CLOSE)
-    pop()
-    
-    fill(50,140,55,160)
-    push();translate(lx+2,ly+3);rotate(dir*0.6)
-    beginShape()
-    vertex(0,0);bezierVertex(sz*0.3,-sz*0.2,sz*0.6,-sz*0.1,sz*0.65,-0.07*sz)
-    bezierVertex(sz*0.4,-sz*0.08,sz*0.2,sz*0.07,0,0)
-    endShape(CLOSE)
-    pop()
-  }
-  
-  for(let th of[{x:cx-8,y:st+50},{x:cx+6,y:st+100},{x:cx+18,y:st+160}]){
-    fill(30,60,25,200)
-    noStroke()
-    triangle(th.x-3,th.y,th.x+3,th.y-2,th.x,th.y+5)
-  }
+  drStem()
+  drRose()
+  ang+=.004
 }
 
 function e(t){return 1-pow(1-t,3)}
