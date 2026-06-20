@@ -66,23 +66,23 @@ function gen(name) {
   textSize(fs)
   text(name, width / 2, height / 2)
   loadPixels()
-  let step = 1.5, sc = 1.2, src = []
-  for (let x = 0; x < width; x += step) {
-    for (let y = 0; y < height; y += step) {
-      let idx = floor(x + y * width) * 4
+  let step = 1.5, sc = 1.2, src = [], d = pixelDensity(), w2 = width * d, h2 = height * d
+  for (let x = 0; x < w2; x += step * d) {
+    for (let y = 0; y < h2; y += step * d) {
+      let idx = floor(x + y * w2) * 4
       if (pixels[idx] > 128) {
-        src.push({ ox: (x - width / 2) * sc, oy: (y - height / 2) * sc })
+        src.push({ ox: (x / d - width / 2) * sc, oy: (y / d - height / 2) * sc })
       }
     }
   }
-  shuffle(src)
-  let missing = max(0, 5000 - src.length)
+  let realN = shuffle(src).length
+  let missing = max(0, 5000 - realN)
   for (let i = 0; i < missing; i++) {
     let ci = floor(random(name.length))
-    src.push({ ox: (ci - (name.length - 1) / 2) * 80 + random(-38, 38), oy: random(-55, 55) })
+    src.push({ ox: (ci - (name.length - 1) / 2) * 38 + random(-15, 15), oy: random(-40, 40), fb: 1 })
   }
   shuffle(src)
-  let N = src.length
+  let N = min(5000, src.length)
   particles = []
   for (let i = 0; i < N; i++) {
     let p = src[i], a = random(TWO_PI), sv = random(80, 200), ts = random(2, 5)
@@ -92,9 +92,9 @@ function gen(name) {
       tx: 0, ty: 0, tz: 0,
       ts: ts, s: 1.5,
       a: 0,
-      clr: [230, 50, 80],
+      clr: [255, 255, 255], tclr: [230, 50, 80],
       de: random(0.6), r2: random(TWO_PI),
-      st: 0
+      st: 0, fb: p.fb || 0
     })
   }
   genRose()
@@ -108,7 +108,7 @@ function genRose() {
     p.ty = 25 + 230 * t + random(-2, 2) * 0.7
     p.tz = random(-2, 2)
     let dk = 1 - t * 0.5
-    p.clr = [random(80, 160) * dk, random(12, 35) * dk, random(20, 45) * dk]
+    p.tclr = [random(80, 160) * dk, random(12, 35) * dk, random(20, 45) * dk]
     p.ts = random(2.5, 4.5) * (1 - t * 0.3)
     p.st = 1
   }
@@ -121,7 +121,7 @@ function genRose() {
       p.tx = lx + dir * (ls * t * 0.6 + random(-2, 2))
       p.ty = ly - ls * t * 0.35 + random(-2, 2) + (1 - t) * 4
       p.tz = random(-3, 3)
-      p.clr = [random(100, 180), random(18, 45), random(28, 55)]
+      p.tclr = [random(100, 180), random(18, 45), random(28, 55)]
       p.ts = random(2, 3.5)
       p.st = 1
       idx++
@@ -149,7 +149,7 @@ function genRose() {
       p.tz = r * sin(pa + off)
       p.ty = h + random(-6, 6)
       let lf = li / (ly.length - 1)
-      p.clr = [lerp(250, 185, lf) + random(-12, 12), lerp(135, 20, lf) + random(-10, 10), lerp(155, 30, lf) + random(-10, 10)]
+      p.tclr = [lerp(250, 185, lf) + random(-12, 12), lerp(135, 20, lf) + random(-10, 10), lerp(155, 30, lf) + random(-10, 10)]
       p.ts = lerp(4, 2.5, lf) + random(-0.6, 0.6)
       p.st = 0
     }
@@ -159,7 +159,7 @@ function genRose() {
     p.tx = r * cos(a)
     p.tz = r * sin(a)
     p.ty = random(-30, -15)
-    p.clr = [250 + random(-10, 10), 65 + random(-10, 15), 85 + random(-10, 15)]
+    p.tclr = [250 + random(-10, 10), 65 + random(-10, 15), 85 + random(-10, 15)]
     p.ts = random(1.5, 2.5)
     p.st = 0
   }
@@ -199,7 +199,7 @@ function upA() {
   for (let p of particles) {
     p.sx = width / 2 + p.ox
     p.sy = height / 2 + p.oy
-    p.a = 255 * pow(pr, 1.5)
+    p.a = (p.fb ? 20 : 255) * pow(pr, 1.5)
     p.s = max(1.2, p.ts * pow(pr, 1.5))
   }
   drStem()
@@ -221,8 +221,9 @@ function upX() {
     let by = lerp(p.oy, ty, t)
     p.sx = cx + bx + p.svx * sc * (1 + t * 0.3)
     p.sy = cy + by + p.svy * sc * (1 + t * 0.3)
-    p.a = lerp(190, 235, t)
+    p.a = lerp(220, 235, t)
     p.s = lerp(p.s, p.ts, t)
+    p.clr = [lerp(255, p.tclr[0], t), lerp(255, p.tclr[1], t), lerp(255, p.tclr[2], t)]
   }
   dr()
   if (pr >= 1) { phase = 'disp'; phaseTime = millis() }
@@ -250,7 +251,7 @@ function upD() {
   drStem()
   for (let item of proj) {
     let p = item.p
-    let [r, g, b2] = p.clr
+    let [r, g, b2] = p.tclr
     let ds = p.ts || p.s
     fill(r, g, b2, p.a * 0.15)
     circle(p.sx, p.sy, ds * 2.5)
