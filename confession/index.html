@@ -86,10 +86,11 @@ function gen(name) {
     src.push({ ox: (ci - (name.length - 1) / 2) * 38 + random(-15, 15), oy: random(-40, 40), fb: 1 })
   }
   src.sort(() => Math.random() - 0.5)
-  let N = min(10000, src.length)
+  let N = min(10000, src.length), maxOx = max(src.map(p => abs(p.ox)))
   particles = []
   for (let i = 0; i < N; i++) {
     let p = src[i], a = random(TWO_PI), sv = random(80, 200), ts = random(2, 5)
+    let delay = constrain(map(p.ox, -maxOx, maxOx, 0, 2), 0, 2)
     particles.push({
       ox: p.ox, oy: p.oy,
       svx: cos(a) * sv, svy: sin(a) * sv,
@@ -98,7 +99,9 @@ function gen(name) {
       a: 0,
       clr: [255, 255, 255], tclr: [230, 50, 80],
       de: random(0.6), r2: random(TWO_PI),
-      st: 0, fb: p.fb || 0
+      st: 0, fb: p.fb || 0,
+      delay, dur: random(0.4, 0.7),
+      twinkle: random() < 0.08
     })
   }
   genRose()
@@ -177,13 +180,22 @@ function draw() {
     rect(0, i, width, 4)
   }
   let hp = 0.4 + 0.6 * (0.5 + 0.5 * sin(pulse * 1.2))
+  let xfrmGlow = phase === 'xfrm' ? 0.5 + 0.5 * sin(pulse * 0.5) : 0
   for (let k = 4; k > 0; k--) {
-    fill(140, 8, 12, 4 * hp / (k * 0.3 + 0.4))
+    let glow = 4 * hp / (k * 0.3 + 0.4) + xfrmGlow * 8 / (k + 1)
+    fill(140, 8, 12, glow)
     ellipse(width / 2, height / 2, (200 + 60 * hp) * (5 - k) * 0.2)
   }
+  if (phase === 'xfrm' || phase === 'disp') {
+    let wa = phase === 'xfrm' ? 12 * xfrmGlow : 6 + 6 * sin(pulse * 0.3)
+    fill(200, 60, 80, wa)
+    ellipse(width / 2, height / 2, 300 + 100 * sin(pulse * 0.4))
+  }
   for (let d of dust) {
-    d.x += d.vx; d.y += d.vy
+    let speedMul = phase === 'xfrm' ? 3 : phase === 'disp' ? 1.5 : 1
+    d.x += d.vx * speedMul; d.y += d.vy * speedMul
     d.a = 15 + 25 * sin(d.p + millis() * 0.0006)
+    d.a *= phase === 'xfrm' ? 2 : phase === 'disp' ? 1.5 : 1
     if (d.x < -5) d.x = width + 5
     if (d.x > width + 5) d.x = -5
     if (d.y < -5) d.y = height + 5
@@ -199,35 +211,69 @@ function draw() {
 }
 
 function upA() {
-  let el = (millis() - phaseTime) / 1000, pr = constrain(el / 1.5, 0, 1)
+  let el = (millis() - phaseTime) / 1000
+  let maxDelay = max(particles.map(p => p.delay))
+  let allDone = true
   for (let p of particles) {
+    let local = constrain(el - p.delay, 0, 999)
+    let pr = constrain(local / p.dur, 0, 1)
     p.sx = width / 2 + p.ox
     p.sy = height / 2 + p.oy
-    p.a = (p.fb ? 20 : 255) * pow(pr, 1.5)
-    p.s = max(1.2, p.ts * pow(pr, 1.5))
+    if (pr < 1) allDone = false
+    let e = easeOutBack(pr)
+    p.a = (p.fb ? 20 : 255) * e
+    p.s = max(1, p.ts * (1 + 0.6 * easeOutBack(pr)))
   }
   drStem()
   dr()
-  if (el > 2.5) { phase = 'xfrm'; phaseTime = millis() }
+  if (el > maxDelay + 1.5) { phase = 'xfrm'; phaseTime = millis() }
+}
+
+function easeOutBack(t) {
+  let c1 = 1.70158, c3 = c1 + 1
+  return 1 + c3 * pow(t - 1, 3) + c1 * pow(t - 1, 2)
 }
 
 function upX() {
-  let el = (millis() - phaseTime) / 1000, pr = constrain(el / 4.5, 0, 1)
-  let cx = width / 2, cy = height / 2, ca = cos(angle), sa = sin(angle)
+  let el = (millis() - phaseTime) / 1000, pr = constrain(el / 8, 0, 1)
+  let cx = width / 2, cy = height / 2, ca = cos(angle), sa = sin(angle), hp = pulse * 0.02
   for (let p of particles) {
     let pp = constrain((pr - p.de * 0.3) / (1 - p.de * 0.3), 0, 1)
-    let t = ee(pp), sc = sin(pp * PI)
     let rx = p.tx * ca - p.tz * sa
     let rz = p.tx * sa + p.tz * ca
     let tx = rx
     let ty = p.ty * cos(TILT) - rz * sin(TILT)
-    let bx = lerp(p.ox, tx, t)
-    let by = lerp(p.oy, ty, t)
-    p.sx = cx + bx + p.svx * sc * (1 + t * 0.3)
-    p.sy = cy + by + p.svy * sc * (1 + t * 0.3)
-    p.a = lerp(220, 235, t)
-    p.s = lerp(p.s, p.ts, t)
-    p.clr = [lerp(255, p.tclr[0], t), lerp(255, p.tclr[1], t), lerp(255, p.tclr[2], t)]
+
+    if (pp < 0.35) {
+      let t = pp / 0.35, et = min(1, t * 2), es = sin(t * PI)
+      let drift = 80 * es
+      let sway = sin(t * PI * 2 + p.r2) * 25 * es
+      p.sx = cx + p.ox + drift * cos(p.r2) + sway * sin(p.r2)
+      p.sy = cy + p.oy + drift * sin(p.r2) + sway * cos(p.r2)
+      p.a = lerp(255, 230, t)
+      p.s = lerp(p.s, p.ts * 1.3, min(1, t * 2))
+      p.clr = [265 - 15 * et, lerp(255, 220, et), lerp(255, 180, et)]
+    } else if (pp < 0.75) {
+      let t = (pp - 0.35) / 0.4, et = ee(t), es = sin(t * PI * 2)
+      let spiral = (1 - t) * 60
+      let sx = (p.ox + spiral * cos(t * PI * 3 + p.r2)) * (1 - et) + tx * et
+      let sy = (p.oy + spiral * sin(t * PI * 3 + p.r2)) * (1 - et) + ty * et
+      let scatter = (1 - t) * (1 + t * 2)
+      p.sx = cx + sx + p.svx * scatter * 0.15
+      p.sy = cy + sy + p.svy * scatter * 0.15
+      p.a = lerp(230, 240, t)
+      p.s = lerp(p.ts * 1.3, p.ts, t)
+      p.clr = [lerp(255, p.tclr[0], et), lerp(240, p.tclr[1], et), lerp(210, p.tclr[2], et)]
+    } else {
+      let t = (pp - 0.75) / 0.25, et = easeOutBack(t)
+      let fx = p.ox * (1 - et) + tx * et
+      let fy = p.oy * (1 - et) + ty * et
+      p.sx = cx + fx
+      p.sy = cy + fy
+      p.a = lerp(240, 235, t)
+      p.s = lerp(p.s, p.ts, t)
+      p.clr = [lerp(255, p.tclr[0], t), lerp(255, p.tclr[1], t), lerp(255, p.tclr[2], t)]
+    }
   }
   dr()
   if (pr >= 1) { phase = 'disp'; phaseTime = millis() }
@@ -236,6 +282,7 @@ function upX() {
 function upD() {
   let cx = width / 2, cy = height / 2, ca = cos(angle), sa = sin(angle)
   let b = 0.85 + 0.15 * sin(pulse * 0.7)
+  let breath = 0.5 + 0.5 * sin(pulse * 0.3)
   let proj = []
   for (let p of particles) {
     let rx = p.tx * ca - p.tz * sa
@@ -245,8 +292,9 @@ function upD() {
       p.sy = cy + p.ty * cos(TILT) - rz * sin(TILT)
       p.a = 200 + 55 * sin(pulse * 0.4 + p.r2)
     } else {
-      p.sx = cx + rx * b
-      p.sy = cy + (p.ty * cos(TILT) - rz * sin(TILT)) * b
+      let pb = 1 + 0.04 * breath
+      p.sx = cx + rx * b * pb
+      p.sy = cy + (p.ty * cos(TILT) - rz * sin(TILT)) * b * pb
       p.a = 220 + 35 * sin(pulse + p.r2)
     }
     proj.push({ p, d: rz * cos(TILT) + p.ty * sin(TILT) })
@@ -257,10 +305,18 @@ function upD() {
     let p = item.p
     let [r, g, b2] = p.tclr
     let ds = p.ts || p.s
-    fill(r, g, b2, p.a * 0.15)
-    circle(p.sx, p.sy, ds * 2.5)
+    let ga = p.a * (0.2 + 0.15 * sin(pulse * 0.8 + p.r2))
+    fill(r, g, b2, ga)
+    circle(p.sx, p.sy, ds * 3)
+    fill(r, g, b2, p.a * 0.25)
+    circle(p.sx, p.sy, ds * 2)
     fill(r, g, b2, p.a)
     circle(p.sx, p.sy, ds)
+    if (p.twinkle) {
+      let tw = 0.5 + 0.5 * sin(pulse * 1.5 + p.r2 * 3)
+      fill(255, 220, 200, p.a * tw * 0.6)
+      circle(p.sx - ds * 0.3, p.sy - ds * 0.3, ds * 0.5)
+    }
   }
 }
 
@@ -268,10 +324,18 @@ function dr() {
   for (let p of particles) {
     let [r, g, b] = p.clr
     let ds = p.ts || p.s
-    fill(r, g, b, p.a * 0.15)
-    circle(p.sx, p.sy, ds * 2.5)
+    let ga = p.a * (0.2 + 0.15 * sin(pulse * 0.8 + p.r2))
+    fill(r, g, b, ga)
+    circle(p.sx, p.sy, ds * 3)
+    fill(r, g, b, p.a * 0.25)
+    circle(p.sx, p.sy, ds * 2)
     fill(r, g, b, p.a)
     circle(p.sx, p.sy, ds)
+    if (p.twinkle) {
+      let tw = 0.5 + 0.5 * sin(pulse * 1.5 + p.r2 * 3)
+      fill(255, 220, 200, p.a * tw * 0.6)
+      circle(p.sx - ds * 0.3, p.sy - ds * 0.3, ds * 0.5)
+    }
   }
 }
 
