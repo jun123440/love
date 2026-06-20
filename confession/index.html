@@ -7,19 +7,16 @@
 <script src="https://cdn.jsdelivr.net/npm/p5@1.11.3/lib/p5.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#0d0000;font-family:'Georgia','Noto Serif SC','Microsoft YaHei',serif;-webkit-font-smoothing:antialiased}
+html,body{width:100%;height:100%;overflow:hidden;background:#120808;font-family:'Georgia','Noto Serif SC','Microsoft YaHei',serif}
 #inputScreen{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;z-index:10;transition:opacity 1.8s cubic-bezier(0.4,0,0.2,1);pointer-events:auto}
 #inputScreen.hidden{opacity:0;pointer-events:none}
-#inputScreen.hidden .glass-card{transform:translateY(-30px) scale(0.95)}
-.glass-card{background:rgba(120,0,0,0.08);backdrop-filter:blur(28px) saturate(1.4);-webkit-backdrop-filter:blur(28px) saturate(1.4);border:1px solid rgba(255,60,60,0.1);border-radius:36px;padding:55px 48px;text-align:center;box-shadow:0 0 100px rgba(120,0,0,0.15),inset 0 1px 0 rgba(255,255,255,0.04);transition:transform 1.8s cubic-bezier(0.4,0,0.2,1);max-width:90vw}
-.glass-card h1{color:#ff1a4a;font-size:24px;font-weight:300;margin-bottom:32px;letter-spacing:3px;text-shadow:0 0 40px rgba(255,0,64,0.3)}
-.glass-card .input-wrap{position:relative;display:inline-block}
-.glass-card input{background:rgba(0,0,0,0.5);border:1.5px solid rgba(255,60,60,0.2);border-radius:18px;padding:16px 28px;font-size:22px;color:#ff1a4a;text-align:center;outline:none;width:300px;font-family:inherit;transition:all 0.5s;letter-spacing:2px}
-.glass-card input:focus{border-color:rgba(255,26,74,0.5);box-shadow:0 0 50px rgba(255,0,64,0.15)}
-.glass-card input::placeholder{color:rgba(255,60,60,0.2);letter-spacing:1px;font-weight:300}
-.glass-card .btn-wrap{margin-top:30px}
-.glass-card button{padding:14px 56px;background:linear-gradient(135deg,rgba(255,0,64,0.65),rgba(160,0,0,0.65));border:none;border-radius:50px;color:#fff;font-size:16px;cursor:pointer;transition:all 0.5s;font-family:inherit;letter-spacing:2px;backdrop-filter:blur(4px)}
-.glass-card button:hover{background:linear-gradient(135deg,rgba(255,0,64,0.85),rgba(180,0,0,0.85));transform:scale(1.04);box-shadow:0 0 50px rgba(255,0,64,0.25)}
+.glass-card{background:rgba(180,20,40,0.07);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:1px solid rgba(255,80,80,0.08);border-radius:36px;padding:52px 46px;text-align:center;box-shadow:0 0 120px rgba(180,0,0,0.1),inset 0 1px 0 rgba(255,255,255,0.03)}
+.glass-card h1{color:#e61950;font-size:23px;font-weight:300;margin-bottom:30px;letter-spacing:3px;text-shadow:0 0 50px rgba(230,25,80,0.25)}
+.glass-card input{background:rgba(0,0,0,0.45);border:1.5px solid rgba(230,25,80,0.2);border-radius:18px;padding:15px 26px;font-size:20px;color:#e61950;text-align:center;outline:none;width:280px;font-family:inherit;transition:all 0.5s;letter-spacing:1px}
+.glass-card input:focus{border-color:rgba(230,25,80,0.4);box-shadow:0 0 50px rgba(230,25,80,0.12)}
+.glass-card input::placeholder{color:rgba(230,25,80,0.2)}
+.glass-card button{margin-top:28px;padding:13px 52px;background:linear-gradient(135deg,rgba(230,25,80,0.6),rgba(160,0,20,0.6));border:none;border-radius:50px;color:#fff;font-size:15px;cursor:pointer;transition:all 0.5s;font-family:inherit;letter-spacing:2px;backdrop-filter:blur(4px)}
+.glass-card button:hover{background:linear-gradient(135deg,rgba(230,25,80,0.8),rgba(180,0,30,0.8));transform:scale(1.04);box-shadow:0 0 50px rgba(230,25,80,0.2)}
 .glass-card button:active{transform:scale(0.96)}
 canvas{display:block;position:fixed;top:0;left:0}
 </style>
@@ -28,12 +25,8 @@ canvas{display:block;position:fixed;top:0;left:0}
 <div id="inputScreen">
   <div class="glass-card">
     <h1>✦ 请输入你的名字</h1>
-    <div class="input-wrap">
-      <input type="text" id="nameInput" placeholder="你的名字..." maxlength="12" autocomplete="off">
-    </div>
-    <div class="btn-wrap">
-      <button id="submitBtn">✦ 开始</button>
-    </div>
+    <input type="text" id="nameInput" placeholder="你的名字..." maxlength="12" autocomplete="off"><br>
+    <button id="submitBtn">✦ 开始</button>
   </div>
 </div>
 
@@ -43,14 +36,14 @@ let ph='input',phT=0,ang=0,pls=0,pts=[],dust=[],nm=''
 function setup(){
   let c=createCanvas(windowWidth,windowHeight)
   c.style('position','fixed');c.style('top','0');c.style('left','0');c.style('z-index','1')
-  for(let i=0;i<120;i++)dust.push({x:random(width),y:random(height),vx:random(-.12,.12),vy:random(-.12,.12),s:random(1,2.5),a:random(15,60),ph:random(TWO_PI)})
+  for(let i=0;i<100;i++)dust.push({x:random(width),y:random(height),vx:random(-.1,.1),vy:random(-.1,.1),s:random(1,2),a:random(10,40),p:random(TWO_PI)})
   document.getElementById('submitBtn').onclick=sub
   document.getElementById('nameInput').onkeydown=e=>{if(e.key==='Enter')sub()}
 }
 
 function sub(){
   let el=document.getElementById('nameInput'),v=el.value.trim()
-  if(!v){el.style.borderColor='rgba(255,0,64,0.6)';return}
+  if(!v)return
   nm=v
   document.getElementById('inputScreen').classList.add('hidden')
   gen(v)
@@ -63,160 +56,190 @@ function gen(name){
   g.textAlign(CENTER,CENTER);g.textFont('sans-serif')
   let fs=name.length<=2?130:name.length<=4?95:72
   g.textSize(fs);g.fill(255);g.text(name,450,140);g.loadPixels()
-  let step=2,sc=1.4
+  let step=2.5,sc=1.3
   pts=[]
   for(let x=0;x<g.width;x+=step)for(let y=0;y<g.height;y+=step){
-    let idx=(x+y*g.width)*4
-    if(g.pixels[idx+3]>128){
-      let ox=(x-450)*sc,oy=(y-140)*sc,a2=random(TWO_PI),d=random(120,350)
-      pts.push({ox,oy,svx:cos(a2)*d,svy:sin(a2)*d,tx:0,ty:0,tz:0,s:random(1.5,3.8),a:255,clr:[random(180,255),random(0,50),random(30,70)],de:random(.6),r2:random(TWO_PI),st:0})
+    let idx=floor(x+y*g.width)*4
+    if(g.pixels[idx+3]>100){
+      let ox=(x-450)*sc,oy=(y-140)*sc,a2=random(TWO_PI),d=random(150,400)
+      pts.push({ox,oy,svx:cos(a2)*d,svy:sin(a2)*d,tx:0,ty:0,tz:0,s:random(2,5),a:0,clr:[230,50,80],de:random(.6),r2:random(TWO_PI),st:0})
     }
   }
   g.remove()
-  genTargets()
+  genRose()
 }
 
-function genTargets(){
-  let n=pts.length
-  let stemN=floor(n*0.18),lfN=floor(stemN*0.35)
-
+function genRose(){
+  let n=pts.length,stemN=floor(n*0.14),lfN=floor(stemN*0.4),idx=0
+  
   for(let i=0;i<stemN;i++){
-    let p=pts[i],t2=i/stemN
-    let cx=0,cy=200+230*t2
-    let sx=6*t2+4*pow(t2,2)+random(-3,3)
-    let sy=230*t2+random(-3,3)
-    p.tx=cx+sx;p.ty=cy+sy;p.tz=random(-3,3)
-    let dk=1-t2*0.45
-    p.clr=[random(70,150)*dk,random(8,30)*dk,random(12,40)*dk]
-    p.s=random(2.5,4.5)*(1-t2*0.25)
+    let p=pts[i],t=i/stemN
+    p.tx=5*t+3*t*t+random(-2,2)*0.7
+    p.ty=195+230*t+random(-2,2)*0.7
+    p.tz=random(-2,2)
+    let dk=1-t*0.5
+    p.clr=[random(80,160)*dk,random(12,35)*dk,random(20,45)*dk]
+    p.s=random(2.5,4.5)*(1-t*0.3)
     p.st=1
   }
-
+  
   for(let lf=0;lf<3;lf++){
-    let bt=[0.20,0.48,0.76][lf],dir=[-1,1,-1][lf]
-    let lx=6*bt+4*bt*bt,ly=200+230*bt,ls=random(18,30)
+    let bt=[0.18,0.45,0.72][lf],dir=[-1,1,-1][lf]
     for(let j=0;j<floor(lfN/3);j++){
-      let idx=stemN+lf*floor(lfN/3)+j
-      if(idx>=n)break
-      let p=pts[idx],t3=random()
-      p.tx=lx+dir*(ls*t3*0.65+random(-2,2))
-      p.ty=ly-ls*t3*0.38+random(-2,2)+(1-t3)*5
-      p.tz=random(-4,4)
-      p.clr=[random(90,170),random(15,40),random(25,50)]
-      p.s=random(2,4);p.st=1
+      let pi=stemN+lf*floor(lfN/3)+j
+      if(pi>=n)break
+      let p=pts[pi],t=random(),ls=random(18,28)
+      let lx=5*bt+3*bt*bt,ly=195+230*bt
+      p.tx=lx+dir*(ls*t*0.6+random(-2,2))
+      p.ty=ly-ls*t*0.35+random(-2,2)+(1-t)*4
+      p.tz=random(-3,3)
+      p.clr=[random(100,180),random(18,45),random(28,55)]
+      p.s=random(2,3.5);p.st=1
     }
   }
-
+  
   let rem=pts.filter(p=>!p.st)
-  if(rem.length===0)rem=pts.slice(stemN+lfN)
-  let ly=[[5,220,0.52,0],[6,175,0.46,0.3],[7,130,0.38,0.6],[8,85,0.30,0.95],[10,40,0.22,1.3]]
-  let wg=[0.22,0.24,0.22,0.18,0.14],idx=0
+  let ly=[{pc:6,R:200,w:0.50,rt:0},{pc:7,R:155,w:0.44,rt:0.35},{pc:8,R:115,w:0.37,rt:0.7},{pc:10,R:70,w:0.28,rt:1.05},{pc:12,R:35,w:0.20,rt:1.4}]
+  let wg=[0.20,0.22,0.20,0.20,0.18]
   for(let li=0;li<ly.length;li++){
-    let [pc,R,wd,rt]=ly[li],cnt=floor(rem.length*wg[li])
+    let{pc,R,w,rt}=ly[li],cnt=floor(rem.length*wg[li])
     for(let i=0;i<cnt&&idx<rem.length;i++,idx++){
-      let p=rem[idx],pi=floor(random(pc)),pa=(pi/pc)*TWO_PI+rt
-      let hs=wd*PI/2,off=random(-hs,hs)
-      let t2=off/(wd*PI/2),r=R*cos(t2*PI/2)*cos(t2*PI/2)
-      r+=random(-3,3)*(r/R+0.5);r=max(r,0)
+      let p=rem[idx]
+      let pi=floor(random(pc)),pa=(pi/pc)*TWO_PI+rt
+      let hs=w*PI*0.5,off=random(-hs,hs),t=off/(w*PI*0.5)
+      let r=R*pow(cos(t*PI/2),1.6)
+      r+=random(-4,4)*(r/R+0.3);r=max(r,0)
       p.tx=r*cos(pa+off);p.ty=r*sin(pa+off)
-      let lf2=li/(ly.length-1)
-      p.tz=(1-r/230)*55+random(-12,12)
-      p.clr=[lerp(140,240,lf2)+random(-20,20),lerp(10,60,lf2)+random(-10,15),lerp(20,80,lf2)+random(-15,20)]
-      p.s=lerp(3.2,1.8,lf2)+random(-.5,.5)
+      p.tz=(1-r/210)*60+random(-8,8)
+      let lf=li/(ly.length-1)
+      let ri=lerp(200,245,lf)+random(-15,15)
+      let gi=lerp(25,65,lf)+random(-8,12)
+      let bi=lerp(35,85,lf)+random(-12,15)
+      p.clr=[ri,gi,bi]
+      p.s=lerp(4,2.5,lf)+random(-.6,.6)
     }
   }
-  for(let i=idx;i<rem.length;i++){
-    let a2=random(TWO_PI),r=random(2,15)
-    rem[i].tx=r*cos(a2);rem[i].ty=r*sin(a2)
-    rem[i].tz=random(55,75)
-    rem[i].clr=[240+random(-15,15),60+random(-10,20),80+random(-10,20)]
-    rem[i].s=random(1,2)
+  for(;idx<rem.length;idx++){
+    let p=rem[idx],a=random(TWO_PI),r=random(2,12)
+    p.tx=r*cos(a);p.ty=r*sin(a);p.tz=random(55,75)
+    p.clr=[250+random(-10,10),65+random(-10,15),85+random(-10,15)]
+    p.s=random(1.5,2.5)
   }
 }
 
 function draw(){
-  bg();du()
+  noStroke()
+  for(let i=0;i<=height;i+=4){let r=lerp(18,6,i/height);fill(r,0,0);rect(0,i,width,4)}
+  let hp=0.4+0.6*(0.5+0.5*sin(pls*1.2))
+  for(let k=4;k>0;k--){fill(140,8,12,4*hp/(k*0.3+0.4));ellipse(width/2,height/2,(200+60*hp)*(5-k)*0.2)}
+  
+  for(let d of dust){
+    d.x+=d.vx;d.y+=d.vy
+    d.a=15+25*sin(d.p+millis()*0.0006)
+    if(d.x<-5)d.x=width+5;if(d.x>width+5)d.x=-5
+    if(d.y<-5)d.y=height+5;if(d.y>height+5)d.y=-5
+    fill(140,20,25,d.a);circle(d.x,d.y,d.s)
+  }
+  
   if(ph==='appear')upA()
   else if(ph==='xfrm')upX()
   else if(ph==='disp')upD()
-  ang+=.004;pls+=.025
-}
-
-function bg(){
-  noStroke()
-  for(let i=0;i<=height;i+=4){let r=lerp(20,8,i/height);fill(r,0,0);rect(0,i,width,4)}
-  let p2=.4+.6*(.5+.5*sin(pls*1.5))
-  for(let k=6;k>0;k--){fill(120,0,0,6*p2/(k*.5+.5));let sz=(280+40*p2)*(7-k)*.18;ellipse(width/2,height/2,sz,sz)}
-}
-
-function du(){
-  for(let d of dust){
-    d.x+=d.vx;d.y+=d.vy
-    d.a=25+35*sin(d.ph+millis()*.0008)
-    if(d.x<-10)d.x=width+10;if(d.x>width+10)d.x=-10
-    if(d.y<-10)d.y=height+10;if(d.y>height+10)d.y=-10
-    fill(120,30,30,d.a);noStroke();circle(d.x,d.y,d.s)
-  }
+  ang+=0.003;pls+=0.02
 }
 
 function dr(){
-  noStroke()
   for(let p of pts){
-    let[r,g,b]=p.clr;fill(r,g,b,p.a);circle(p.sx,p.sy,p.s)
-    if(p.s>2.5){fill(r,g,b,p.a*.12);circle(p.sx,p.sy,p.s*2.5)}
+    let[r,g,b]=p.clr
+    fill(r,g,b,p.a*0.15);circle(p.sx,p.sy,p.s*2.5)
+    fill(r,g,b,p.a);circle(p.sx,p.sy,p.s)
+  }
+}
+
+function drStem(){
+  let cx=width/2,cy=height/2
+  noFill()
+  strokeWeight(3.5)
+  stroke(100,18,25,180)
+  beginShape()
+  vertex(cx,cy+200)
+  bezierVertex(cx-12,cy+240,cx+25,cy+300,cx+30,cy+450)
+  endShape()
+  strokeWeight(2)
+  stroke(80,14,20,150)
+  beginShape()
+  vertex(cx+3,cy+210)
+  bezierVertex(cx-5,cy+260,cx+32,cy+310,cx+35,cy+440)
+  endShape()
+  strokeWeight(1.2)
+  stroke(60,10,15,120)
+  beginShape()
+  vertex(cx-2,cy+225)
+  bezierVertex(cx-10,cy+275,cx+30,cy+320,cx+33,cy+430)
+  endShape()
+  
+  noStroke()
+  for(let lf of[{x:cx-18,y:cy+270,d:-1,s:22},{x:cx+22,y:cy+330,d:1,s:28},{x:cx-25,y:cy+380,d:-1,s:20}]){
+    fill(90,22,30,180)
+    push();translate(lf.x,lf.y);rotate(lf.d*0.55)
+    beginShape()
+    vertex(0,0);bezierVertex(lf.s*0.35,-lf.s*0.35,lf.s*0.8,-lf.s*0.15,lf.s*0.9,-0.1*lf.s)
+    bezierVertex(lf.s*0.5,-lf.s*0.1,lf.s*0.25,lf.s*0.12,0,0)
+    endShape(CLOSE)
+    pop()
+    fill(110,30,38,140)
+    push();translate(lf.x+2,lf.y+2);rotate(lf.d*0.55)
+    beginShape()
+    vertex(0,0);bezierVertex(lf.s*0.25,-lf.s*0.25,lf.s*0.55,-lf.s*0.1,lf.s*0.6,-0.07*lf.s)
+    bezierVertex(lf.s*0.35,-lf.s*0.08,lf.s*0.15,lf.s*0.08,0,0)
+    endShape(CLOSE)
+    pop()
   }
 }
 
 function upA(){
-  let el=(millis()-phT)/1000,pr=constrain(el/1.8,0,1)
+  let el=(millis()-phT)/1000,pr=constrain(el/1.5,0,1)
   for(let p of pts){
     p.sx=width/2+p.ox;p.sy=height/2+p.oy
-    p.a=255*e(pr);p.s=(1.2+random(-.3,.3))*e(pr)
+    p.a=255*pow(pr,1.5)
+    p.s=(1.5+random(-.3,.3))*pow(pr,1.5)
   }
-  dr()
-  if(el>2.8){ph='xfrm';phT=millis()}
+  drStem();dr()
+  if(el>2.5){ph='xfrm';phT=millis()}
 }
 
 function upX(){
-  let el=(millis()-phT)/1000,pr=constrain(el/4.2,0,1)
-  let cx=width/2,cy=height/2
+  let el=(millis()-phT)/1000,pr=constrain(el/4.5,0,1)
+  let cx=width/2,cy=height/2,ca=cos(ang),sa=sin(ang)
   for(let p of pts){
-    let pp=constrain((pr-p.de*0.35)/(1-p.de*0.35),0,1),t2=ee(pp)
-    let sc=sin(pp*PI)
-    let ca=cos(ang),sa=sin(ang)
+    let pp=constrain((pr-p.de*0.3)/(1-p.de*0.3),0,1),t=ee(pp),sc=sin(pp*PI)
     let rx=p.tx*ca-p.tz*sa,ry=p.ty
-    let bx=lerp(p.ox,rx,t2),by=lerp(p.oy,ry,t2)
-    p.sx=cx+bx+p.svx*sc*(1+t2*0.3)
-    p.sy=cy+by+p.svy*sc*(1+t2*0.3)
-    p.a=lerp(180,230,t2)
-    p.s=lerp(1.5,2.3+random(-.3,.3),t2)
+    let bx=lerp(p.ox,rx,t),by=lerp(p.oy,ry,t)
+    p.sx=cx+bx+p.svx*sc*(1+t*0.3)
+    p.sy=cy+by+p.svy*sc*(1+t*0.3)
+    p.a=lerp(190,235,t)
+    p.s=lerp(1.8,2.5+random(-.3,.3),t)
   }
   dr()
   if(pr>=1){ph='disp';phT=millis()}
 }
 
 function upD(){
-  let cx=width/2,cy=height/2,p2=.85+.15*sin(pls*.8)
+  let cx=width/2,cy=height/2,p2=.85+.15*sin(pls*0.7)
   let ca=cos(ang),sa=sin(ang)
   for(let p of pts){
+    let x3d=p.tx*ca-p.tz*sa,y3d=p.ty
     if(p.st){
-      p.sx=cx+p.tx*ca-p.tz*sa
-      p.sy=cy+p.ty
-      p.a=200+55*sin(pls*0.5+p.r2)
+      p.sx=cx+x3d;p.sy=cy+y3d
+      p.a=200+55*sin(pls*0.4+p.r2)
     }else{
-      p.sx=cx+(p.tx*ca-p.tz*sa)*p2
-      p.sy=cy+p.ty*p2
+      p.sx=cx+x3d*p2;p.sy=cy+y3d*p2
       p.a=220+35*sin(pls+p.r2)
     }
   }
-  pts.sort((a,b)=>{
-    let az=a.tx*sa+a.tz*ca,bz=b.tx*sa+b.tz*ca
-    return az-bz
-  })
-  dr();ang+=.004
+  pts.sort((a,b)=>(a.tx*sa+a.tz*ca)-(b.tx*sa+b.tz*ca))
+  drStem();dr();ang+=0.003
 }
 
-function e(t){return 1-pow(1-t,3)}
 function ee(t){return t===1?1:1-pow(2,-10*t)}
 function windowResized(){resizeCanvas(windowWidth,windowHeight)}
 </script>
