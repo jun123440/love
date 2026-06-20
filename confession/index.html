@@ -180,8 +180,11 @@ function upX(){
   for(let p of pts){
     let pp=constrain((pr-p.de*0.35)/(1-p.de*0.35),0,1),t2=ee(pp)
     let sc=sin(pp*PI)
-    let ca=cos(ang),sa=sin(ang)
-    let rx=p.tx*ca-p.ty*sa,ry=p.tx*sa+p.ty*ca
+    let ca,sa,rx,ry
+    if(p.st){
+      let sa2=sin(ang)*0.35*t2;ca=cos(sa2);sa=sin(sa2)
+    }else{ca=cos(ang);sa=sin(ang)}
+    rx=p.tx*ca-p.ty*sa;ry=p.tx*sa+p.ty*ca
     let bx=lerp(p.ox,rx,t2),by=lerp(p.oy,ry,t2)
     p.x=cx+bx+p.svx*sc*(1+t2*0.3)
     p.y=cy+by+p.svy*sc*(1+t2*0.3)
@@ -194,11 +197,12 @@ function upX(){
 
 function upD(){
   let cx=width/2,cy=height/2
+  let sa2=sin(ang)*0.35,ca2=cos(sa2)
   for(let p of pts){
     if(p.st){
-      p.x=cx+p.tx;p.y=cy+p.ty
-      p.a=200+55*sin(pls*0.5+p.r2)
-      continue
+      let rx=p.tx*ca2-p.ty*sa2,ry=p.tx*sa2+p.ty*ca2
+      p.x=cx+rx;p.y=cy+ry
+      p.a=200+55*sin(pls*0.5+p.r2);continue
     }
     let p2=.85+.15*sin(pls*.8)
     let ca=cos(ang),sa=sin(ang),rx=p.tx*ca-p.ty*sa,ry=p.tx*sa+p.ty*ca
