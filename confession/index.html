@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
-<title>💕 致你</title>
+<title>✦</title>
 <script src="https://cdn.jsdelivr.net/npm/p5@1.11.3/lib/p5.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -18,312 +18,174 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0000;font-family:
 .glass-card input:focus{border-color:rgba(255,26,74,0.5);box-shadow:0 0 50px rgba(255,0,64,0.15)}
 .glass-card input::placeholder{color:rgba(255,60,60,0.2);letter-spacing:1px;font-weight:300}
 .glass-card .btn-wrap{margin-top:30px}
-.glass-card button{padding:14px 56px;background:linear-gradient(135deg,rgba(255,0,64,0.65),rgba(160,0,0,0.65));border:none;border-radius:50px;color:#fff;font-size:16px;cursor:pointer;transition:all 0.5s;font-family:inherit;letter-spacing:2px;backdrop-filter:blur(4px);position:relative;overflow:hidden}
+.glass-card button{padding:14px 56px;background:linear-gradient(135deg,rgba(255,0,64,0.65),rgba(160,0,0,0.65));border:none;border-radius:50px;color:#fff;font-size:16px;cursor:pointer;transition:all 0.5s;font-family:inherit;letter-spacing:2px;backdrop-filter:blur(4px)}
 .glass-card button:hover{background:linear-gradient(135deg,rgba(255,0,64,0.85),rgba(180,0,0,0.85));transform:scale(1.04);box-shadow:0 0 50px rgba(255,0,64,0.25)}
 .glass-card button:active{transform:scale(0.96)}
 .glass-card .hint{color:rgba(255,60,60,0.15);font-size:13px;margin-top:20px;letter-spacing:1px;font-weight:300}
-#finalMsg{position:fixed;bottom:60px;left:0;width:100%;text-align:center;z-index:5;opacity:0;transition:opacity 2s ease;pointer-events:none}
-#finalMsg.show{opacity:1}
-#finalMsg h2{color:#ff1a4a;font-size:22px;font-weight:300;letter-spacing:4px;text-shadow:0 0 30px rgba(255,0,64,0.3)}
-#finalMsg p{color:rgba(255,60,60,0.3);font-size:13px;margin-top:8px;letter-spacing:2px}
 canvas{display:block;position:fixed;top:0;left:0}
 </style>
 </head>
 <body>
-
 <div id="inputScreen">
   <div class="glass-card">
-    <h1>💕 请输入你的名字</h1>
+    <h1>✦ 请输入你的名字</h1>
     <div class="input-wrap">
       <input type="text" id="nameInput" placeholder="你的名字..." maxlength="12" autocomplete="off">
     </div>
     <div class="btn-wrap">
       <button id="submitBtn">✦ 开始</button>
     </div>
-    <div class="hint">— 轻轻按下，见证奇迹 —</div>
   </div>
 </div>
 
-<div id="finalMsg">
-  <h2 id="loveText"></h2>
-  <p>— 致独一无二的你 —</p>
-</div>
-
 <script>
-let phase = 'input'
-let phaseTime = 0
-let roseAngle = 0
-let heartPulse = 0
-let textParticles = []
-let dust = []
-let nameStr = ''
+let phase='input',phaseTime=0,ang=0,pulse=0,pts=[],dust=[],nm=''
 
-function setup() {
-  let c = createCanvas(windowWidth, windowHeight)
-  c.style('position', 'fixed')
-  c.style('top', '0')
-  c.style('left', '0')
-  c.style('z-index', '1')
-
-  for (let i = 0; i < 120; i++) {
-    dust.push(createDust())
-  }
-
-  document.getElementById('submitBtn').onclick = handleSubmit
-  document.getElementById('nameInput').onkeydown = e => { if (e.key === 'Enter') handleSubmit() }
+function setup(){
+  let c=createCanvas(windowWidth,windowHeight)
+  c.style('position','fixed');c.style('top','0');c.style('left','0');c.style('z-index','1')
+  for(let i=0;i<120;i++)dust.push({x:random(width),y:random(height),vx:random(-.12,.12),vy:random(-.12,.12),s:random(1,2.5),a:random(15,60),ph:random(TWO_PI)})
+  document.getElementById('submitBtn').onclick=submit
+  document.getElementById('nameInput').onkeydown=e=>{if(e.key==='Enter')submit()}
 }
 
-function createDust() {
-  return {
-    x: random(width), y: random(height),
-    vx: random(-0.12, 0.12), vy: random(-0.12, 0.12),
-    s: random(1, 2.5), a: random(15, 60), ph: random(TWO_PI)
-  }
-}
-
-function handleSubmit() {
-  let el = document.getElementById('nameInput')
-  let v = el.value.trim()
-  if (!v) { el.style.borderColor = 'rgba(255,0,64,0.6)'; el.style.boxShadow = '0 0 40px rgba(255,0,64,0.2)'; return }
-  nameStr = v
+function submit(){
+  let el=document.getElementById('nameInput'),v=el.value.trim()
+  if(!v){el.style.borderColor='rgba(255,0,64,0.6)';return}
+  nm=v
   document.getElementById('inputScreen').classList.add('hidden')
-  generateParticles(v)
-  phase = 'appear'
-  phaseTime = millis()
+  genParticles(v)
+  phase='appear';phaseTime=millis()
 }
 
-function generateParticles(name) {
-  let g = createGraphics(900, 280)
-  g.pixelDensity(1)
-  g.background(0, 0)
-  g.textAlign(CENTER, CENTER)
-  g.textFont('sans-serif')
-  g.textStyle(NORMAL)
-  let fs = name.length <= 2 ? 130 : name.length <= 4 ? 95 : 72
-  g.textSize(fs)
-  g.fill(255)
-  g.text(name, 450, 140)
-  g.loadPixels()
-
-  let step = 3
-  let sc = 1.4
-  textParticles = []
-  let cx = width / 2, cy = height / 2
-
-  for (let x = 0; x < g.width; x += step) {
-    for (let y = 0; y < g.height; y += step) {
-      let idx = (x + y * g.width) * 4
-      if (g.pixels[idx + 3] > 128) {
-        let ox = (x - 450) * sc, oy = (y - 140) * sc
-        let a = random(TWO_PI), d = random(120, 350)
-        textParticles.push({
-          x: cx + ox, y: cy + oy,
-          ox: ox, oy: oy,
-          sx: ox + cos(a) * d, sy: oy + sin(a) * d,
-          tx: 0, ty: 0,
-          vx: 0, vy: 0,
-          s: random(1.5, 3.8), a: 255,
-          clr: [random(180, 255), random(0, 50), random(30, 70)],
-          del: random(0.6), rp: random(0.7, 1),
-          rp2: random(TWO_PI)
-        })
-      }
+function genParticles(name){
+  let g=createGraphics(900,280)
+  g.pixelDensity(1);g.background(0,0)
+  g.textAlign(CENTER,CENTER);g.textFont('sans-serif')
+  let fs=name.length<=2?130:name.length<=4?95:72
+  g.textSize(fs);g.fill(255);g.text(name,450,140);g.loadPixels()
+  let step=3,sc=1.4
+  pts=[]
+  for(let x=0;x<g.width;x+=step)for(let y=0;y<g.height;y+=step){
+    let idx=(x+y*g.width)*4
+    if(g.pixels[idx+3]>128){
+      let ox=(x-450)*sc,oy=(y-140)*sc,a=random(TWO_PI),d=random(120,350)
+      pts.push({x:width/2+ox,y:height/2+oy,ox,oy,sx:ox+cos(a)*d,sy:oy+sin(a)*d,tx:0,ty:0,s:random(1.5,3.8),a:255,clr:[random(180,255),random(0,50),random(30,70)],del:random(.6),rp2:random(TWO_PI)})
     }
   }
   g.remove()
-  assignRoseTargets()
+  genRose()
 }
 
-function assignRoseTargets() {
-  let n = textParticles.length
-  for (let i = 0; i < n; i++) {
-    let p = textParticles[i]
-    let t = (TWO_PI * i) / n
-    let l = i / n
-    let r
-    if (l < 0.25) {
-      r = 200 * (0.3 + 0.7 * pow(abs(cos(3.2 * t + 0.2)), 1.1))
-      r += random(-4, 4)
-    } else if (l < 0.45) {
-      r = 160 * (0.35 + 0.65 * pow(abs(sin(3.8 * t + 0.7)), 1.2))
-      r += random(-3, 3)
-    } else if (l < 0.62) {
-      r = 120 * (0.4 + 0.6 * pow(abs(cos(4.5 * t + 1.2)), 1.4))
-      r += random(-3, 3)
-    } else if (l < 0.78) {
-      r = 75 * (0.5 + 0.5 * pow(abs(sin(5.5 * t + 1.8)), 1.6))
-      r += random(-2, 2)
-    } else if (l < 0.9) {
-      r = 40 * (0.6 + 0.4 * pow(abs(cos(7 * t + 2.5)), 2))
-      r += random(-2, 2)
-    } else {
-      r = random(5, 25)
-    }
-    p.tx = r * cos(t)
-    p.ty = r * sin(t)
-  }
-}
-
-function draw() {
-  drawBackground()
-  drawDust()
-
-  if (phase === 'appear') updateAppear()
-  else if (phase === 'decompose') updateDecompose()
-  else if (phase === 'assemble') updateAssemble()
-  else if (phase === 'display') updateDisplay()
-
-  roseAngle += 0.004
-  heartPulse += 0.025
-}
-
-function drawBackground() {
-  noStroke()
-  for (let i = 0; i <= height; i += 4) {
-    let r = lerp(20, 8, i / height)
-    fill(r, 0, 0)
-    rect(0, i, width, 4)
-  }
-  let pulse = 0.4 + 0.6 * (0.5 + 0.5 * sin(heartPulse * 1.5))
-  for (let k = 6; k > 0; k--) {
-    fill(120, 0, 0, 6 * pulse / (k * 0.5 + 0.5))
-    let sz = (280 + 40 * pulse) * (7 - k) * 0.18
-    ellipse(width / 2, height / 2, sz, sz)
-  }
-}
-
-function drawDust() {
-  noStroke()
-  for (let d of dust) {
-    d.x += d.vx; d.y += d.vy
-    d.a = 25 + 35 * sin(d.ph + millis() * 0.0008)
-    if (d.x < -10) d.x = width + 10
-    if (d.x > width + 10) d.x = -10
-    if (d.y < -10) d.y = height + 10
-    if (d.y > height + 10) d.y = -10
-    fill(120, 30, 30, d.a)
-    circle(d.x, d.y, d.s)
-  }
-}
-
-function drawParticles() {
-  noStroke()
-  let cx = width / 2, cy = height / 2
-  for (let p of textParticles) {
-    let [r, g, b] = p.clr
-    fill(r, g, b, p.a)
-    let sz = p.s
-    circle(p.x, p.y, sz)
-    if (sz > 2.5) {
-      fill(r, g, b, p.a * 0.15)
-      circle(p.x, p.y, sz * 2.5)
+function genRose(){
+  let n=pts.length
+  let layers=[
+    [5,220,0.52,0],[6,175,0.46,0.3],[7,130,0.38,0.6],[8,85,0.30,0.95],[10,40,0.22,1.3]
+  ]
+  let wg=[0.22,0.24,0.22,0.18,0.14]
+  let idx=0
+  for(let li=0;li<layers.length;li++){
+    let [pc,R,wd,rt]=layers[li],cnt=floor(n*wg[li])
+    for(let i=0;i<cnt&&idx<n;i++,idx++){
+      let p=pts[idx],pi=floor(random(pc)),pa=(pi/pc)*TWO_PI+rt
+      let hs=wd*PI/2,off=random(-hs,hs)
+      let t=off/(wd*PI/2),r=R*cos(t*PI/2)*cos(t*PI/2)
+      r+=random(-3,3)*(r/R+0.5);r=max(r,0)
+      p.tx=r*cos(pa+off);p.ty=r*sin(pa+off)
+      
+      let lf=li/(layers.length-1)
+      let rb=lerp(140,240,lf),gb=lerp(10,60,lf),bb=lerp(20,80,lf)
+      p.clr=[rb+random(-20,20),gb+random(-10,15),bb+random(-15,20)]
+      p.s=lerp(3.2,1.8,lf)+random(-.5,.5)
     }
   }
-}
-
-function updateAppear() {
-  let el = (millis() - phaseTime) / 1000
-  let prog = constrain(el / 1.8, 0, 1)
-  let cx = width / 2, cy = height / 2
-  for (let p of textParticles) {
-    p.x = cx + p.ox
-    p.y = cy + p.oy
-    p.a = 255 * easeOut(prog)
-    p.s = (1.2 + random(-0.3, 0.3)) * easeOut(prog)
-  }
-  drawParticles()
-  if (el > 2.8) {
-    phase = 'decompose'
-    phaseTime = millis()
+  for(let i=idx;i<n;i++){
+    let a=random(TWO_PI),r=random(2,15)
+    pts[i].tx=r*cos(a);pts[i].ty=r*sin(a)
+    pts[i].clr=[240+random(-15,15),60+random(-10,20),80+random(-10,20)]
+    pts[i].s=random(1,2)
   }
 }
 
-function updateDecompose() {
-  let el = (millis() - phaseTime) / 1000
-  let prog = constrain(el / 2.8, 0, 1)
-  let cx = width / 2, cy = height / 2
-  for (let p of textParticles) {
-    let pp = constrain((prog - p.del * 0.4) / (1 - p.del * 0.4), 0, 1)
-    let t = easeOutCubic(pp)
-    let ra = roseAngle * 2.5 * t
-    let rx = p.ox * cos(ra) - p.oy * sin(ra)
-    let ry = p.ox * sin(ra) + p.oy * cos(ra)
-    p.x = cx + lerp(rx, p.sx, t)
-    p.y = cy + lerp(ry, p.sy, t)
-    p.a = 255 * (1 - t * 0.25)
-    p.s = lerp(2.5, 1.8, t)
-    let drift = 1 + t * 0.5
-    p.x += cos(p.rp2 + t * 3) * drift
-    p.y += sin(p.rp2 + t * 2) * drift
+function draw(){
+  drawBg()
+  for(let d of dust){
+    d.x+=d.vx;d.y+=d.vy
+    d.a=25+35*sin(d.ph+millis()*.0008)
+    if(d.x<-10)d.x=width+10;if(d.x>width+10)d.x=-10
+    if(d.y<-10)d.y=height+10;if(d.y>height+10)d.y=-10
+    fill(120,30,30,d.a);noStroke();circle(d.x,d.y,d.s)
   }
-  drawParticles()
-  if (prog >= 1) {
-    phase = 'assemble'
-    phaseTime = millis()
-  }
+  if(phase==='appear')upAppear()
+  else if(phase==='decompose')upDecompose()
+  else if(phase==='assemble')upAssemble()
+  else if(phase==='display')upDisplay()
+  ang+=.004;pulse+=.025
 }
 
-function updateAssemble() {
-  let el = (millis() - phaseTime) / 1000
-  let prog = constrain(el / 3.5, 0, 1)
-  let cx = width / 2, cy = height / 2
-  for (let p of textParticles) {
-    let st = p.del * 0.3
-    let pp = constrain((prog - st) / (1 - st), 0, 1)
-    let t = easeOutExpo(pp)
-    let ca = cos(roseAngle), sa = sin(roseAngle)
-    let rx = p.tx * ca - p.ty * sa
-    let ry = p.tx * sa + p.ty * ca
-    let scatterAngle = atan2(p.sy, p.sx)
-    let scatterDist = sqrt(p.sx * p.sx + p.sy * p.sy)
-    let rotScatterX = scatterDist * cos(scatterAngle + roseAngle * 1.2 * pp)
-    let rotScatterY = scatterDist * sin(scatterAngle + roseAngle * 1.2 * pp)
-    p.x = cx + lerp(rotScatterX, rx, t)
-    p.y = cy + lerp(rotScatterY, ry, t)
-    p.a = lerp(180, 230, t)
-    p.s = lerp(1.8, 2.5 + random(-0.3, 0.3), t)
-  }
-  drawParticles()
-  if (prog >= 1) {
-    phase = 'display'
-    phaseTime = millis()
-    showFinalMessage()
-  }
-}
-
-function updateDisplay() {
-  let cx = width / 2, cy = height / 2
-  let pulse = 0.85 + 0.15 * sin(heartPulse * 0.8)
-  for (let p of textParticles) {
-    let ca = cos(roseAngle), sa = sin(roseAngle)
-    let rx = p.tx * ca - p.ty * sa
-    let ry = p.tx * sa + p.ty * ca
-    p.x = cx + rx * pulse
-    p.y = cy + ry * pulse
-    p.a = 220 + 35 * sin(heartPulse + p.rp2)
-  }
-  let dx = width / 2, dy = height / 2
+function drawBg(){
   noStroke()
-  for (let k = 3; k > 0; k--) {
-    fill(180, 0, 0, 8 / k)
-    let sz = (350 + 30 * sin(heartPulse * 0.8)) * (4 - k) * 0.2
-    ellipse(dx, dy, sz, sz)
+  for(let i=0;i<=height;i+=4){let r=lerp(20,8,i/height);fill(r,0,0);rect(0,i,width,4)}
+  let p=.4+.6*(.5+.5*sin(pulse*1.5))
+  for(let k=6;k>0;k--){fill(120,0,0,6*p/(k*.5+.5));let sz=(280+40*p)*(7-k)*.18;ellipse(width/2,height/2,sz,sz)}
+}
+
+function drawP(){
+  noStroke()
+  for(let p of pts){
+    let[r,g,b]=p.clr;fill(r,g,b,p.a);circle(p.x,p.y,p.s)
+    if(p.s>2.5){fill(r,g,b,p.a*.12);circle(p.x,p.y,p.s*2.5)}
   }
-  drawParticles()
-  roseAngle += 0.004
 }
 
-function showFinalMessage() {
-  let el = document.getElementById('finalMsg')
-  document.getElementById('loveText').textContent = `${nameStr} 💕 我爱你`
-  setTimeout(() => el.classList.add('show'), 500)
+function upAppear(){
+  let el=(millis()-phaseTime)/1000,pr=constrain(el/1.8,0,1)
+  for(let p of pts){p.x=width/2+p.ox;p.y=height/2+p.oy;p.a=255*ease(pr);p.s=(1.2+random(-.3,.3))*ease(pr)}
+  drawP()
+  if(el>2.8){phase='decompose';phaseTime=millis()}
 }
 
-function easeOut(t) { return 1 - pow(1 - t, 3) }
-function easeOutCubic(t) { return 1 - pow(1 - t, 3) }
-function easeOutExpo(t) { return t === 1 ? 1 : 1 - pow(2, -10 * t) }
+function upDecompose(){
+  let el=(millis()-phaseTime)/1000,pr=constrain(el/2.8,0,1)
+  for(let p of pts){
+    let pp=constrain((pr-p.del*.4)/(1-p.del*.4),0,1),t=ease(pp),ra=ang*2.5*t
+    let rx=p.ox*cos(ra)-p.oy*sin(ra),ry=p.ox*sin(ra)+p.oy*cos(ra)
+    p.x=width/2+lerp(rx,p.sx,t);p.y=height/2+lerp(ry,p.sy,t)
+    p.a=255*(1-t*.25);p.s=lerp(2.5,1.8,t);let dr=1+t*.5
+    p.x+=cos(p.rp2+t*3)*dr;p.y+=sin(p.rp2+t*2)*dr
+  }
+  drawP()
+  if(pr>=1){phase='assemble';phaseTime=millis()}
+}
 
-function windowResized() { resizeCanvas(windowWidth, windowHeight) }
+function upAssemble(){
+  let el=(millis()-phaseTime)/1000,pr=constrain(el/3.5,0,1)
+  for(let p of pts){
+    let st=p.del*.3,pp=constrain((pr-st)/(1-st),0,1),t=ee(pp)
+    let ca=cos(ang),sa=sin(ang),rx=p.tx*ca-p.ty*sa,ry=p.tx*sa+p.ty*ca
+    let sa2=atan2(p.sy,p.sx),sd=sqrt(p.sx*p.sx+p.sy*p.sy)
+    let rsx=sd*cos(sa2+ang*1.2*pp),rsy=sd*sin(sa2+ang*1.2*pp)
+    p.x=width/2+lerp(rsx,rx,t);p.y=height/2+lerp(rsy,ry,t)
+    p.a=lerp(180,230,t);p.s=lerp(1.8,2.5+random(-.3,.3),t)
+  }
+  drawP()
+  if(pr>=1){phase='display';phaseTime=millis()}
+}
+
+function upDisplay(){
+  let p2=.85+.15*sin(pulse*.8)
+  for(let p of pts){
+    let ca=cos(ang),sa=sin(ang),rx=p.tx*ca-p.ty*sa,ry=p.tx*sa+p.ty*ca
+    p.x=width/2+rx*p2;p.y=height/2+ry*p2
+    p.a=220+35*sin(pulse+p.rp2)
+  }
+  for(let k=3;k>0;k--){fill(180,0,0,8/k);let sz=(350+30*sin(pulse*.8))*(4-k)*.2;ellipse(width/2,height/2,sz,sz)}
+  drawP();ang+=.004
+}
+
+function ease(t){return 1-pow(1-t,3)}
+function ee(t){return t===1?1:1-pow(2,-10*t)}
+function windowResized(){resizeCanvas(windowWidth,windowHeight)}
 </script>
 </body>
 </html>
