@@ -69,7 +69,7 @@ function gen(name){
     let idx=(x+y*g.width)*4
     if(g.pixels[idx+3]>128){
       let ox=(x-450)*sc,oy=(y-140)*sc,a2=random(TWO_PI),d=random(120,350)
-      pts.push({x:width/2+ox,y:height/2+oy,ox,oy,svx:cos(a2)*d,svy:sin(a2)*d,tx:0,ty:0,s:random(1.5,3.8),a:255,clr:[random(180,255),random(0,50),random(30,70)],de:random(.6),r2:random(TWO_PI),st:0})
+      pts.push({ox,oy,svx:cos(a2)*d,svy:sin(a2)*d,tx:0,ty:0,tz:0,s:random(1.5,3.8),a:255,clr:[random(180,255),random(0,50),random(30,70)],de:random(.6),r2:random(TWO_PI),st:0})
     }
   }
   g.remove()
@@ -78,38 +78,37 @@ function gen(name){
 
 function genTargets(){
   let n=pts.length
-  let stemN=floor(n*0.18)
+  let stemN=floor(n*0.18),lfN=floor(stemN*0.35)
+
   for(let i=0;i<stemN;i++){
     let p=pts[i],t2=i/stemN
-    let cx=0,cy=225+210*t2
-    let sx=8*t2+2*pow(t2,2)+random(-3,3)*0.8
-    let sy=210*t2+random(-3,3)*0.8
-    if(t2<0.35){let peak=sin(t2/0.35*PI);sx+=random(-8,8)*peak*0.2;sy+=random(-5,5)*peak*0.2}
-    let ld=-0.3+0.8*t2
-    p.tx=cx+sx+ld*3;p.ty=cy+sy
-    let dk=1-t2*0.5
-    p.clr=[random(80,160)*dk,random(8,35)*dk,random(15,50)*dk]
-    p.s=random(2.5,4.5)*(1-t2*0.3)
+    let cx=0,cy=200+230*t2
+    let sx=6*t2+4*pow(t2,2)+random(-3,3)
+    let sy=230*t2+random(-3,3)
+    p.tx=cx+sx;p.ty=cy+sy;p.tz=random(-3,3)
+    let dk=1-t2*0.45
+    p.clr=[random(70,150)*dk,random(8,30)*dk,random(12,40)*dk]
+    p.s=random(2.5,4.5)*(1-t2*0.25)
     p.st=1
   }
+
   for(let lf=0;lf<3;lf++){
-    let bt=[0.22,0.50,0.78][lf],dir=[-1,1,-1][lf]
-    let lc=225+210*bt,lx=8*bt+2*bt*bt
-    let ls=random(20,35)
-    for(let j=0;j<floor(stemN*0.12);j++){
-      if(stemN+lf*floor(stemN*0.12)+j>=n)break
-      let p=pts[stemN+lf*floor(stemN*0.12)+j]
-      let t3=random()
-      let px=lx+dir*(ls*t3*0.6+random(-2,2))
-      let py=lc-ls*t3*0.35+random(-2,2)+(1-t3)*6
-      p.tx=px;p.ty=py
-      p.clr=[random(100,180),random(20,50),random(30,60)]
-      p.s=random(2,4)
-      p.st=1
+    let bt=[0.20,0.48,0.76][lf],dir=[-1,1,-1][lf]
+    let lx=6*bt+4*bt*bt,ly=200+230*bt,ls=random(18,30)
+    for(let j=0;j<floor(lfN/3);j++){
+      let idx=stemN+lf*floor(lfN/3)+j
+      if(idx>=n)break
+      let p=pts[idx],t3=random()
+      p.tx=lx+dir*(ls*t3*0.65+random(-2,2))
+      p.ty=ly-ls*t3*0.38+random(-2,2)+(1-t3)*5
+      p.tz=random(-4,4)
+      p.clr=[random(90,170),random(15,40),random(25,50)]
+      p.s=random(2,4);p.st=1
     }
   }
+
   let rem=pts.filter(p=>!p.st)
-  if(rem.length===0)rem=pts.slice(stemN+floor(stemN*0.36))
+  if(rem.length===0)rem=pts.slice(stemN+lfN)
   let ly=[[5,220,0.52,0],[6,175,0.46,0.3],[7,130,0.38,0.6],[8,85,0.30,0.95],[10,40,0.22,1.3]]
   let wg=[0.22,0.24,0.22,0.18,0.14],idx=0
   for(let li=0;li<ly.length;li++){
@@ -121,6 +120,7 @@ function genTargets(){
       r+=random(-3,3)*(r/R+0.5);r=max(r,0)
       p.tx=r*cos(pa+off);p.ty=r*sin(pa+off)
       let lf2=li/(ly.length-1)
+      p.tz=(1-r/230)*55+random(-12,12)
       p.clr=[lerp(140,240,lf2)+random(-20,20),lerp(10,60,lf2)+random(-10,15),lerp(20,80,lf2)+random(-15,20)]
       p.s=lerp(3.2,1.8,lf2)+random(-.5,.5)
     }
@@ -128,14 +128,14 @@ function genTargets(){
   for(let i=idx;i<rem.length;i++){
     let a2=random(TWO_PI),r=random(2,15)
     rem[i].tx=r*cos(a2);rem[i].ty=r*sin(a2)
+    rem[i].tz=random(55,75)
     rem[i].clr=[240+random(-15,15),60+random(-10,20),80+random(-10,20)]
     rem[i].s=random(1,2)
   }
 }
 
 function draw(){
-  bg()
-  du()
+  bg();du()
   if(ph==='appear')upA()
   else if(ph==='xfrm')upX()
   else if(ph==='disp')upD()
@@ -162,14 +162,17 @@ function du(){
 function dr(){
   noStroke()
   for(let p of pts){
-    let[r,g,b]=p.clr;fill(r,g,b,p.a);circle(p.x,p.y,p.s)
-    if(p.s>2.5){fill(r,g,b,p.a*.12);circle(p.x,p.y,p.s*2.5)}
+    let[r,g,b]=p.clr;fill(r,g,b,p.a);circle(p.sx,p.sy,p.s)
+    if(p.s>2.5){fill(r,g,b,p.a*.12);circle(p.sx,p.sy,p.s*2.5)}
   }
 }
 
 function upA(){
   let el=(millis()-phT)/1000,pr=constrain(el/1.8,0,1)
-  for(let p of pts){p.x=width/2+p.ox;p.y=height/2+p.oy;p.a=255*e(pr);p.s=(1.2+random(-.3,.3))*e(pr)}
+  for(let p of pts){
+    p.sx=width/2+p.ox;p.sy=height/2+p.oy
+    p.a=255*e(pr);p.s=(1.2+random(-.3,.3))*e(pr)
+  }
   dr()
   if(el>2.8){ph='xfrm';phT=millis()}
 }
@@ -180,14 +183,11 @@ function upX(){
   for(let p of pts){
     let pp=constrain((pr-p.de*0.35)/(1-p.de*0.35),0,1),t2=ee(pp)
     let sc=sin(pp*PI)
-    let ca,sa,rx,ry
-    if(p.st){
-      let sa2=sin(ang)*0.35*t2;ca=cos(sa2);sa=sin(sa2)
-    }else{ca=cos(ang);sa=sin(ang)}
-    rx=p.tx*ca-p.ty*sa;ry=p.tx*sa+p.ty*ca
+    let ca=cos(ang),sa=sin(ang)
+    let rx=p.tx*ca-p.tz*sa,ry=p.ty
     let bx=lerp(p.ox,rx,t2),by=lerp(p.oy,ry,t2)
-    p.x=cx+bx+p.svx*sc*(1+t2*0.3)
-    p.y=cy+by+p.svy*sc*(1+t2*0.3)
+    p.sx=cx+bx+p.svx*sc*(1+t2*0.3)
+    p.sy=cy+by+p.svy*sc*(1+t2*0.3)
     p.a=lerp(180,230,t2)
     p.s=lerp(1.5,2.3+random(-.3,.3),t2)
   }
@@ -196,20 +196,23 @@ function upX(){
 }
 
 function upD(){
-  let cx=width/2,cy=height/2
-  let sa2=sin(ang)*0.35,ca2=cos(sa2)
+  let cx=width/2,cy=height/2,p2=.85+.15*sin(pls*.8)
+  let ca=cos(ang),sa=sin(ang)
   for(let p of pts){
     if(p.st){
-      let rx=p.tx*ca2-p.ty*sa2,ry=p.tx*sa2+p.ty*ca2
-      p.x=cx+rx;p.y=cy+ry
-      p.a=200+55*sin(pls*0.5+p.r2);continue
+      p.sx=cx+p.tx*ca-p.tz*sa
+      p.sy=cy+p.ty
+      p.a=200+55*sin(pls*0.5+p.r2)
+    }else{
+      p.sx=cx+(p.tx*ca-p.tz*sa)*p2
+      p.sy=cy+p.ty*p2
+      p.a=220+35*sin(pls+p.r2)
     }
-    let p2=.85+.15*sin(pls*.8)
-    let ca=cos(ang),sa=sin(ang),rx=p.tx*ca-p.ty*sa,ry=p.tx*sa+p.ty*ca
-    p.x=cx+rx*p2;p.y=cy+ry*p2
-    p.a=220+35*sin(pls+p.r2)
   }
-  for(let k=3;k>0;k--){fill(180,0,0,8/k);let sz=(350+30*sin(pls*.8))*(4-k)*.2;ellipse(cx,cy,sz,sz)}
+  pts.sort((a,b)=>{
+    let az=a.tx*sa+a.tz*ca,bz=b.tx*sa+b.tz*ca
+    return az-bz
+  })
   dr();ang+=.004
 }
 
