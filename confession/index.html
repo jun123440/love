@@ -29,14 +29,12 @@ canvas{display:block}
   </div>
 </div>
 <script>
-let phase='idle',startTime=0,rotation=0,particles=[]
-const tilt=radians(15),focal=520
-let cx,cy
+let phase='idle',startTime=0,rotation=0,particles=[],phaseTimer=0
+const tilt=radians(15),focal=500
 
 function setup(){
   createCanvas(windowWidth,windowHeight).style('display','block')
-  cx=width/2;cy=height*0.48
-  textAlign(CENTER,CENTER);textStyle(BOLD)
+  textAlign(CENTER,CENTER)
   document.getElementById('submitBtn').onclick=submit
   document.getElementById('nameInput').onkeydown=e=>{if(e.key==='Enter')submit()}
 }
@@ -45,86 +43,154 @@ function submit(){
   let v=document.getElementById('nameInput').value.trim()
   if(!v)return
   document.getElementById('inputScreen').classList.add('hidden')
-  build(v);phase='grow';startTime=millis()
+  build(v)
+  phase='burst';startTime=millis()
 }
 
 function build(n){
-  let c=[],s=0.45
-  for(let ch of n)c.push(ch)
-  while(c.length<38)for(let ch of n)if(c.length<38)c.push(ch)
-  if(c.length>45)c.length=45
-  let sn=max(4,min(10,floor(c.length*0.18))),fn=c.length-sn
-  particles=[]
-  for(let i=0;i<fn;i++){
-    let t=i/fn
-    particles.push({
-      ch:c[i],fa:i*2.3999,fr:14+pow(i,1.15)*2.3,fh:55*exp(-i*0.055),
-      cr:lerp(175,245,t),cg:lerp(15,175,t),cb:lerp(15,165,t),
-      sz:20+random(-2,3),dl:i*s,st:0
-    })
+  let g=createGraphics(500,200)
+  g.textAlign(CENTER,CENTER);g.textSize(56);g.fill(255);g.background(0,0)
+  g.text(n,250,100);g.loadPixels()
+  let src=[]
+  for(let y=0;y<200;y+=2)for(let x=0;x<500;x+=2){
+    let i=(x+y*500)*4
+    if(g.pixels[i]>200)src.push({x:x-250,y:y-100})
   }
-  for(let i=0;i<sn;i++){
-    let t=i/sn
+  g.remove()
+  let N=min(1200,src.length)
+  shuffle(src)
+  let cx=width/2,cy=height*0.48
+  
+  // rose params - 6 layers from outer to inner
+  let layers=[{n:18,r1:220,r2:160,h:12},{n:16,r1:160,r2:110,h:24},{n:14,r1:110,r2:70,h:36},{n:12,r1:70,r2:40,h:46},{n:10,r1:40,r2:20,h:54},{n:8,r1:20,r2:4,h:60}]
+  let pidx=0
+  
+  particles=[]
+  for(let li=0;li<layers.length;li++){
+    let l=layers[li],ppl=floor(N*l.n/78),pidx0=pidx
+    for(let j=0;j<ppl&&pidx<src.length&&pidx<pidx0+ppl;j++){
+      let t=j/ppl
+      let baseA=j*2.3999+li*0.8
+      let aOff=(random()-0.5)*PI/(l.n*0.5)
+      let r=lerp(l.r2,l.r1,t)+random(-8,8)
+      let a=baseA+aOff
+      let h=l.h*(1-t*0.3)+random(-2,2)
+      let colT=li/6
+      let ri=lerp(180,245,colT)+random(-5,5)
+      let gi=lerp(25,170,colT)+random(-8,12)
+      let bi=lerp(30,160,colT)+random(-8,12)
+      particles.push({
+        sx:src[pidx].x,sy:src[pidx].y,
+        ta:a,tr:r,th:h,
+        cr:ri,cg:gi,cb:bi,
+        sz:1.8+random()*1.2,
+        ca:0,crr:0,chh:0,
+        ap:0,dl:0.3+pidx*0.002+random()*0.4,
+        st:0
+      })
+      pidx++
+    }
+  }
+  let stemN=floor(particles.length*0.1)
+  for(let i=0;i<stemN&&pidx<src.length;i++){
+    let t=i/stemN
+    let a=-PI*0.3+t*PI*0.5
+    let r=20+t*140+random(-5,5)
+    let h=2*(1-t)+random(0,1.5)
     particles.push({
-      ch:c[fn+i],fa:-PI*0.25+t*PI*0.55,fr:28+t*115,fh:2.5*(1-t*t),
-      cr:lerp(55,130,1-t),cg:lerp(90,185,1-t),cb:lerp(35,75,1-t),
-      sz:17-t*random(3,5),dl:(fn+i)*s,st:1,sw:i*0.15
+      sx:src[pidx].x,sy:src[pidx].y,
+      ta:a,tr:r,th:h,
+      cr:lerp(50,120,1-t),cg:lerp(80,175,1-t),cb:lerp(30,70,1-t),
+      sz:1.8+random()*1.2,
+      ca:0,crr:0,chh:0,
+      ap:0,dl:0.5+pidx*0.002+random()*0.3,
+      st:1,sw:i*0.08
     })
+    pidx++
+  }
+  // remaining particles as fill
+  while(pidx<src.length){
+    let a=random(TWO_PI),r=random(4,220),h=random(2,60)
+    let t=r/220
+    particles.push({
+      sx:src[pidx].x,sy:src[pidx].y,
+      ta:a,tr:r,th:h,
+      cr:lerp(245,180,t)+random(-5,5),
+      cg:lerp(170,25,t)+random(-8,12),
+      cb:lerp(160,30,t)+random(-8,12),
+      sz:1+random()*2,
+      ca:0,crr:0,chh:0,
+      ap:0,dl:0.3+pidx*0.0015,
+      st:0
+    })
+    pidx++
   }
 }
 
 function draw(){
   bg()
   rotation+=0.005
-  if(phase==='grow')grow()
-  else if(phase==='disp')disp()
+  let cx=width/2,cy=height*0.48
+  let el=(millis()-startTime)/1000
+  
+  if(phase==='burst'){
+    let allDone=true
+    for(let p of particles){
+      let delay=p.dl
+      let raw=max(0,(el-delay)/1.2)
+      let e=raw<1?1-pow(2,-8*raw):1
+      if(e<1)allDone=false
+      if(e>0){
+        p.ap=e
+        p.crr=p.tr*e
+        p.chh=p.th*e
+        p.ca=p.ta+rotation*e
+      }else{p.ap=0;p.crr=0;p.chh=0}
+    }
+    if(allDone&&el>particles[particles.length-1].dl+1)
+      {phase='disp';startTime=millis()}
+    render(cx,cy)
+  }else if(phase==='disp'){
+    for(let p of particles){p.ap=1;p.crr=p.tr;p.chh=p.th}
+    render(cx,cy)
+  }
+}
+
+function render(cx,cy){
+  let depthSorted=[]
+  for(let i=0;i<particles.length;i++){
+    let p=particles[i];if(p.ap<=0)continue
+    let a,r,h
+    if(p.st){
+      let sw=sin(rotation*0.25+p.sw)*0.2
+      a=p.ta+sw*0.04;r=p.crr;h=p.chh
+    }else{a=p.ca;r=p.crr;h=p.chh}
+    let x=r*cos(a),yf=r*sin(a),z=h
+    let sy=yf*cos(tilt)-z*sin(tilt),dp=yf*sin(tilt)+z*cos(tilt)
+    let pf=focal/(focal+dp+30)
+    let sx=cx+x*pf,sy2=cy+sy*pf,sz=p.sz*pf*(1+z*0.008)
+    let sd=1;if(yf<0)sd=0.5+0.5*pow(1+yf/160,0.6)
+    let al=255*pf*sd*p.ap;if(p.st)al*=0.8
+    depthSorted.push({sx,sy:sy2,sz,al,r:p.cr,g:p.cg,b:p.cb,i})
+  }
+  depthSorted.sort((a,b)=>b.sy-a.sy)
+  for(let d of depthSorted){
+    let p=particles[d.i]
+    push();translate(d.sx,d.sy)
+    fill(d.r,d.g,d.b,d.al*0.15);noStroke();circle(0,0,d.sz*3)
+    fill(d.r,d.g,d.b,d.al);circle(0,0,d.sz)
+    pop()
+  }
 }
 
 function bg(){
   for(let y=0;y<height;y+=4){
-    let r=lerp(12,4,y/height)
+    let r=lerp(10,3,y/height)
     noStroke();fill(r,0,0);rect(0,y,width,4)
   }
 }
 
-function grow(){
-  let el=(millis()-startTime)/1000,ok=true
-  for(let p of particles){
-    let r=max(0,(el-p.dl)/0.8)
-    let e=r<1?1-pow(2,-10*r):1
-    if(e<1)ok=false
-    rnd(p,e)
-  }
-  if(ok&&el>2){phase='disp'}
-}
-
-function disp(){for(let p of particles)rnd(p,1)}
-
-function rnd(p,e){
-  let a,r,h
-  if(p.st){
-    if(e<1){a=p.fa;r=p.fr*e;h=p.fh*e}
-    else{
-      let sw=sin(rotation*0.3+p.sw)*0.3
-      a=p.fa+sw*0.03;r=p.fr;h=p.fh
-    }
-  }else{a=p.fa+rotation*e;r=p.fr*e;h=p.fh*e}
-  
-  let x=r*cos(a),y=r*sin(a),z=h
-  let sy=y*cos(tilt)-z*sin(tilt),dp=y*sin(tilt)+z*cos(tilt)
-  let pf=focal/(focal+dp+40)
-  let sx=cx+x*pf,sy2=cy+sy*pf,sz=p.sz*pf*(1+z*0.007)
-  
-  let sd=1;if(y<0)sd=0.5+0.5*pow(1+y/150,0.6)
-  let al=255*pf*sd*(p.st?0.85:1);if(e<1)al*=e
-  
-  push();translate(sx,sy2)
-  fill(p.cr,p.cg,p.cb,al*0.2);noStroke();circle(0,0,sz*1.4)
-  fill(p.cr,p.cg,p.cb,al);textSize(sz);text(p.ch,0,0)
-  pop()
-}
-
-function windowResized(){resizeCanvas(windowWidth,windowHeight);cx=width/2;cy=height*0.48}
+function windowResized(){resizeCanvas(windowWidth,windowHeight)}
 </script>
 </body>
 </html>
