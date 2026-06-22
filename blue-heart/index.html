@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D 粒子球</title>
+    <style>
+        * { margin: 0; padding: 0; }
+        body { background: #0a0a2e; overflow: hidden; height: 100vh; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setClearColor(0x0a0a2e);
+        renderer.shadowMap.enabled = true;
+        document.body.prepend(renderer.domElement);
+        camera.position.set(0, 0, 6);
+
+        const COUNT = 8000;
+        const dummy = new THREE.Object3D();
+        const sphereGeom = new THREE.SphereGeometry(1, 16, 16);
+        const mat = new THREE.MeshPhysicalMaterial({
+            color: 0x4fc3f7, metalness: 0.2, roughness: 0.15,
+            clearcoat: 0.5, clearcoatRoughness: 0.2,
+            emissive: 0x1565c0, emissiveIntensity: 0.15
+        });
+        const mesh = new THREE.InstancedMesh(sphereGeom, mat, COUNT);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        scene.add(mesh);
+
+        const data = [];
+        for (let i = 0; i < COUNT; i++) {
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            const r = Math.pow(Math.random(), 0.33) * 2;
+            data.push({
+                tx: r * Math.sin(phi) * Math.cos(theta),
+                ty: r * Math.sin(phi) * Math.sin(theta),
+                tz: r * Math.cos(phi),
+                x: (Math.random() - 0.5) * 12,
+                y: (Math.random() - 0.5) * 12,
+                z: (Math.random() - 0.5) * 12,
+                size: 0.015 + Math.random() * 0.025,
+                speed: 0.005 + Math.random() * 0.01,
+                delay: Math.random() * 200,
+            });
+            dummy.position.set(data[i].x, data[i].y, data[i].z);
+            dummy.scale.set(data[i].size, data[i].size, data[i].size);
+            dummy.updateMatrix();
+            mesh.setMatrixAt(i, dummy.matrix);
+        }
+        mesh.instanceMatrix.needsUpdate = true;
+
+        const ambient = new THREE.AmbientLight(0x222266, 0.4);
+        scene.add(ambient);
+        const main = new THREE.DirectionalLight(0x4fc3f7, 2);
+        main.position.set(5, 8, 5); main.castShadow = true;
+        scene.add(main);
+        const fill = new THREE.DirectionalLight(0x7c4dff, 0.8);
+        fill.position.set(-5, 3, -5);
+        scene.add(fill);
+
+        const starGeom = new THREE.BufferGeometry();
+        const starCount = 2000;
+        const starPos = new Float32Array(starCount * 3);
+        for (let i = 0; i < starCount * 3; i++) starPos[i] = (Math.random() - 0.5) * 200;
+        starGeom.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        const starField = new THREE.Points(starGeom, new THREE.PointsMaterial({
+            color: 0xffffff, size: 0.1, transparent: true, opacity: 0.4,
+            blending: THREE.AdditiveBlending, depthWrite: false
+        }));
+        scene.add(starField);
+
+        let frame = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            frame++;
+            for (let i = 0; i < COUNT; i++) {
+                const d = data[i];
+                if (frame > d.delay) {
+                    const t = Math.min(1, (frame - d.delay) * d.speed);
+                    const ease = 1 - Math.pow(1 - t, 3);
+                    d.x += (d.tx - d.x) * ease * 0.03;
+                    d.y += (d.ty - d.y) * ease * 0.03;
+                    d.z += (d.tz - d.z) * ease * 0.03;
+                }
+                dummy.position.set(d.x, d.y, d.z);
+                dummy.scale.set(d.size, d.size, d.size);
+                dummy.updateMatrix();
+                mesh.setMatrixAt(i, dummy.matrix);
+            }
+            mesh.instanceMatrix.needsUpdate = true;
+            mesh.rotation.y += 0.004;
+            mesh.rotation.x += 0.001;
+            mat.emissiveIntensity = 0.1 + Math.sin(frame * 0.02) * 0.08;
+            starField.rotation.y += 0.0002;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

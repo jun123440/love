@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>电力系统等值电路</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: #f0f4f8;
+    color: #1a2332;
+    padding: 20px;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  h1 {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: 2px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #5a6a7a;
+    font-size: 14px;
+    margin-bottom: 28px;
+    border-bottom: 2px solid #d0d8e0;
+    padding-bottom: 14px;
+  }
+  .section {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    margin-bottom: 24px;
+    padding: 20px 20px 10px;
+    transition: box-shadow 0.2s;
+  }
+  .section:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.10); }
+  .section h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    padding-left: 10px;
+    border-left: 4px solid #2563eb;
+    color: #1e3a5f;
+  }
+  .section .desc {
+    font-size: 13px;
+    color: #5a6a7a;
+    margin-bottom: 10px;
+    padding-left: 14px;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #fafcff;
+    border-radius: 8px;
+    border: 1px solid #e8ecf0;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 24px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #2a3a4a;
+    background: #f7faff;
+    border-radius: 6px;
+    margin-top: 8px;
+    border: 1px solid #e8ecf0;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot {
+    display: inline-block;
+    width: 14px; height: 4px; border-radius: 2px;
+  }
+  .legend-dot.blue { background: #2563eb; }
+  .legend-dot.red { background: #dc2626; }
+  .legend-dot.green { background: #16a34a; }
+  .legend-dot.orange { background: #ea580c; }
+  .legend-dot.purple { background: #7c3aed; }
+  .formula-box {
+    background: #f1f5f9;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 8px 4px 4px;
+    font-size: 14px;
+    line-height: 1.8;
+    border: 1px solid #e2e8f0;
+    font-family: 'Cambria', 'Times New Roman', serif;
+    font-style: italic;
+  }
+  .formula-box .hl { color: #2563eb; font-weight: 600; }
+  .formula-box .hl2 { color: #dc2626; font-weight: 600; }
+  footer {
+    text-align: center;
+    font-size: 12px;
+    color: #8a9aaa;
+    margin-top: 20px;
+    padding-top: 14px;
+    border-top: 1px solid #d0d8e0;
+  }
+  @media (max-width: 640px) {
+    body { padding: 10px; }
+    .section { padding: 14px 10px 6px; }
+    h1 { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>⚡ 电力系统等值电路</h1>
+  <div class="subtitle">架空线路 · 变压器 · 组合网络</div>
+
+  <!-- Section 1: Transmission Line -->
+  <div class="section">
+    <h2>一、架空线路 π 型等值电路</h2>
+    <div class="desc">集中参数模型，适用于中长线路（80–300 km）</div>
+    <canvas id="canvasLine" width="900" height="320"></canvas>
+    <div class="formula-box">
+      Z = <span class="hl">R + jX</span> &nbsp; 串联阻抗 &nbsp;|&nbsp;
+      Y/2 = <span class="hl2">G/2 + jB/2</span> &nbsp; 并联导纳（每端）
+    </div>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-dot blue"></span> 串联支路 Z</span>
+      <span class="legend-item"><span class="legend-dot red"></span> 并联支路 Y/2</span>
+      <span class="legend-item"><span class="legend-dot orange"></span> 节点电压 / 电流</span>
+    </div>
+  </div>
+
+  <!-- Section 2: Transformer -->
+  <div class="section">
+    <h2>二、变压器 Γ 型等值电路</h2>
+    <div class="desc">归算到一次侧的 Γ 型等效模型</div>
+    <canvas id="canvasTx" width="900" height="320"></canvas>
+    <div class="formula-box">
+      Z₁ = <span class="hl">R₁ + jXσ₁</span> &nbsp; 一次侧漏阻抗 &nbsp;|&nbsp;
+      Y<sub>m</sub> = <span class="hl2">1/R<sub>m</sub> + 1/(jX<sub>m</sub>)</span> &nbsp; 励磁支路 &nbsp;|&nbsp;
+      Z₂' = <span class="hl">R₂' + jXσ₂'</span> &nbsp; 二次侧归算阻抗
+    </div>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-dot blue"></span> 一次侧 Z₁</span>
+      <span class="legend-item"><span class="legend-dot purple"></span> 励磁支路 Y<sub>m</sub></span>
+      <span class="legend-item"><span class="legend-dot green"></span> 理想变压器 1:k</span>
+      <span class="legend-item"><span class="legend-dot red"></span> 二次侧 Z₂'</span>
+    </div>
+  </div>
+
+  <!-- Section 3: Combined Network -->
+  <div class="section">
+    <h2>三、电力网络等值电路</h2>
+    <div class="desc">发电机 → 升压变压器 → 架空线路 → 降压变压器 → 负荷</div>
+    <canvas id="canvasNet" width="900" height="280"></canvas>
+    <div class="formula-box">
+      <span class="hl">G</span> → <span class="hl2">Tx₁</span> → <span class="hl">Line(π)</span> → <span class="hl2">Tx₂</span> → <span class="hl">Load</span>
+    </div>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-dot blue"></span> 发电机 G</span>
+      <span class="legend-item"><span class="legend-dot orange"></span> 变压器 Tx</span>
+      <span class="legend-item"><span class="legend-dot red"></span> 架空线路 Line</span>
+      <span class="legend-item"><span class="legend-dot purple"></span> 负荷 Load</span>
+    </div>
+  </div>
+
+  <footer>电力系统分析 · 等值电路可视化</footer>
+</div>
+
+<script>
+const DPR = window.devicePixelRatio || 1;
+
+function setupCanvas(id, w, h) {
+  const c = document.getElementById(id);
+  c.width = w * DPR;
+  c.height = h * DPR;
+  c.style.width = w + 'px';
+  c.style.height = h + 'px';
+  const ctx = c.getContext('2d');
+  ctx.scale(DPR, DPR);
+  return { ctx, c };
+}
+
+/* ========== helpers ========== */
+function drawGround(ctx, x, y) {
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x, y + 8);
+  ctx.moveTo(x - 10, y + 8);
+  ctx.lineTo(x + 10, y + 8);
+  ctx.moveTo(x - 6, y + 12);
+  ctx.lineTo(x + 6, y + 12);
+  ctx.moveTo(x - 2, y + 16);
+  ctx.lineTo(x + 2, y + 16);
+  ctx.stroke();
+}
+
+function drawResistor(ctx, x1, y, w, h) {
+  const n = 6;
+  const seg = w / (n * 2);
+  ctx.beginPath();
+  ctx.moveTo(x1, y);
+  for (let i = 0; i < n; i++) {
+    const bx = x1 + i * 2 * seg;
+    ctx.lineTo(bx + seg, y - h / 2);
+    ctx.lineTo(bx + 2 * seg, y + h / 2);
+  }
+  ctx.lineTo(x1 + w, y);
+  ctx.stroke();
+}
+
+function drawInductor(ctx, x1, y, w, r) {
+  const loops = 5;
+  const seg = w / loops;
+  ctx.beginPath();
+  ctx.moveTo(x1, y);
+  for (let i = 0; i < loops; i++) {
+    const cx = x1 + i * seg + seg / 2;
+    ctx.arc(cx, y + r, r, Math.PI, 0);
+  }
+  ctx.lineTo(x1 + w, y);
+  ctx.stroke();
+}
+
+function drawRoundedBox(ctx, x, y, w, h, r, fill, stroke) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+function drawLabel(ctx, text, x, y, color, size, align) {
+  ctx.fillStyle = color || '#1a2332';
+  ctx.font = (size || 14) + 'px "Segoe UI", "Microsoft YaHei", sans-serif';
+  ctx.textAlign = align || 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x, y);
+}
+
+function drawMultiLine(ctx, lines, x, y, color, size, align) {
+  ctx.fillStyle = color || '#1a2332';
+  ctx.font = (size || 13) + 'px "Segoe UI", "Microsoft YaHei", sans-serif';
+  ctx.textAlign = align || 'center';
+  ctx.textBaseline = 'middle';
+  const lh = (size || 13) + 4;
+  const startY = y - ((lines.length - 1) * lh) / 2;
+  lines.forEach((l, i) => {
+    ctx.fillText(l, x, startY + i * lh);
+  });
+}
+
+function drawArrow(ctx, x1, y1, x2, y2) {
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  const len = 10;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - len * Math.cos(a - 0.4), y2 - len * Math.sin(a - 0.4));
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - len * Math.cos(a + 0.4), y2 - len * Math.sin(a + 0.4));
+  ctx.stroke();
+}
+
+function drawDot(ctx, x, y, r, color) {
+  ctx.beginPath();
+  ctx.arc(x, y, r || 4, 0, 2 * Math.PI);
+  ctx.fillStyle = color || '#1a2332';
+  ctx.fill();
+}
+
+/* ================================================================
+   1. 架空线路 π 型等值电路
+   ================================================================ */
+function drawLineCircuit() {
+  const { ctx } = setupCanvas('canvasLine', 900, 320);
+  ctx.strokeStyle = '#1a2332';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  const cx = 450, topY = 70, botY = 230;
+  const leftX = 120, rightX = 780;
+  const midX = cx;
+
+  // ---- main horizontal wire ----
+  ctx.beginPath();
+  ctx.moveTo(leftX, topY);
+  ctx.lineTo(rightX, topY);
+  ctx.stroke();
+
+  // ---- bottom wire ----
+  ctx.beginPath();
+  ctx.moveTo(leftX, botY);
+  ctx.lineTo(rightX, botY);
+  ctx.stroke();
+
+  // ---- nodes ----
+  drawDot(ctx, leftX, topY, 5, '#ea580c');
+  drawDot(ctx, rightX, topY, 5, '#ea580c');
+
+  // ---- series Z box ----
+  const zW = 160, zH = 60, zX = midX - zW / 2, zY = topY - 10;
+  drawRoundedBox(ctx, zX, zY, zW, zH, 6, '#eef4ff', '#2563eb');
+  drawMultiLine(ctx, ['Z = R + jX', '串联阻抗'], midX, zY + zH / 2, '#2563eb', 14);
+  // resistor + inductor symbol inside box
+  const symY = zY + zH - 14;
+  drawResistor(ctx, zX + 15, symY, 60, 12);
+  drawInductor(ctx, zX + 90, symY, 55, 6);
+
+  // ---- left shunt branch Y/2 ----
+  const lShuntX = leftX + 80;
+  ctx.beginPath();
+  ctx.moveTo(lShuntX, topY);
+  ctx.lineTo(lShuntX, topY + 30);
+  ctx.stroke();
+  const yw = 110, yh = 50, yLx = lShuntX - yw / 2, yLy = topY + 30;
+  drawRoundedBox(ctx, yLx, yLy, yw, yh, 6, '#fef2f2', '#dc2626');
+  drawMultiLine(ctx, ['Y/2 = G/2 + jB/2', '并联导纳'], lShuntX, yLy + yh / 2, '#dc2626', 13);
+  // from box to bottom
+  ctx.beginPath();
+  ctx.moveTo(lShuntX, yLy + yh);
+  ctx.lineTo(lShuntX, botY);
+  ctx.stroke();
+  drawGround(ctx, lShuntX, botY);
+
+  // ---- right shunt branch Y/2 ----
+  const rShuntX = rightX - 80;
+  ctx.beginPath();
+  ctx.moveTo(rShuntX, topY);
+  ctx.lineTo(rShuntX, topY + 30);
+  ctx.stroke();
+  const rLx = rShuntX - yw / 2, rLy = topY + 30;
+  drawRoundedBox(ctx, rLx, rLy, yw, yh, 6, '#fef2f2', '#dc2626');
+  drawMultiLine(ctx, ['Y/2 = G/2 + jB/2', '并联导纳'], rShuntX, rLy + yh / 2, '#dc2626', 13);
+  ctx.beginPath();
+  ctx.moveTo(rShuntX, rLy + yh);
+  ctx.lineTo(rShuntX, botY);
+  ctx.stroke();
+  drawGround(ctx, rShuntX, botY);
+
+  // ---- labels ----
+  drawLabel(ctx, '①', leftX - 20, topY, '#ea580c', 15);
+  drawLabel(ctx, '②', rightX + 20, topY, '#ea580c', 15);
+  drawLabel(ctx, 'V₁', leftX - 20, topY + 18, '#ea580c', 12);
+  drawLabel(ctx, 'V₂', rightX + 20, topY + 18, '#ea580c', 12);
+  drawLabel(ctx, 'I₁', leftX - 20, topY - 18, '#ea580c', 12);
+  drawLabel(ctx, 'I₂', rightX + 20, topY - 18, '#ea580c', 12);
+
+  // parameter values
+  ctx.fillStyle = '#6b7a8a';
+  ctx.font = '12px "Segoe UI", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('R = r₀ · l     X = x₀ · l     G = g₀ · l     B = b₀ · l', 30, 298);
+  ctx.textAlign = 'right';
+  ctx.fillText('l — 线路长度 (km)', 880, 298);
+}
+
+/* ================================================================
+   2. 变压器 Γ 型等值电路
+   ================================================================ */
+function drawTxCircuit() {
+  const { ctx } = setupCanvas('canvasTx', 900, 320);
+  ctx.strokeStyle = '#1a2332';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  const topY = 60, botY = 240;
+  const leftX = 80, rightX = 820;
+
+  // ---- top wire ----
+  ctx.beginPath();
+  ctx.moveTo(leftX, topY);
+  ctx.lineTo(rightX, topY);
+  ctx.stroke();
+
+  // ---- bottom wire ----
+  ctx.beginPath();
+  ctx.moveTo(leftX, botY);
+  ctx.lineTo(rightX, botY);
+  ctx.stroke();
+
+  // ---- nodes ----
+  drawDot(ctx, leftX, topY, 5, '#ea580c');
+  drawDot(ctx, rightX, topY, 5, '#ea580c');
+
+  // ---- 1. Primary impedance Z₁ ----
+  const z1W = 120, z1H = 50;
+  const z1X = 150, z1Y = topY - 6;
+  drawRoundedBox(ctx, z1X, z1Y, z1W, z1H, 6, '#eef4ff', '#2563eb');
+  drawMultiLine(ctx, ['Z₁ = R₁ + jXσ₁', '一次侧漏阻抗'], z1X + z1W / 2, z1Y + z1H / 2, '#2563eb', 13);
+
+  // ---- 2. Magnetizing branch Ym ----
+  const ymW = 120, ymH = 50;
+  const ymX = 340, ymTopY = topY;
+  // T-junction
+  const tJX = ymX + ymW / 2;
+  ctx.beginPath();
+  ctx.moveTo(tJX, topY);
+  ctx.lineTo(tJX, topY + 40);
+  ctx.stroke();
+
+  drawRoundedBox(ctx, ymX, topY + 40, ymW, ymH, 6, '#f3eaff', '#7c3aed');
+  drawMultiLine(ctx, ['Yₘ = Gₘ + jBₘ', '励磁支路'], tJX, topY + 40 + ymH / 2, '#7c3aed', 13);
+
+  ctx.beginPath();
+  ctx.moveTo(tJX, topY + 40 + ymH);
+  ctx.lineTo(tJX, botY);
+  ctx.stroke();
+  drawGround(ctx, tJX, botY);
+
+  // ---- 3. Ideal transformer ----
+  const kx = 510, ky = topY;
+  // circle
+  ctx.beginPath();
+  ctx.arc(kx, ky, 26, 0, 2 * Math.PI);
+  ctx.strokeStyle = '#16a34a';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.strokeStyle = '#1a2332';
+  ctx.fillStyle = '#f0fdf4';
+  ctx.fill();
+  // 1:k text inside
+  drawLabel(ctx, '1 : k', kx, ky, '#16a34a', 14);
+  // gap before and after circle (already connected via top wire)
+
+  // ---- 4. Secondary impedance Z₂' ----
+  const z2W = 120, z2H = 50;
+  const z2X = 610, z2Y = topY - 6;
+  drawRoundedBox(ctx, z2X, z2Y, z2W, z2H, 6, '#fef2f2', '#dc2626');
+  drawMultiLine(ctx, ["Z₂' = R₂' + jXσ₂'", '二次侧归算阻抗'], z2X + z2W / 2, z2Y + z2H / 2, '#dc2626', 12);
+
+  // ---- labels ----
+  drawLabel(ctx, '①', leftX - 20, topY, '#ea580c', 15);
+  drawLabel(ctx, '②', rightX + 20, topY, '#ea580c', 15);
+  drawLabel(ctx, 'V₁', leftX - 20, topY + 18, '#ea580c', 12);
+  drawLabel(ctx, 'V₂', rightX + 20, topY + 18, '#ea580c', 12);
+  drawLabel(ctx, 'I₁', leftX - 20, topY - 18, '#ea580c', 12);
+  drawLabel(ctx, 'I₂', rightX + 20, topY - 18, '#ea580c', 12);
+
+  // parameters note
+  ctx.fillStyle = '#6b7a8a';
+  ctx.font = '12px "Segoe UI", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('归算关系:  Z₂\' = k² · Z₂    k = V₁ / V₂ (变比)', 30, 298);
+  ctx.textAlign = 'right';
+  ctx.fillText('Rₘ — 铁耗等效电阻   Xₘ — 励磁电抗', 880, 298);
+}
+
+/* ================================================================
+   3. 电力网络等值电路
+   ================================================================ */
+function drawNetCircuit() {
+  const { ctx } = setupCanvas('canvasNet', 900, 280);
+  ctx.strokeStyle = '#1a2332';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  const y = 120;
+
+  // positions of 5 elements
+  const elem = [
+    { label: '发电机\nG', x: 80, color: '#2563eb', fill: '#eef4ff' },
+    { label: '升压\n变压器', x: 260, color: '#ea580c', fill: '#fff7ed' },
+    { label: '架空线路\nπ 型等值电路', x: 460, color: '#dc2626', fill: '#fef2f2' },
+    { label: '降压\n变压器', x: 660, color: '#ea580c', fill: '#fff7ed' },
+    { label: '负荷\nLoad', x: 840, color: '#7c3aed', fill: '#f3eaff' },
+  ];
+
+  // draw connecting lines
+  ctx.beginPath();
+  ctx.moveTo(elem[0].x + 50, y);
+  elem.slice(1).forEach(e => {
+    ctx.lineTo(e.x - 50, y);
+    ctx.moveTo(e.x + 50, y);
+  });
+  ctx.stroke();
+
+  // draw bottom wire
+  ctx.beginPath();
+  ctx.moveTo(elem[0].x + 50, y + 60);
+  elem.slice(1).forEach(e => {
+    ctx.lineTo(e.x - 50, y + 60);
+    ctx.moveTo(e.x + 50, y + 60);
+  });
+  ctx.stroke();
+
+  // draw each element
+  elem.forEach(e => {
+    const w = 100, h = 60;
+    const ex = e.x - w / 2, ey = y - h / 2;
+    drawRoundedBox(ctx, ex, ey, w, h, 8, e.fill, e.color);
+    const lines = e.label.split('\n');
+    drawMultiLine(ctx, lines, e.x, y, e.color, 14);
+
+    // small connection dots at sides
+    drawDot(ctx, e.x - w / 2, y, 4, '#1a2332');
+    drawDot(ctx, e.x + w / 2, y, 4, '#1a2332');
+    // bottom dots
+    drawDot(ctx, e.x - w / 2, y + 60, 4, '#1a2332');
+    drawDot(ctx, e.x + w / 2, y + 60, 4, '#1a2332');
+
+    // ground for transformers
+    if (e.label.includes('变压器') || e.label.includes('发电机')) {
+      ctx.beginPath();
+      ctx.moveTo(e.x, y + 30);
+      ctx.lineTo(e.x, y + 60);
+      ctx.stroke();
+      drawGround(ctx, e.x, y + 60);
+    }
+  });
+
+  // arrows for power flow
+  const arrowY = y - 50;
+  for (let i = 0; i < elem.length - 1; i++) {
+    const ax1 = elem[i].x + 50, ax2 = elem[i+1].x - 50;
+    ctx.strokeStyle = '#2563eb';
+    ctx.lineWidth = 1.5;
+    drawArrow(ctx, ax1, arrowY, ax2, arrowY);
+    ctx.strokeStyle = '#1a2332';
+    ctx.lineWidth = 2;
+  }
+  drawLabel(ctx, '功率方向 P + jQ', 470, arrowY - 16, '#2563eb', 12);
+
+  // System diagram caption
+  ctx.fillStyle = '#6b7a8a';
+  ctx.font = '12px "Segoe UI", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('实际接线:  发电厂 → 升压站 → 输电线路 → 降压站 → 配电网 → 用户', 30, 250);
+  ctx.textAlign = 'right';
+  ctx.fillText('各元件用集中参数等值电路表示', 880, 250);
+}
+
+/* ========== draw on load ========== */
+drawLineCircuit();
+drawTxCircuit();
+drawNetCircuit();
+</script>
+</body>
+</html>
