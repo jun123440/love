@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Anti Burn · 防烧屏</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif}
+#screen{position:fixed;top:0;left:0;width:100%;height:100%;transition:background 2.5s ease}
+#screen.dark{background:#0a0a0a}
+#screen.white{background:#ffffff}
+#canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;opacity:0;transition:opacity 2.5s ease}
+#canvas.show{opacity:1}
+.hud{position:fixed;z-index:10;color:rgba(255,255,255,.18);font-size:14px;font-variant-numeric:tabular-nums;letter-spacing:.5px;pointer-events:none;transition:color 1s}
+.hud.white{color:rgba(0,0,0,.12)}
+#timer{bottom:24px;left:50%;transform:translateX(-50%);font-size:13px;font-weight:300}
+#status{bottom:50px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:200;opacity:.6}
+#phase{top:50%;left:50%;transform:translate(-50%,-50%);font-size:22px;font-weight:300;text-align:center;transition:opacity 1.5s ease}
+#phase .sub{display:block;font-size:11px;font-weight:200;margin-top:8px;opacity:.5}
+#progress-wrap{position:fixed;bottom:0;left:0;width:100%;height:2px;z-index:10;background:rgba(255,255,255,.04)}
+#progress-fill{height:100%;width:0%;background:rgba(255,255,255,.1);transition:width 2s linear}
+#progress-wrap.white-bar{background:rgba(0,0,0,.04)}
+#progress-wrap.white-bar #progress-fill{background:rgba(0,0,0,.08)}
+.done{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20;background:#fff;opacity:0;pointer-events:none;transition:opacity 1.5s ease}
+.done.show{opacity:1;pointer-events:auto}
+.done h1{font-weight:200;font-size:36px;color:#222;margin-bottom:12px}
+.done p{font-weight:200;font-size:14px;color:#888}
+</style>
+</head>
+<body>
+
+<div id="screen" class="dark"></div>
+<canvas id="canvas"></canvas>
+
+<div id="phase">准备中<span class="sub">Anti Burn · 防烧屏</span></div>
+<div id="timer">--:--:--</div>
+<div id="status">等待开始</div>
+<div id="progress-wrap"><div id="progress-fill"></div></div>
+
+<div class="done" id="done">
+  <h1>✓ 完成</h1>
+  <p>已持续运行 3 小时 · 防烧屏保护结束</p>
+</div>
+
+<script>
+const DURATION = 3 * 60 * 60 * 1000 // 3 hours
+const canvas = document.getElementById('canvas')
+const ctx = canvas.getContext('2d')
+const screen = document.getElementById('screen')
+const phase = document.getElementById('phase')
+const timer = document.getElementById('timer')
+const status = document.getElementById('status')
+const progressFill = document.getElementById('progress-fill')
+const progressWrap = document.getElementById('progress-wrap')
+const done = document.getElementById('done')
+
+let W, H
+let startTime = localStorage.getItem('antiBurnStart')
+  ? parseInt(localStorage.getItem('antiBurnStart'))
+  : Date.now()
+if (!localStorage.getItem('antiBurnStart')) {
+  localStorage.setItem('antiBurnStart', startTime)
+}
+
+let isWhite = false
+let whiteTimer = null
+let nextWhiteTimeout = null
+let animId = null
+let particles = []
+let completed = false
+
+function resize() {
+  W = canvas.width = window.innerWidth
+  H = canvas.height = window.innerHeight
+}
+window.addEventListener('resize', resize)
+resize()
+
+// --- particles for anti-burn (barely visible drifting dots) ---
+function initParticles(n = 80) {
+  particles = []
+  for (let i = 0; i < n; i++) {
+    particles.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      r: Math.random() * 2 + 0.5,
+      phase: Math.random() * Math.PI * 2
+    })
+  }
+}
+
+function drawParticles(time) {
+  ctx.clearRect(0, 0, W, H)
+  for (const p of particles) {
+    p.x += p.vx
+    p.y += p.vy
+    if (p.x < 0) p.x = W
+    if (p.x > W) p.x = 0
+    if (p.y < 0) p.y = H
+    if (p.y > H) p.y = 0
+    const alpha = 0.015 + 0.01 * Math.sin(time * 0.001 + p.phase)
+    ctx.beginPath()
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+    ctx.fillStyle = `rgba(200,200,200,${alpha})`
+    ctx.fill()
+  }
+  // subtle gradient sweep to prevent static white
+  const sweep = 0.5 + 0.5 * Math.sin(time * 0.0002)
+  ctx.fillStyle = `rgba(255,255,255,${sweep * 0.002})`
+  ctx.fillRect(0, 0, W, H)
+}
+
+// --- white flash orchestration ---
+function scheduleWhite() {
+  if (completed) return
+  const delay = 20000 + Math.random() * 160000 // 20s ~ 3min
+  nextWhiteTimeout = setTimeout(triggerWhite, delay)
+}
+
+function triggerWhite() {
+  if (completed) return
+  isWhite = true
+  screen.className = 'white'
+  canvas.classList.add('show')
+  phase.textContent = '● 白屏保护中'
+  phase.className = 'hud white'
+  timer.className = 'hud white'
+  status.className = 'hud white'
+  status.textContent = '防烧屏像素刷新'
+  progressWrap.classList.add('white-bar')
+  initParticles(60)
+
+  const duration = 3000 + Math.random() * 7000 // 3~10s
+  whiteTimer = setTimeout(endWhite, duration)
+}
+
+function endWhite() {
+  if (completed) return
+  isWhite = false
+  screen.className = 'dark'
+  canvas.classList.remove('show')
+  phase.textContent = '待命中'
+  phase.className = 'hud'
+  timer.className = 'hud'
+  status.className = 'hud'
+  status.textContent = '等待下次白屏'
+  progressWrap.classList.remove('white-bar')
+  scheduleWhite()
+}
+
+// --- main loop ---
+function loop(time) {
+  const elapsed = Date.now() - startTime
+  const remaining = Math.max(0, DURATION - elapsed)
+  const progress = Math.min(1, elapsed / DURATION)
+
+  // update timer
+  const hrs = Math.floor(remaining / 3600000)
+  const mins = Math.floor((remaining % 3600000) / 60000)
+  const secs = Math.floor((remaining % 60000) / 1000)
+  timer.textContent = `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`
+
+  progressFill.style.width = `${progress * 100}%`
+
+  if (isWhite) {
+    drawParticles(time)
+  }
+
+  // check completion
+  if (elapsed >= DURATION && !completed) {
+    completed = true
+    if (whiteTimer) clearTimeout(whiteTimer)
+    if (nextWhiteTimeout) clearTimeout(nextWhiteTimeout)
+    isWhite = false
+    screen.className = 'white'
+    canvas.classList.remove('show')
+    phase.style.opacity = '0'
+    timer.style.opacity = '0'
+    status.style.opacity = '0'
+    progressWrap.style.opacity = '0'
+    setTimeout(() => {
+      done.classList.add('show')
+    }, 1000)
+    localStorage.removeItem('antiBurnStart')
+    return
+  }
+
+  animId = requestAnimationFrame(loop)
+}
+
+// restart
+function restart() {
+  localStorage.removeItem('antiBurnStart')
+  startTime = Date.now()
+  localStorage.setItem('antiBurnStart', startTime)
+  completed = false
+  done.classList.remove('show')
+  phase.style.opacity = '1'
+  timer.style.opacity = '1'
+  status.style.opacity = '1'
+  progressWrap.style.opacity = '1'
+  screen.className = 'dark'
+  canvas.classList.remove('show')
+  phase.textContent = '待命中'
+  timer.className = 'hud'
+  status.className = 'hud'
+  status.textContent = '等待下次白屏'
+  progressWrap.classList.remove('white-bar')
+  if (whiteTimer) clearTimeout(whiteTimer)
+  if (nextWhiteTimeout) clearTimeout(nextWhiteTimeout)
+  scheduleWhite()
+  if (animId) cancelAnimationFrame(animId)
+  animId = requestAnimationFrame(loop)
+}
+
+// click to restart
+document.addEventListener('click', () => {
+  if (completed) restart()
+})
+
+// init
+initParticles()
+scheduleWhite()
+animId = requestAnimationFrame(loop)
+</script>
+</body>
+</html>
