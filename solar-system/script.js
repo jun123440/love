@@ -7,10 +7,10 @@ const PLANETS = [
   { name:'金星', nameEn:'Venus',      r:0.45, orbit:8,  speed:1.62,  rot:-0.002, tilt:2.64, color1:'#e8cda0', color2:'#b8944a', info:'最热行星 · 直径 12,104 km' },
   { name:'地球', nameEn:'Earth',      r:0.52, orbit:11, speed:1.0,   rot:0.02,   tilt:0.41, useEarth:true,     info:'生命家园 · 直径 12,742 km' },
   { name:'火星', nameEn:'Mars',       r:0.32, orbit:14, speed:0.53,  rot:0.019,  tilt:0.44, color1:'#d4785c', color2:'#8b3a2a', info:'红色行星 · 直径 6,779 km' },
-  { name:'木星', nameEn:'Jupiter',    r:1.20, orbit:19, speed:0.084, rot:0.04,   tilt:0.05, color1:'#d4a06a', color2:'#c4884a', info='最大行星 · 直径 139,820 km' },
-  { name:'土星', nameEn:'Saturn',     r:0.95, orbit:24, speed:0.034, rot:0.038,  tilt:0.47, color1:'#d4c090', color2:'#a08050', info='环系统 · 直径 116,460 km', hasRing:true },
-  { name:'天王星', nameEn:'Uranus',   r:0.62, orbit:30, speed:0.012, rot:-0.03,  tilt:1.71, color1:'#7ec8c8', color2:'#4a9e9e', info='冰巨星 · 直径 50,724 km' },
-  { name:'海王星', nameEn:'Neptune',  r:0.58, orbit:35, speed:0.006, rot:0.032,  tilt:0.49, color1:'#3355ff', color2:'#1a2eaa', info='最远行星 · 直径 49,244 km' },
+  { name:'木星', nameEn:'Jupiter',    r:1.20, orbit:19, speed:0.084, rot:0.04,   tilt:0.05, color1:'#d4a06a', color2:'#c4884a', info:'最大行星 · 直径 139,820 km' },
+  { name:'土星', nameEn:'Saturn',     r:0.95, orbit:24, speed:0.034, rot:0.038,  tilt:0.47, color1:'#d4c090', color2:'#a08050', info:'环系统 · 直径 116,460 km', hasRing:true },
+  { name:'天王星', nameEn:'Uranus',   r:0.62, orbit:30, speed:0.012, rot:-0.03,  tilt:1.71, color1:'#7ec8c8', color2:'#4a9e9e', info:'冰巨星 · 直径 50,724 km' },
+  { name:'海王星', nameEn:'Neptune',  r:0.58, orbit:35, speed:0.006, rot:0.032,  tilt:0.49, color1:'#3355ff', color2:'#1a2eaa', info:'最远行星 · 直径 49,244 km' },
 ];
 
 const SUN_COLORS = ['#fff8e0','#ffdd44','#ff8800','#cc4400','#661100'];
