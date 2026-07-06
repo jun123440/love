@@ -1,30 +1,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const EARTH_MAP = 'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg';
+const EARTH_MAP = 'https://clouds.matteason.co.uk/images/4096x2048/earth.jpg';
 const EARTH_NORMAL = 'https://threejs.org/examples/textures/planets/earth_normal_2048.jpg';
 const EARTH_SPEC = 'https://threejs.org/examples/textures/planets/earth_specular_2048.jpg';
 const CLOUD_MAP = 'https://threejs.org/examples/textures/planets/earth_clouds_1024.png';
-
-function makeProceduralEarth() {
-  const c = document.createElement('canvas'); c.width = 1024; c.height = 512;
-  const ctx = c.getContext('2d');
-  for (let y = 0; y < 512; y++) {
-    for (let x = 0; x < 1024; x++) {
-      const u = x / 1024, v = y / 512;
-      const n = Math.sin(u * 20 + v * 10) * 0.5 + Math.sin(u * 8 - v * 15 + 2) * 0.3 + Math.sin(u * 35 + v * 25 + 4) * 0.2;
-      const lat = (v - 0.5) * Math.PI;
-      const polar = Math.abs(lat) > 1.2 ? 1 : 0;
-      if (polar) { ctx.fillStyle = '#e8e8f0'; }
-      else if (n > 0.15) { ctx.fillStyle = `rgb(${80+Math.random()*40|0},${120+Math.random()*50|0},${40+Math.random()*30|0})`; }
-      else { ctx.fillStyle = `rgb(${30+Math.random()*30|0},${70+Math.random()*40|0},${120+Math.random()*40|0})`; }
-      ctx.fillRect(x, y, 1, 1);
-    }
-  }
-  const t = new THREE.CanvasTexture(c);
-  t.anisotropy = maxAniso;
-  return t;
-}
 
 const progressFill = document.getElementById('progressFill');
 const loading = document.getElementById('loading');
@@ -37,11 +17,9 @@ function updateProgress() {
     progressFill.style.width = Math.min((loaded / 4) * 100, 100) + '%';
   }
   if (loaded >= 4) {
-    setTimeout(() => loading.classList.add('hidden'), 200);
+    setTimeout(() => loading.classList.add('hidden'), 300);
   }
 }
-
-setTimeout(() => loading.classList.add('hidden'), 3000);
 
 const texLoader = new THREE.TextureLoader();
 
@@ -81,7 +59,6 @@ const earthGeo = new THREE.SphereGeometry(1, 2048, 2048);
 const earthMat = new THREE.MeshPhongMaterial({
   shininess: 8,
   specular: new THREE.Color(0x555555),
-  map: makeProceduralEarth(),
 });
 
 texLoader.load(EARTH_MAP, (tex) => {
@@ -90,7 +67,7 @@ texLoader.load(EARTH_MAP, (tex) => {
   earthMat.map = tex;
   earthMat.needsUpdate = true;
   updateProgress();
-}, undefined, () => { updateProgress(); });
+});
 
 texLoader.load(EARTH_NORMAL, (tex) => {
   tex.anisotropy = maxAniso;
@@ -98,14 +75,14 @@ texLoader.load(EARTH_NORMAL, (tex) => {
   earthMat.normalScale = new THREE.Vector2(1.2, 1.2);
   earthMat.needsUpdate = true;
   updateProgress();
-}, undefined, () => { updateProgress(); });
+});
 
 texLoader.load(EARTH_SPEC, (tex) => {
   tex.anisotropy = maxAniso;
   earthMat.specularMap = tex;
   earthMat.needsUpdate = true;
   updateProgress();
-}, undefined, () => { updateProgress(); });
+});
 
 const earth = new THREE.Mesh(earthGeo, earthMat);
 earthGroup.add(earth);
@@ -125,7 +102,9 @@ texLoader.load(CLOUD_MAP, (tex) => {
   clouds.name = 'clouds';
   earthGroup.add(clouds);
   updateProgress();
-}, undefined, () => { updateProgress(); });
+});
+
+setTimeout(() => loading.classList.add('hidden'), 12000);
 
 function makeGlow(radius, color, intensity, powFactor) {
   const geo = new THREE.SphereGeometry(radius, 512, 512);
