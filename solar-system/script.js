@@ -208,7 +208,7 @@ CTRL.enableDamping=1;CTRL.dampingFactor=0.05;CTRL.rotateSpeed=0.3;CTRL.minDistan
     else{const b=0.7+Math.random()*0.3;c[i*3]=b;c[i*3+1]=b;c[i*3+2]=b}
   }
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));g.setAttribute('color',new THREE.BufferAttribute(c,3))
-  SCENE.add(new THREE.Points(g,new THREE.PointsMaterial({size:1.0,vertexColors:1,transparent:1,opacity:0.9,sizeAttenuation:1,blending:THREE.AdditiveBlending,depthWrite:0})))
+  SCENE.add(new THREE.Points(g,new THREE.PointsMaterial({size:0.3,vertexColors:1,transparent:1,opacity:0.9,sizeAttenuation:1,blending:THREE.AdditiveBlending,depthWrite:0})))
 })();
 
 // ─── Nebula ──────────────────────────────────────────────
@@ -251,9 +251,9 @@ SUN_G.add(new THREE.Points(CG,CM))
 
 // ─── Lighting ────────────────────────────────────────────
 
-SCENE.add(new THREE.PointLight(0xffeedd,3.5,400))
-SCENE.add(new THREE.AmbientLight(0x222244,0.12))
-SCENE.add(new THREE.DirectionalLight(0xffffff,0.25))
+const SL=new THREE.PointLight(0xffeedd,2,0,0);SL.position.set(0,0,0);SCENE.add(SL)
+SCENE.add(new THREE.AmbientLight(0x446688,0.6))
+SCENE.add(new THREE.HemisphereLight(0x88bbdd,0x222244,0.35))
 
 // ─── Planets ─────────────────────────────────────────────
 
@@ -279,7 +279,7 @@ DATA.forEach((p,idx)=>{
     tex=mkTex(cached('e_fb',texEarth))
   }else tex=mkTex(cached(p.en+'_tex',p.gen))
 
-  const mat=new THREE.MeshPhysicalMaterial({map:tex,roughness:p.rgh||0.6,metalness:p.met||0,normalMap:normalTex,normalScale:normalTex?new THREE.Vector2(1,1):null})
+  const mat=new THREE.MeshStandardMaterial({map:tex,roughness:Math.min(p.rgh||0.6,0.5),metalness:0.05,normalMap:normalTex,normalScale:normalTex?new THREE.Vector2(1,1):null,emissive:new THREE.Color(0x222233),emissiveIntensity:0.15})
   const seg=p.n==='木星'||p.n==='土星'?80:56
   const msh=new THREE.Mesh(new THREE.SphereGeometry(p.r,seg,Math.floor(seg*0.7)),mat)
   msh.rotation.z=p.tilt||0;msh.userData.idx=idx;G.add(msh);MSH.push(msh)
