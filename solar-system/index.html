@@ -9,24 +9,22 @@
 <body>
 
 <div id="loading">
-  <div id="loaderOrbit">
-    <div class="loaderPlanet"></div>
-  </div>
-  <p id="loaderText">生成太阳系...</p>
-  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="spinner"></div>
+  <p>生成太阳系...</p>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
 </div>
 
-<div id="hud">
-  <h1 id="hudTitle">✦ 太阳系</h1>
-  <p id="hudHint">点击行星观察 · 滚轮缩放 · 拖拽旋转</p>
+<div id="info">
+  <h1>☀ 太阳系 3D</h1>
+  <p>点击任意行星放大观察 · 滚轮缩放 · 拖拽旋转</p>
 </div>
 
-<div id="panel" class="hidden">
-  <div id="panelDot"></div>
-  <div id="panelName"></div>
-  <div id="panelNameEn"></div>
-  <div id="panelStat"></div>
-  <button id="panelBack">← 返回</button>
+<div id="planetPanel" class="hidden">
+  <div id="planetIcon"></div>
+  <div id="planetName"></div>
+  <div id="planetNameEn"></div>
+  <div id="planetInfo"></div>
+  <button id="btnBack">返回</button>
 </div>
 
 <script type="importmap">
