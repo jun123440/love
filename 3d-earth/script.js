@@ -53,7 +53,7 @@ controls.target.set(0, 0, 0);
 const earthGroup = new THREE.Group();
 scene.add(earthGroup);
 
-const earthGeo = new THREE.SphereGeometry(1, 512, 512);
+const earthGeo = new THREE.SphereGeometry(1, 1024, 1024);
 const earthMat = new THREE.MeshPhongMaterial({
   shininess: 8,
   specular: new THREE.Color(0x555555),
@@ -83,7 +83,7 @@ const earth = new THREE.Mesh(earthGeo, earthMat);
 earthGroup.add(earth);
 
 texLoader.load(CLOUD_MAP, (tex) => {
-  const cloudGeo = new THREE.SphereGeometry(1.008, 256, 256);
+  const cloudGeo = new THREE.SphereGeometry(1.008, 512, 512);
   const cloudMat = new THREE.MeshPhongMaterial({
     map: tex,
     transparent: true,
@@ -101,7 +101,7 @@ texLoader.load(CLOUD_MAP, (tex) => {
 setTimeout(() => loading.classList.add('hidden'), 12000);
 
 function makeGlow(radius, color, intensity, powFactor) {
-  const geo = new THREE.SphereGeometry(radius, 128, 128);
+  const geo = new THREE.SphereGeometry(radius, 256, 256);
   const mat = new THREE.ShaderMaterial({
     vertexShader: `
       varying vec3 vNormal;
@@ -139,11 +139,11 @@ function makeGlow(radius, color, intensity, powFactor) {
   return new THREE.Mesh(geo, mat);
 }
 
-earthGroup.add(makeGlow(1.12, 0x4facfe, 0.7, 4.5));
-earthGroup.add(makeGlow(1.25, 0x88ccff, 0.25, 2.0));
-earthGroup.add(makeGlow(1.45, 0x667eea, 0.08, 1.2));
+earthGroup.add(makeGlow(1.035, 0xffffff, 0.06, 8.0));
+earthGroup.add(makeGlow(1.06, 0x88ddff, 0.10, 5.0));
+earthGroup.add(makeGlow(1.12, 0x6688cc, 0.04, 3.0));
 
-const starCount = 20000;
+const starCount = 40000;
 const starPos = new Float32Array(starCount * 3);
 const starCol = new Float32Array(starCount * 3);
 const starSize = new Float32Array(starCount);
