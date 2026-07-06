@@ -1,174 +1,284 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const EARTH_URL = 'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg';
-const CLOUD_URL = 'https://threejs.org/examples/textures/planets/earth_clouds_1024.png';
-const BUMB_URL = 'https://threejs.org/examples/textures/planets/earth_normal_2048.jpg';
-const SPEC_URL = 'https://threejs.org/examples/textures/planets/earth_specular_2048.jpg';
+const EARTH_MAP = 'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg';
+const EARTH_NORMAL = 'https://threejs.org/examples/textures/planets/earth_normal_2048.jpg';
+const EARTH_SPEC = 'https://threejs.org/examples/textures/planets/earth_specular_2048.jpg';
+const CLOUD_MAP = 'https://threejs.org/examples/textures/planets/earth_clouds_1024.png';
+
+const progressFill = document.getElementById('progressFill');
+const loading = document.getElementById('loading');
+
+let loaded = 0;
+
+function updateProgress() {
+  loaded++;
+  if (progressFill) {
+    progressFill.style.width = Math.min((loaded / 4) * 100, 100) + '%';
+  }
+  if (loaded >= 4) {
+    setTimeout(() => loading.classList.add('hidden'), 300);
+  }
+}
+
+const texLoader = new THREE.TextureLoader();
 
 const scene = new THREE.Scene();
 
-const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 1000);
-camera.position.set(0, 0, 3.2);
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
+camera.position.set(0, 0.2, 3.2);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  alpha: true,
+  powerPreference: 'high-performance',
+});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.2;
+renderer.toneMappingExposure = 1.0;
 document.body.prepend(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
-controls.rotateSpeed = 0.8;
+controls.rotateSpeed = 0.5;
 controls.autoRotate = true;
-controls.autoRotateSpeed = 1.2;
-controls.minDistance = 1.8;
-controls.maxDistance = 6;
+controls.autoRotateSpeed = 0.6;
+controls.minDistance = 1.5;
+controls.maxDistance = 8;
 controls.enablePan = false;
-
-const manager = new THREE.LoadingManager();
-let loadedCount = 0;
-const totalAssets = 5;
-const texLoader = new THREE.TextureLoader(manager);
-
-manager.onLoad = () => {
-  document.getElementById('loading').classList.add('hidden');
-};
+controls.target.set(0, 0, 0);
 
 const earthGroup = new THREE.Group();
 scene.add(earthGroup);
 
-texLoader.load(EARTH_URL, (tex) => {
-  tex.colorSpace = THREE.SRGBColorSpace;
-  const geo = new THREE.SphereGeometry(1, 64, 64);
-  const mat = new THREE.MeshPhongMaterial({
-    map: tex,
-    bumpMap: texLoader.load(BUMB_URL),
-    bumpScale: 0.04,
-    specularMap: texLoader.load(SPEC_URL),
-    specular: new THREE.Color(0x333333),
-    shininess: 10,
-  });
-  const earth = new THREE.Mesh(geo, mat);
-  earthGroup.add(earth);
-  checkLoad();
+const earthGeo = new THREE.SphereGeometry(1, 128, 128);
+const earthMat = new THREE.MeshPhongMaterial({
+  shininess: 8,
+  specular: new THREE.Color(0x555555),
 });
 
-texLoader.load(CLOUD_URL, (tex) => {
-  const geo = new THREE.SphereGeometry(1.008, 64, 64);
-  const mat = new THREE.MeshPhongMaterial({
+texLoader.load(EARTH_MAP, (tex) => {
+  tex.colorSpace = THREE.SRGBColorSpace;
+  earthMat.map = tex;
+  earthMat.needsUpdate = true;
+  updateProgress();
+});
+
+texLoader.load(EARTH_NORMAL, (tex) => {
+  earthMat.normalMap = tex;
+  earthMat.normalScale = new THREE.Vector2(0.8, 0.8);
+  earthMat.needsUpdate = true;
+  updateProgress();
+});
+
+texLoader.load(EARTH_SPEC, (tex) => {
+  earthMat.specularMap = tex;
+  earthMat.needsUpdate = true;
+  updateProgress();
+});
+
+const earth = new THREE.Mesh(earthGeo, earthMat);
+earthGroup.add(earth);
+
+texLoader.load(CLOUD_MAP, (tex) => {
+  const cloudGeo = new THREE.SphereGeometry(1.008, 80, 80);
+  const cloudMat = new THREE.MeshPhongMaterial({
     map: tex,
     transparent: true,
-    opacity: 0.3,
+    opacity: 0.35,
     blending: THREE.AdditiveBlending,
     side: THREE.DoubleSide,
+    depthWrite: false,
   });
-  const clouds = new THREE.Mesh(geo, mat);
+  const clouds = new THREE.Mesh(cloudGeo, cloudMat);
   clouds.name = 'clouds';
   earthGroup.add(clouds);
-  checkLoad();
+  updateProgress();
 });
 
-function checkLoad() {
-  loadedCount++;
-  if (loadedCount >= totalAssets) {
-    document.getElementById('loading').classList.add('hidden');
-  }
+setTimeout(() => loading.classList.add('hidden'), 12000);
+
+function makeGlow(radius, color, intensity, powFactor) {
+  const geo = new THREE.SphereGeometry(radius, 64, 64);
+  const mat = new THREE.ShaderMaterial({
+    vertexShader: `
+      varying vec3 vNormal;
+      varying vec3 vWorldPos;
+      void main() {
+        vNormal = normalize(normalMatrix * normal);
+        vec4 wp = modelMatrix * vec4(position, 1.0);
+        vWorldPos = wp.xyz;
+        gl_Position = projectionMatrix * viewMatrix * wp;
+      }
+    `,
+    fragmentShader: `
+      varying vec3 vNormal;
+      varying vec3 vWorldPos;
+      uniform vec3 uColor;
+      uniform float uIntensity;
+      uniform float uPow;
+      void main() {
+        vec3 viewDir = normalize(cameraPosition - vWorldPos);
+        float rim = 1.0 - max(0.0, dot(viewDir, vNormal));
+        rim = pow(rim, uPow);
+        gl_FragColor = vec4(uColor, rim * uIntensity);
+      }
+    `,
+    uniforms: {
+      uColor: { value: new THREE.Color(color) },
+      uIntensity: { value: intensity },
+      uPow: { value: powFactor },
+    },
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    side: THREE.BackSide,
+    depthWrite: false,
+  });
+  return new THREE.Mesh(geo, mat);
 }
 
-checkLoad();
-checkLoad();
-checkLoad();
+earthGroup.add(makeGlow(1.12, 0x4facfe, 0.7, 4.5));
+earthGroup.add(makeGlow(1.25, 0x88ccff, 0.25, 2.0));
+earthGroup.add(makeGlow(1.45, 0x667eea, 0.08, 1.2));
 
-const starGeo = new THREE.BufferGeometry();
-const starCount = 6000;
+const starCount = 8000;
 const starPos = new Float32Array(starCount * 3);
-const starColors = new Float32Array(starCount * 3);
-const starSizes = new Float32Array(starCount);
+const starCol = new Float32Array(starCount * 3);
+const starSize = new Float32Array(starCount);
+const starPhase = new Float32Array(starCount);
 
 for (let i = 0; i < starCount; i++) {
-  const r = 30 + Math.random() * 70;
+  const r = 30 + Math.random() * 120;
   const theta = Math.random() * Math.PI * 2;
   const phi = Math.acos(2 * Math.random() - 1);
   starPos[i*3] = r * Math.sin(phi) * Math.cos(theta);
   starPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
   starPos[i*3+2] = r * Math.cos(phi);
 
-  const c = 0.5 + Math.random() * 0.5;
-  const tint = Math.random();
-  if (tint < 0.3) {
-    starColors[i*3] = c; starColors[i*3+1] = c*0.8; starColors[i*3+2] = c*0.6;
-  } else if (tint < 0.6) {
-    starColors[i*3] = c*0.7; starColors[i*3+1] = c*0.8; starColors[i*3+2] = c;
+  const b = 0.5 + Math.random() * 0.5;
+  const t = Math.random();
+  if (t < 0.15) {
+    starCol[i*3] = b * 0.6; starCol[i*3+1] = b * 0.7; starCol[i*3+2] = b;
+  } else if (t < 0.3) {
+    starCol[i*3] = b; starCol[i*3+1] = b * 0.8; starCol[i*3+2] = b * 0.6;
+  } else if (t < 0.4) {
+    starCol[i*3] = b; starCol[i*3+1] = b * 0.6; starCol[i*3+2] = b * 0.5;
   } else {
-    starColors[i*3] = c; starColors[i*3+1] = c; starColors[i*3+2] = c;
+    starCol[i*3] = b; starCol[i*3+1] = b; starCol[i*3+2] = b;
   }
-  starSizes[i] = 0.5 + Math.random() * 1.5;
+
+  starSize[i] = 0.3 + Math.random() * 1.8;
+  starPhase[i] = Math.random() * Math.PI * 2;
 }
 
+const starGeo = new THREE.BufferGeometry();
 starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-starGeo.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
-starGeo.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
+starGeo.setAttribute('customColor', new THREE.BufferAttribute(starCol, 3));
+starGeo.setAttribute('size', new THREE.BufferAttribute(starSize, 1));
+starGeo.setAttribute('phase', new THREE.BufferAttribute(starPhase, 1));
 
-const starMat = new THREE.PointsMaterial({
-  size: 0.15,
-  vertexColors: true,
+const starMat = new THREE.ShaderMaterial({
+  uniforms: {
+    uTime: { value: 0 },
+  },
+  vertexShader: `
+    attribute float size;
+    attribute vec3 customColor;
+    attribute float phase;
+    varying vec3 vColor;
+    uniform float uTime;
+    void main() {
+      vColor = customColor;
+      vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+      float twinkle = 0.55 + 0.45 * sin(uTime * 1.2 + phase + position.x * 6.0 + position.y * 5.0);
+      gl_PointSize = size * (180.0 / -mvPos.z) * twinkle;
+      gl_Position = projectionMatrix * mvPos;
+    }
+  `,
+  fragmentShader: `
+    varying vec3 vColor;
+    void main() {
+      vec2 c = gl_PointCoord - vec2(0.5);
+      float d = length(c);
+      if (d > 0.5) discard;
+      float a = 1.0 - smoothstep(0.0, 0.5, d);
+      a = pow(a, 1.5);
+      gl_FragColor = vec4(vColor, a * 0.9);
+    }
+  `,
   transparent: true,
-  opacity: 0.9,
-  sizeAttenuation: true,
-  blending: THREE.AdditiveBlending,
   depthWrite: false,
+  blending: THREE.AdditiveBlending,
 });
 const stars = new THREE.Points(starGeo, starMat);
 scene.add(stars);
 
-const glowGeo = new THREE.SphereGeometry(1.15, 48, 48);
-const glowMat = new THREE.ShaderMaterial({
-  vertexShader: `
-    varying vec3 vNormal;
-    varying vec3 vPositionW;
-    void main() {
-      vNormal = normalize(normalMatrix * normal);
-      vec4 worldPos = modelMatrix * vec4(position, 1.0);
-      vPositionW = worldPos.xyz;
-      gl_Position = projectionMatrix * viewMatrix * worldPos;
-    }
-  `,
-  fragmentShader: `
-    varying vec3 vNormal;
-    varying vec3 vPositionW;
-    uniform vec3 glowColor;
-    uniform float intensity;
-    void main() {
-      vec3 viewDir = normalize(cameraPosition - vPositionW);
-      float rim = 1.0 - max(0.0, dot(viewDir, vNormal));
-      rim = pow(rim, 3.0);
-      gl_FragColor = vec4(glowColor, rim * intensity);
-    }
-  `,
-  uniforms: {
-    glowColor: { value: new THREE.Color(0x4facfe) },
-    intensity: { value: 0.8 },
-  },
+const ringCount = 3000;
+const ringPos = new Float32Array(ringCount * 3);
+for (let i = 0; i < ringCount; i++) {
+  const angle = Math.random() * Math.PI * 2;
+  const radius = 1.6 + Math.random() * 0.8;
+  const wave = Math.sin(angle * 5 + Math.random() * 0.5) * 0.015;
+  const height = (Math.random() - 0.5) * 0.06 + wave;
+  ringPos[i*3] = Math.cos(angle) * radius;
+  ringPos[i*3+1] = height;
+  ringPos[i*3+2] = Math.sin(angle) * radius;
+}
+const ringGeo = new THREE.BufferGeometry();
+ringGeo.setAttribute('position', new THREE.BufferAttribute(ringPos, 3));
+const ringMat = new THREE.PointsMaterial({
+  color: 0x88ccff,
+  size: 0.006,
   transparent: true,
+  opacity: 0.5,
   blending: THREE.AdditiveBlending,
-  side: THREE.BackSide,
+  sizeAttenuation: true,
   depthWrite: false,
 });
-const glow = new THREE.Mesh(glowGeo, glowMat);
-earthGroup.add(glow);
+const ring = new THREE.Points(ringGeo, ringMat);
+ring.name = 'ring';
+earthGroup.add(ring);
 
-const light1 = new THREE.DirectionalLight(0xffffff, 2.0);
-light1.position.set(5, 3, 5);
-scene.add(light1);
+const ring2Count = 1200;
+const ring2Pos = new Float32Array(ring2Count * 3);
+for (let i = 0; i < ring2Count; i++) {
+  const angle = Math.random() * Math.PI * 2;
+  const radius = 2.6 + Math.random() * 0.4;
+  const tilt = (Math.random() - 0.5) * 0.12;
+  ring2Pos[i*3] = Math.cos(angle) * radius;
+  ring2Pos[i*3+1] = tilt;
+  ring2Pos[i*3+2] = Math.sin(angle) * radius;
+}
+const ring2Geo = new THREE.BufferGeometry();
+ring2Geo.setAttribute('position', new THREE.BufferAttribute(ring2Pos, 3));
+const ring2Mat = new THREE.PointsMaterial({
+  color: 0xff88aa,
+  size: 0.004,
+  transparent: true,
+  opacity: 0.25,
+  blending: THREE.AdditiveBlending,
+  sizeAttenuation: true,
+  depthWrite: false,
+});
+const ring2 = new THREE.Points(ring2Geo, ring2Mat);
+ring2.name = 'ring2';
+earthGroup.add(ring2);
 
-const light2 = new THREE.DirectionalLight(0x4facfe, 0.5);
-light2.position.set(-5, -2, -3);
-scene.add(light2);
+const keyLight = new THREE.DirectionalLight(0xffeedd, 2.5);
+keyLight.position.set(5, 3, 5);
+scene.add(keyLight);
 
-const ambient = new THREE.AmbientLight(0x222244, 1.0);
+const fillLight = new THREE.DirectionalLight(0x4488ff, 0.6);
+fillLight.position.set(-4, -1, -3);
+scene.add(fillLight);
+
+const rimLight = new THREE.DirectionalLight(0x88ccff, 0.3);
+rimLight.position.set(0, -5, 0);
+scene.add(rimLight);
+
+const ambient = new THREE.AmbientLight(0x222244, 0.8);
 scene.add(ambient);
 
 function animate() {
@@ -176,16 +286,21 @@ function animate() {
   controls.update();
 
   const clouds = earthGroup.getObjectByName('clouds');
-  if (clouds) {
-    clouds.rotation.y += 0.0003;
-  }
+  if (clouds) clouds.rotation.y += 0.0003;
+
+  const r = earthGroup.getObjectByName('ring');
+  if (r) r.rotation.y += 0.0004;
+  const r2 = earthGroup.getObjectByName('ring2');
+  if (r2) r2.rotation.y -= 0.0006;
+
+  starMat.uniforms.uTime.value += 0.005;
 
   renderer.render(scene, camera);
 }
 animate();
 
-addEventListener('resize', () => {
-  camera.aspect = innerWidth / innerHeight;
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
+  renderer.setSize(window.innerWidth, window.innerHeight);
 });
