@@ -155,6 +155,10 @@ function createStarTexture() {
   c.width = 4096; c.height = 2048;
   const ctx = c.getContext('2d');
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 4096, 2048);
+  const ng = ctx.createRadialGradient(2048, 1024, 0, 2048, 1024, 1600);
+  ng.addColorStop(0,'rgba(30,10,60,0.4)'); ng.addColorStop(0.3,'rgba(10,10,40,0.2)');
+  ng.addColorStop(0.6,'rgba(40,10,20,0.1)'); ng.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle = ng; ctx.fillRect(0, 0, 4096, 2048);
   for (let i = 0; i < 25000; i++) {
     const x = Math.random() * 4096, y = Math.random() * 2048;
     const s = 0.5 + Math.random() * 2.5;
@@ -207,9 +211,12 @@ function makeSunGlow(r, color, intensity, powV) {
   return new THREE.Mesh(g, m);
 }
 
-sunGroup.add(makeSunGlow(PLANETS[0].r * 1.08, 0xff8800, 0.5, 5));
-sunGroup.add(makeSunGlow(PLANETS[0].r * 1.2, 0xff4400, 0.2, 3));
-sunGroup.add(makeSunGlow(PLANETS[0].r * 1.5, 0xff2200, 0.06, 2));
+const sunGlows = [
+  makeSunGlow(PLANETS[0].r * 1.08, 0xff8800, 0.5, 5),
+  makeSunGlow(PLANETS[0].r * 1.2, 0xff4400, 0.2, 3),
+  makeSunGlow(PLANETS[0].r * 1.5, 0xff2200, 0.06, 2),
+];
+sunGlows.forEach(g => sunGroup.add(g));
 
 // ============ LIGHTING ============
 
@@ -352,6 +359,35 @@ PLANETS.forEach((p, idx) => {
   tickLoad();
 });
 
+// ============ PLANET LABELS ============
+
+function makeLabel(text, color) {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 128;
+  const ctx = c.getContext('2d');
+  ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 8;
+  ctx.fillStyle = color; ctx.font = 'bold 42px Arial, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 256, 58);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '20px Arial, sans-serif';
+  ctx.fillText(text, 256, 58);
+  const tex = new THREE.CanvasTexture(c);
+  tex.anisotropy = maxAniso;
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0.7, sizeAttenuation: true });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(2, 0.5, 1);
+  return sprite;
+}
+
+PLANETS.forEach((p, idx) => {
+  if (p.isSun) return;
+  const label = makeLabel(p.nameEn, '#fff');
+  label.userData.planetIdx = idx;
+  p._label = label;
+  scene.add(label);
+});
+
 // ============ CLICK & ZOOM ============
 
 const raycaster = new THREE.Raycaster();
@@ -383,6 +419,7 @@ function zoomToPlanet(idx) {
   const dist = Math.max(p.r * 5, 2.5);
   zoomEndTarget.copy(pos);
   zoomEndCam.copy(pos.clone().add(new THREE.Vector3(0, p.r * 2, dist)));
+  PLANETS.forEach((px, i) => { if (px._label) px._label.visible = i === idx; });
   planetPanel.classList.remove('hidden');
   planetIcon.style.background = `radial-gradient(circle at 35% 35%, ${p.color1 || '#fff'}, ${p.color2 || p.color1 || '#888'})`;
   planetName.textContent = p.name;
@@ -398,6 +435,7 @@ function zoomOut() {
   zoomStartTarget.copy(controls.target);
   zoomEndCam.copy(HOME_CAM);
   zoomEndTarget.copy(HOME_TARGET);
+  PLANETS.forEach((px, i) => { if (px._label) px._label.visible = true; });
   planetPanel.classList.add('hidden');
   zoomTargetIdx = null;
   document.getElementById('info').style.opacity = '1';
@@ -433,6 +471,10 @@ function animate() {
   time += 0.005;
 
   sunGroup.rotation.y += 0.0005;
+  sunGlows.forEach((g, i) => {
+    const s = 1 + 0.015 * Math.sin(time * 2 + i * 1.2);
+    g.scale.setScalar(s);
+  });
 
   PLANETS.forEach((p, i) => {
     if (p.isSun) return;
@@ -440,6 +482,10 @@ function animate() {
     p._mesh.position.x = p.orbit * Math.cos(p._angle);
     p._mesh.position.z = p.orbit * Math.sin(p._angle);
     p._mesh.rotation.y += p.rot;
+    if (p._label) {
+      p._label.position.copy(p._mesh.position);
+      p._label.position.y += p.r * 2.2 + 0.4;
+    }
   });
 
   if (zoomState === 'zooming-in') {
