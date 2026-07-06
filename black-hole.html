@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Black Hole — Relativistic Ray Tracing</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;font-family:'Segoe UI',sans-serif}
+canvas{display:block}
+#info{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.45);font-size:11px;pointer-events:none;text-align:center;line-height:1.6}
+#fps{color:rgba(255,255,255,0.35);font-size:10px}
+</style>
+</head>
+<body>
+<div id="info">Drag to orbit &bull; Scroll to zoom &bull; Right-drag to pan<br><span>Schwarzschild Black Hole — Null Geodesic Ray Tracing (RK4, 360 steps/ray)</span><br><span id="fps"></span></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+const pixelRatio = Math.min(window.devicePixelRatio, 2);
+const W = window.innerWidth;
+const H = window.innerHeight;
+
+const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+renderer.setSize(W, H);
+renderer.setPixelRatio(pixelRatio);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+// Virtual camera for ray computation
+const vCam = new THREE.PerspectiveCamera(55, W / H, 0.5, 600);
+vCam.position.set(0, 14, 26);
+vCam.lookAt(0, 0, 0);
+
+const controls = new OrbitControls(vCam, renderer.domElement);
+controls.target.set(0, 0, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.minDistance = 5;
+controls.maxDistance = 150;
+controls.maxPolarAngle = Math.PI * 0.88;
+controls.update();
+
+const quadScene = new THREE.Scene();
+const quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+const quadGeo = new THREE.PlaneGeometry(2, 2);
+
+const shaderMat = new THREE.ShaderMaterial({
+  uniforms: {
+    uCameraPos: { value: vCam.position.clone() },
+    uCameraRot: { value: new THREE.Matrix3() },
+    uFOV: { value: THREE.MathUtils.degToRad(55) },
+    uAspect: { value: W / H },
+    uResolution: { value: new THREE.Vector2(W * pixelRatio, H * pixelRatio) },
+    uTime: { value: 0 },
+    uFrame: { value: 0 },
+  },
+  vertexShader: /*glsl*/`
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = vec4(position.xy, 0.0, 1.0);
+    }
+  `,
+  fragmentShader: /*glsl*/`
+    precision highp float;
+    varying vec2 vUv;
+    uniform vec3 uCameraPos;
+    uniform mat3 uCameraRot;
+    uniform float uFOV;
+    uniform float uAspect;
+    uniform vec2 uResolution;
+    uniform float uTime;
+    uniform int uFrame;
+
+    const float RS = 1.0;
+    const float ISCO = 3.0;
+    const float DISK_OUTER = 22.0;
+    const int MAX_STEPS = 360;
+    const float STEP_BASE = 0.035;
+    const float ESCAPE_R = 120.0;
+    const float T_ISCO = 60000.0;
+
+    // ═══ Derivatives of null geodesic in Schwarzschild (E=1, Rs=1) ═══
+    void derivatives(float r, float theta, float phi, float dr, float dtheta, float dphi,
+                     out float ddr, out float ddtheta, out float ddphi) {
+      float r1 = r - 1.0;
+      float inv_r = 1.0 / r;
+      float st = sin(theta);
+      float ct = cos(theta);
+      float st2 = st * st;
+
+      // dt/dλ = 1/(1-1/r) = r/(r-1), needed for Γ^r_tt term
+      // d²r/dλ²
+      ddr = (dr * dr - 1.0) / (2.0 * r * r1) + r1 * (dtheta * dtheta + st2 * dphi * dphi);
+      // d²θ/dλ²
+      ddtheta = -2.0 * inv_r * dr * dtheta + st * ct * dphi * dphi;
+      // d²φ/dλ²
+      ddphi = (abs(st) < 1e-6) ? 0.0 : (-2.0 * inv_r * dr * dphi - 2.0 * (ct / st) * dtheta * dphi);
+    }
+
+    // RK4 step
+    void rk4(inout vec3 pos, inout vec3 vel, float dlambda) {
+      float r=pos.x, th=pos.y, ph=pos.z, dr=vel.x, dth=vel.y, dph=vel.z;
+      float ddr1, ddth1, ddph1, ddr2, ddth2, ddph2, ddr3, ddth3, ddph3, ddr4, ddth4, ddph4;
+      vec3 k1p, k1v, k2p, k2v, k3p, k3v, k4p, k4v;
+
+      derivatives(r,th,ph,dr,dth,dph, ddr1,ddth1,ddph1);
+      k1p = vec3(dr,dth,dph);
+      k1v = vec3(ddr1,ddth1,ddph1);
+
+      k2p = vec3(dr,dth,dph) + 0.5*dlambda*k1v;
+      k2v = vec3(0.0);
+      derivatives(r+0.5*dlambda*k1p.x, th+0.5*dlambda*k1p.y, ph+0.5*dlambda*k1p.z,
+                  k2p.x,k2p.y,k2p.z, ddr2,ddth2,ddph2);
+      k2v = vec3(ddr2,ddth2,ddph2);
+
+      k3p = vec3(dr,dth,dph) + 0.5*dlambda*k2v;
+      k3v = vec3(0.0);
+      derivatives(r+0.5*dlambda*k2p.x, th+0.5*dlambda*k2p.y, ph+0.5*dlambda*k2p.z,
+                  k3p.x,k3p.y,k3p.z, ddr3,ddth3,ddph3);
+      k3v = vec3(ddr3,ddth3,ddph3);
+
+      k4p = vec3(dr,dth,dph) + dlambda*k3v;
+      k4v = vec3(0.0);
+      derivatives(r+dlambda*k3p.x, th+dlambda*k3p.y, ph+dlambda*k3p.z,
+                  k4p.x,k4p.y,k4p.z, ddr4,ddth4,ddph4);
+      k4v = vec3(ddr4,ddth4,ddph4);
+
+      pos += dlambda * (k1p + 2.0*k2p + 2.0*k3p + k4p) / 6.0;
+      vel += dlambda * (k1v + 2.0*k2v + 2.0*k3v + k4v) / 6.0;
+    }
+
+    // Blackbody color (simplified Wien approximation)
+    vec3 tempToColor(float T) {
+      float t = T / 1000.0;
+      if (t < 0.3) return vec3(0.0);
+      if (t < 1.5) {
+        float f = (t - 0.3) / 1.2;
+        return vec3(f * 0.9, 0.0, 0.0);
+      }
+      if (t < 2.8) {
+        float f = (t - 1.5) / 1.3;
+        return vec3(0.9 + f * 0.1, f * 0.5, 0.0);
+      }
+      if (t < 4.5) {
+        float f = (t - 2.8) / 1.7;
+        return vec3(1.0, 0.5 + f * 0.4, f * 0.15);
+      }
+      if (t < 7.0) {
+        float f = (t - 4.5) / 2.5;
+        return vec3(1.0 - f * 0.2, 0.9 + f * 0.1, 0.15 + f * 0.6);
+      }
+      if (t < 12.0) {
+        float f = (t - 7.0) / 5.0;
+        return vec3(0.8 - f * 0.25, 1.0 - f * 0.1, 0.75 + f * 0.25);
+      }
+      if (t < 30.0) {
+        float f = (t - 12.0) / 18.0;
+        return vec3(0.55, 0.85 + f * 0.1, 1.0);
+      }
+      return vec3(0.5, 0.8, 1.0);
+    }
+
+    // ═══ Procedural starfield ═══
+    float hash3D(vec3 p) {
+      p = fract(p * 0.1031);
+      p += dot(p, p.yzx + 33.33);
+      return fract((p.x + p.y) * p.z);
+    }
+
+    float starBrightness(vec3 dir) {
+      float brightness = 0.0;
+      vec3 id = floor(dir * 500.0);
+      float cellSize = 1.0 / 500.0;
+
+      for (int dx = -1; dx <= 1; dx++) {
+        for (int dy = -1; dy <= 1; dy++) {
+          for (int dz = -1; dz <= 1; dz++) {
+            vec3 cell = id + vec3(float(dx),float(dy),float(dz));
+            float h0 = hash3D(cell);
+            if (h0 > 0.0025) continue;
+
+            vec3 starPos = (cell + 0.5 + vec3(
+              hash3D(cell+1.0)-0.5, hash3D(cell+2.0)-0.5, hash3D(cell+3.0)-0.5
+            ) * 0.35) * cellSize;
+
+            float d = length(dir - normalize(starPos));
+            float sigma = (0.0004 + hash3D(cell+4.0) * 0.001) * (h0 < 0.0003 ? 4.0 : 1.0);
+            brightness += exp(-d * d / (sigma * sigma)) * (0.4 + hash3D(cell+5.0) * 0.6);
+          }
+        }
+      }
+      return brightness;
+    }
+
+    vec3 starfield(vec3 dir) {
+      float base = starBrightness(dir);
+      if (base < 0.001) return vec3(0.0);
+
+      vec3 id = floor(dir * 500.0);
+      float h = hash3D(id);
+      vec3 col;
+      if (h < 0.15) col = vec3(0.55, 0.7, 1.0);
+      else if (h < 0.3) col = vec3(1.0, 0.88, 0.6);
+      else if (h < 0.45) col = vec3(1.0, 0.65, 0.45);
+      else if (h < 0.55) col = vec3(0.6, 0.8, 1.0);
+      else {
+        float b = 0.6 + h * 0.5;
+        col = vec3(b, b * 0.95, b * 1.05);
+      }
+      return col * base * 2.5;
+    }
+
+    // ═══ Photon ring contribution for near-critical rays ═══
+    float photonRingGlow(float bLocal, float rMin) {
+      float bCrit = sqrt(27.0) / 2.0; // ≈2.598 for Rs=1
+      float bNear = abs(abs(bLocal) - bCrit);
+
+      // Multiple ring orders: rays that orbit 0.5, 1, 1.5, 2 times
+      float ring = 0.0;
+
+      // Primary ring (rays that pass very close to photon sphere)
+      ring += exp(-bNear * 0.12) * 3.0;
+
+      // Secondary ring (rays that orbit ~1 extra time)
+      ring += exp(-bNear * 0.04) * 1.5;
+
+      // Higher order rings (very thin)
+      ring += exp(-bNear * 0.015) * 0.6;
+
+      // Proximity to photon sphere affects brightness
+      if (rMin > 0.0) {
+        float rpDist = abs(rMin - 1.5);
+        ring *= exp(-rpDist * 3.0);
+      }
+
+      ring *= 1.0 + 0.4 * sin(uTime * 3.0 + bLocal * 12.0);
+      return ring;
+    }
+
+    // ═══ MAIN ═══
+    void main() {
+      // Compute ray direction
+      vec2 ndc = vec2(vUv.x * 2.0 - 1.0, 1.0 - vUv.y * 2.0);
+      float halfH = tan(uFOV * 0.5);
+      float halfW = halfH * uAspect;
+      vec3 localDir = normalize(vec3(ndc.x * halfW, ndc.y * halfH, -1.0));
+      vec3 rayDir = normalize(uCameraRot * localDir);
+      vec3 rayOrig = uCameraPos;
+
+      // World-Cartesian → Schwarzschild spherical
+      float r0 = length(rayOrig);
+      if (r0 < RS * 0.9) { gl_FragColor = vec4(0,0,0,1); return; }
+
+      float theta0 = acos(clamp(rayOrig.y / r0, -1.0, 1.0));
+      float phi0 = atan(rayOrig.z, rayOrig.x);
+
+      // Unit vectors in world frame (mapped: x_w=r sinθ cosφ, y_w=r cosθ, z_w=r sinθ sinφ)
+      vec3 rHat = rayOrig / r0;
+      float sinTh0 = sin(theta0);
+      float cosTh0 = cos(theta0);
+      float cosPhi0 = cos(phi0);
+      float sinPhi0 = sin(phi0);
+      vec3 thHat = vec3(cosTh0*cosPhi0, -sinTh0, cosTh0*sinPhi0);
+      vec3 phHat = vec3(-sinPhi0, 0.0, cosPhi0);
+
+      // Orthonormal frame velocity components
+      float vr_hat = dot(rayDir, rHat);
+      float vth_hat = dot(rayDir, thHat);
+      float vph_hat = dot(rayDir, phHat);
+
+      // Convert to coordinate velocities, then rescale for E=1
+      float E0 = sqrt(max(1.0 - RS / r0, 1e-6));
+      float dr0 = vr_hat;
+      float dth0 = vth_hat / (r0 * E0);
+      float dph0 = (abs(sinTh0) < 1e-8) ? 0.0 : vph_hat / (r0 * sinTh0 * E0);
+
+      // Conserved angular momentum / energy (E=1 normalized)
+      float b = r0 * r0 * sinTh0 * sinTh0 * dph0;
+
+      vec3 pos = vec3(r0, theta0, phi0);
+      vec3 vel = vec3(dr0, dth0, dph0);
+
+      vec3 accum = vec3(0.0);
+      bool escaped = false;
+      bool fellIn = false;
+      float rMin = r0;
+
+      float prevTheta = theta0;
+      float prevR = r0;
+      float prevPhi = phi0;
+
+      for (int i = 0; i < MAX_STEPS; i++) {
+        float r = pos.x;
+        float theta = pos.y;
+        float phi = pos.z;
+
+        // Track minimum distance to BH center
+        if (r < rMin) rMin = r;
+
+        // Adaptive step — tiny near photon sphere, large when escaping
+        float photonDist = abs(r - 1.5 * RS);
+        float stepSize;
+        if (r > 10.0 && vel.x > 0.0) {
+          stepSize = STEP_BASE * r * 0.4; // fast escape
+        } else {
+          stepSize = STEP_BASE * (photonDist * 6.0 + 0.25);
+        }
+        stepSize = clamp(stepSize, STEP_BASE * 0.12, STEP_BASE * 10.0);
+        if (photonDist < 0.04) stepSize = STEP_BASE * 0.06;
+
+        rk4(pos, vel, stepSize);
+
+        float newR = pos.x;
+        float newTheta = pos.y;
+        float newPhi = pos.z;
+
+        // Disk crossing: theta crosses π/2
+        float halfPi = 1.57079632679;
+        if ((prevTheta - halfPi) * (newTheta - halfPi) < 0.0) {
+          float t = clamp((halfPi - prevTheta) / (newTheta - prevTheta), 0.0, 1.0);
+          float rCross = mix(prevR, newR, t);
+
+          if (rCross >= ISCO && rCross <= DISK_OUTER) {
+            float T = T_ISCO * pow(rCross / ISCO, -0.75);
+            float rn = rCross / RS;
+            float ut = 1.0 / sqrt(max(1.0 - 3.0 / (2.0 * rn), 0.005));
+            float up = ut / sqrt(2.0 * rn * rn * rn);
+            float denom = ut + b * up;
+
+            if (abs(denom) > 1e-5) {
+              float g = clamp(1.0 / denom, 0.002, 8.0);
+              float Tobs = T * g;
+
+              float intensity = pow(g, 3.5) * pow(T / T_ISCO, 2.5);
+              float falloff = 1.0 / (rn * 0.5 + 0.5);
+              float edgeFade = smoothstep(ISCO - 0.3, ISCO + 0.6, rCross);
+              float outerFade = 1.0 - smoothstep(DISK_OUTER - 5.0, DISK_OUTER + 1.0, rCross);
+
+              accum += tempToColor(Tobs) * intensity * falloff * edgeFade * outerFade * 2.5;
+            }
+          }
+        }
+
+        prevTheta = newTheta;
+        prevR = newR;
+        prevPhi = newPhi;
+
+        if (newR < RS * 0.8) { fellIn = true; break; }
+        if (newR > ESCAPE_R) { escaped = true; break;         }
+      }
+
+      // Add accumulated disk emission (primary + secondary lensed images)
+      vec3 finalColor = accum;
+
+      if (fellIn) {
+        // Photon ring glow for rays on the edge of the shadow
+        float ring = photonRingGlow(b, rMin);
+        finalColor += ring * vec3(1.0, 0.62, 0.18);
+        if (b > 0.0) {
+          finalColor += ring * 0.35 * vec3(0.35, 0.55, 1.0);
+        }
+      } else {
+        // Escaped — sample starfield at exit direction
+        vec3 exitDir = normalize(vec3(
+          pos.x * sin(pos.y) * cos(pos.z),
+          pos.x * cos(pos.y),
+          pos.x * sin(pos.y) * sin(pos.z)
+        ));
+        finalColor += starfield(exitDir);
+
+        // Photon ring for near-critical escaping rays
+        float critDist = abs(abs(b) - sqrt(27.0) / 2.0);
+        if (rMin < 5.0 && critDist < 1.5) {
+          float ring = photonRingGlow(b, rMin);
+          finalColor += ring * 0.7 * vec3(1.0, 0.6, 0.15);
+          if (b > 0.0) {
+            finalColor += ring * 0.25 * vec3(0.3, 0.5, 1.0);
+          }
+        }
+      }
+
+      // Reinhard tone mapping + gamma
+      finalColor = finalColor / (finalColor + vec3(1.0));
+      finalColor = pow(finalColor, vec3(1.0 / 2.2));
+
+      gl_FragColor = vec4(finalColor, 1.0);
+    }
+  `,
+});
+
+quadScene.add(new THREE.Mesh(quadGeo, shaderMat));
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(quadScene, quadCam));
+
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(W, H), 1.5, 0.4, 0.85);
+bloomPass.threshold = 0.55;
+bloomPass.strength = 1.2;
+bloomPass.radius = 0.6;
+composer.addPass(bloomPass);
+
+const clock = new THREE.Clock();
+let frames = 0;
+let lastFPS = 0;
+const fpsEl = document.getElementById('fps');
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  const dt = clock.getDelta();
+  const elapsed = performance.now() * 0.001;
+  frames++;
+
+  if (elapsed - lastFPS > 0.5) {
+    fpsEl.textContent = `FPS: ${Math.round(frames / (elapsed - lastFPS))}  |  ${Math.round(W*pixelRatio)}×${Math.round(H*pixelRatio)}  |  360 steps RK4`;
+    frames = 0;
+    lastFPS = elapsed;
+  }
+
+  controls.update();
+  vCam.updateMatrixWorld();
+  shaderMat.uniforms.uCameraPos.value.copy(vCam.position);
+  shaderMat.uniforms.uCameraRot.value.setFromMatrix4(vCam.matrixWorld);
+  shaderMat.uniforms.uTime.value = elapsed;
+
+  composer.render();
+}
+
+animate();
+
+window.addEventListener('resize', () => {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  renderer.setSize(w, h);
+  composer.setSize(w, h);
+  vCam.aspect = w / h;
+  vCam.updateProjectionMatrix();
+  shaderMat.uniforms.uAspect.value = w / h;
+  shaderMat.uniforms.uResolution.value.set(w * pixelRatio, h * pixelRatio);
+});
+</script>
+</body>
+</html>
