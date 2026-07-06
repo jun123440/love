@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const EARTH_MAP = 'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg';
+const EARTH_MAP = 'https://clouds.matteason.co.uk/images/4096x2048/earth.jpg';
 const EARTH_NORMAL = 'https://threejs.org/examples/textures/planets/earth_normal_2048.jpg';
 const EARTH_SPEC = 'https://threejs.org/examples/textures/planets/earth_specular_2048.jpg';
-const CLOUD_MAP = 'https://threejs.org/examples/textures/planets/earth_clouds_1024.png';
+const CLOUD_MAP = 'https://clouds.matteason.co.uk/images/4096x2048/clouds.jpg';
 
 const progressFill = document.getElementById('progressFill');
 const loading = document.getElementById('loading');
@@ -34,7 +34,7 @@ const renderer = new THREE.WebGLRenderer({
   powerPreference: 'high-performance',
 });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(window.devicePixelRatio);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
 document.body.prepend(renderer.domElement);
@@ -53,7 +53,7 @@ controls.target.set(0, 0, 0);
 const earthGroup = new THREE.Group();
 scene.add(earthGroup);
 
-const earthGeo = new THREE.SphereGeometry(1, 128, 128);
+const earthGeo = new THREE.SphereGeometry(1, 512, 512);
 const earthMat = new THREE.MeshPhongMaterial({
   shininess: 8,
   specular: new THREE.Color(0x555555),
@@ -83,7 +83,7 @@ const earth = new THREE.Mesh(earthGeo, earthMat);
 earthGroup.add(earth);
 
 texLoader.load(CLOUD_MAP, (tex) => {
-  const cloudGeo = new THREE.SphereGeometry(1.008, 80, 80);
+  const cloudGeo = new THREE.SphereGeometry(1.008, 256, 256);
   const cloudMat = new THREE.MeshPhongMaterial({
     map: tex,
     transparent: true,
@@ -101,7 +101,7 @@ texLoader.load(CLOUD_MAP, (tex) => {
 setTimeout(() => loading.classList.add('hidden'), 12000);
 
 function makeGlow(radius, color, intensity, powFactor) {
-  const geo = new THREE.SphereGeometry(radius, 64, 64);
+  const geo = new THREE.SphereGeometry(radius, 128, 128);
   const mat = new THREE.ShaderMaterial({
     vertexShader: `
       varying vec3 vNormal;
@@ -143,7 +143,7 @@ earthGroup.add(makeGlow(1.12, 0x4facfe, 0.7, 4.5));
 earthGroup.add(makeGlow(1.25, 0x88ccff, 0.25, 2.0));
 earthGroup.add(makeGlow(1.45, 0x667eea, 0.08, 1.2));
 
-const starCount = 8000;
+const starCount = 20000;
 const starPos = new Float32Array(starCount * 3);
 const starCol = new Float32Array(starCount * 3);
 const starSize = new Float32Array(starCount);
@@ -215,57 +215,6 @@ const starMat = new THREE.ShaderMaterial({
 const stars = new THREE.Points(starGeo, starMat);
 scene.add(stars);
 
-const ringCount = 3000;
-const ringPos = new Float32Array(ringCount * 3);
-for (let i = 0; i < ringCount; i++) {
-  const angle = Math.random() * Math.PI * 2;
-  const radius = 1.6 + Math.random() * 0.8;
-  const wave = Math.sin(angle * 5 + Math.random() * 0.5) * 0.015;
-  const height = (Math.random() - 0.5) * 0.06 + wave;
-  ringPos[i*3] = Math.cos(angle) * radius;
-  ringPos[i*3+1] = height;
-  ringPos[i*3+2] = Math.sin(angle) * radius;
-}
-const ringGeo = new THREE.BufferGeometry();
-ringGeo.setAttribute('position', new THREE.BufferAttribute(ringPos, 3));
-const ringMat = new THREE.PointsMaterial({
-  color: 0x88ccff,
-  size: 0.006,
-  transparent: true,
-  opacity: 0.5,
-  blending: THREE.AdditiveBlending,
-  sizeAttenuation: true,
-  depthWrite: false,
-});
-const ring = new THREE.Points(ringGeo, ringMat);
-ring.name = 'ring';
-earthGroup.add(ring);
-
-const ring2Count = 1200;
-const ring2Pos = new Float32Array(ring2Count * 3);
-for (let i = 0; i < ring2Count; i++) {
-  const angle = Math.random() * Math.PI * 2;
-  const radius = 2.6 + Math.random() * 0.4;
-  const tilt = (Math.random() - 0.5) * 0.12;
-  ring2Pos[i*3] = Math.cos(angle) * radius;
-  ring2Pos[i*3+1] = tilt;
-  ring2Pos[i*3+2] = Math.sin(angle) * radius;
-}
-const ring2Geo = new THREE.BufferGeometry();
-ring2Geo.setAttribute('position', new THREE.BufferAttribute(ring2Pos, 3));
-const ring2Mat = new THREE.PointsMaterial({
-  color: 0xff88aa,
-  size: 0.004,
-  transparent: true,
-  opacity: 0.25,
-  blending: THREE.AdditiveBlending,
-  sizeAttenuation: true,
-  depthWrite: false,
-});
-const ring2 = new THREE.Points(ring2Geo, ring2Mat);
-ring2.name = 'ring2';
-earthGroup.add(ring2);
-
 const keyLight = new THREE.DirectionalLight(0xffeedd, 2.5);
 keyLight.position.set(5, 3, 5);
 scene.add(keyLight);
@@ -287,11 +236,6 @@ function animate() {
 
   const clouds = earthGroup.getObjectByName('clouds');
   if (clouds) clouds.rotation.y += 0.0003;
-
-  const r = earthGroup.getObjectByName('ring');
-  if (r) r.rotation.y += 0.0004;
-  const r2 = earthGroup.getObjectByName('ring2');
-  if (r2) r2.rotation.y -= 0.0006;
 
   starMat.uniforms.uTime.value += 0.005;
 
