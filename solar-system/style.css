@@ -1,170 +1,70 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  overflow: hidden;
-  background: #000;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: #fff;
-  user-select: none;
-}
-
 canvas {
-  display: block;
+    display: block;
+    width: 100vw;
+    height: 100vh;
 }
 
-#loading {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: radial-gradient(ellipse at center, #0a0a1a, #000);
-  z-index: 100;
-  transition: opacity 0.8s ease, visibility 0.8s ease;
+html, body { 
+    width: 100%;
+    height: 100%;
+    margin: 0; 
+    padding: 0; 
+    overflow: hidden; 
+    font-family: 'Arial', sans-serif;
 }
 
-#loading.hidden {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
+body { 
+    background: #0a0a0f;
 }
 
-.spinner {
-  width: 52px;
-  height: 52px;
-  border: 2px solid rgba(255,255,255,0.06);
-  border-top: 2px solid #f90;
-  border-right: 2px solid #f60;
-  border-radius: 50%;
-  animation: spin 1s cubic-bezier(0.4,0,0.2,1) infinite;
+#loader {
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    z-index: 10000; 
+    transition: opacity 0.7s ease;
 }
 
-#loading p {
-  margin-top: 20px;
-  color: rgba(255,255,255,0.35);
-  font-size: 13px;
-  letter-spacing: 1px;
+.loader-content {
+    text-align: center; 
+    color: white; 
 }
 
-.progress-bar {
-  width: 180px;
-  height: 2px;
-  background: rgba(255,255,255,0.08);
-  border-radius: 2px;
-  margin-top: 16px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  width: 0%;
-  height: 100%;
-  background: linear-gradient(90deg, #f90, #f60);
-  border-radius: 2px;
-  transition: width 0.3s ease;
-}
-
-#info {
-  position: fixed;
-  top: 28px;
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
-  z-index: 10;
-  pointer-events: none;
-}
-
-#info h1 {
-  font-size: 22px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #f90, #f60, #c30);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  letter-spacing: 2px;
-}
-
-#info p {
-  font-size: 12px;
-  color: rgba(255,255,255,0.35);
-  margin-top: 5px;
-  letter-spacing: 1px;
-}
-
-#planetPanel {
-  position: fixed;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 20;
-  background: rgba(10,10,30,0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
-  padding: 20px 32px;
-  text-align: center;
-  min-width: 220px;
-  transition: opacity 0.4s ease, transform 0.4s ease;
-  pointer-events: auto;
-}
-
-#planetPanel.hidden {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(-50%) translateY(20px);
-}
-
-#planetIcon {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  margin: 0 auto 10px;
-  box-shadow: 0 0 20px rgba(255,255,255,0.15);
-}
-
-#planetName {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 1px;
-}
-
-#planetNameEn {
-  font-size: 12px;
-  color: rgba(255,255,255,0.4);
-  margin-top: 2px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-
-#planetInfo {
-  font-size: 12px;
-  color: rgba(255,255,255,0.5);
-  margin-top: 8px;
-}
-
-#btnBack {
-  margin-top: 14px;
-  padding: 6px 24px;
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 20px;
-  background: rgba(255,255,255,0.05);
-  color: rgba(255,255,255,0.6);
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  letter-spacing: 1px;
-}
-
-#btnBack:hover {
-  background: rgba(255,255,255,0.12);
-  color: #fff;
-  border-color: rgba(255,255,255,0.3);
+.loader-spinner { 
+    width: 50px; 
+    height: 50px; 
+    border: 3px solid rgba(255,255,255,0.3); 
+    border-top: 3px solid #00ff88;
+    border-radius: 50%; 
+    animation: spin 1s linear infinite; 
+    margin: 0 auto 20px; 
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+    0% { 
+        transform: rotate(0deg);
+    } 
+    100% { 
+        transform: rotate(360deg);
+    } 
+}
+
+.instructions {
+    position: fixed; 
+    bottom: 20px; 
+    left: 50%; 
+    transform: translateX(-50%);
+    color: white; 
+    text-align: center; 
+    z-index: 100; 
+    background: rgba(0,0,0,0.7);
+    padding: 10px 20px; 
+    border-radius: 20px; 
+    font-size: 0.9rem;
 }
