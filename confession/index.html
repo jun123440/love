@@ -235,23 +235,48 @@ function upA() {
 function upX() {
   let el = (millis() - phaseTime) / 1000, pr = constrain(el / 8, 0, 1)
   let cx = width / 2, cy = height / 2, ca = cos(angle), sa = sin(angle)
+  let s1 = 2.8 / 8, s2 = (2.8 + 3.2) / 8
   for (let p of particles) {
     let pp = constrain((pr - p.de * 0.3) / (1 - p.de * 0.3), 0, 1)
-    let t = ee(pp), sc = sin(pp * PI), sp = (1 - ee(pp * 0.6)) * 55 * cos(pp * PI * 3 + p.r2)
     let rx = p.tx * ca - p.tz * sa, rz = p.tx * sa + p.tz * ca
-    let tx = rx, ty = p.ty * cos(TILT) - rz * sin(TILT)
-    let bx = p.ox * (1 - t) + tx * t + sc * (p.svx * 0.15 + 50 * cos(p.r2))
-    let by = p.oy * (1 - t) + ty * t + sc * (p.svy * 0.15 + 50 * sin(p.r2))
-    p.sx = cx + bx + sp * cos(p.r2)
-    p.sy = cy + by + sp * 0.5 * sin(p.r2)
-    let warm = sin(pp * PI * 0.7)
-    p.a = lerp(230, 240, t)
-    p.s = lerp(p.s, p.ts, min(1, t * 2))
-    p.clr = [
-      lerp(255, p.tclr[0], t) - 15 * warm * (1 - t),
-      lerp(255, p.tclr[1], t) + 25 * warm * (1 - t),
-      lerp(255, p.tclr[2], t) + 40 * warm * (1 - t)
-    ]
+    let ttx = rx, tty = p.ty * cos(TILT) - rz * sin(TILT)
+    let tx = cx + ttx, ty = cy + tty
+    if (pp < s1) {
+      let t = constrain(pp / s1, 0, 1), e = ee(t)
+      let sw = sin(t * PI * 3 + p.r2) * 25
+      let sc = sin(t * PI)
+      let sx = p.ox + (p.svx * 0.2 + 60 * cos(p.r2)) * sc + sw
+      let sy = p.oy + (p.svy * 0.2 + 60 * sin(p.r2)) * sc + sw * 0.5
+      p.sx = cx + sx; p.sy = cy + sy
+      p.a = 255
+      p.s = lerp(p.s, p.ts, min(1, t * 2))
+      let w = t
+      p.clr = [lerp(255, 255, w), lerp(255, 210, w), lerp(255, 120, w)]
+    } else if (pp < s2) {
+      let t = constrain((pp - s1) / (s2 - s1), 0, 1), e = ee(t)
+      let sr = (1 - ee(t * 0.6)) * 60
+      let sa2 = t * PI * 4 + p.r2
+      let sc = sin(t * PI)
+      let bx = p.ox * (1 - e) + ttx * e + sc * (p.svx * 0.15 + 50 * cos(p.r2))
+      let by = p.oy * (1 - e) + tty * e + sc * (p.svy * 0.15 + 50 * sin(p.r2))
+      p.sx = cx + bx + sr * cos(sa2)
+      p.sy = cy + by + sr * 0.5 * sin(sa2)
+      p.a = lerp(255, 240, e)
+      p.s = lerp(p.s, p.ts, min(1, e * 2))
+      let w = 1 - t
+      p.clr = [
+        lerp(255, p.tclr[0], e) - 15 * w * (1 - e),
+        lerp(210, p.tclr[1], e) + 25 * w * (1 - e),
+        lerp(120, p.tclr[2], e) + 40 * w * (1 - e)
+      ]
+    } else {
+      let t = constrain((pp - s2) / (1 - s2), 0, 1), e = easeOutBack(t)
+      p.sx = lerp(p.sx, tx, e)
+      p.sy = lerp(p.sy, ty, e)
+      p.clr = p.tclr
+      p.a = 240
+      p.s = lerp(p.s, p.ts, min(1, e * 2))
+    }
   }
   dr()
   if (pr >= 1) { phase = 'disp'; phaseTime = millis(); showFinal() }
