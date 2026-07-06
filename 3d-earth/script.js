@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const EARTH_MAP = 'https://clouds.matteason.co.uk/images/4096x2048/earth.jpg';
+const EARTH_MAP = 'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg';
 const EARTH_NORMAL = 'https://threejs.org/examples/textures/planets/earth_normal_2048.jpg';
 const EARTH_SPEC = 'https://threejs.org/examples/textures/planets/earth_specular_2048.jpg';
 const CLOUD_MAP = 'https://threejs.org/examples/textures/planets/earth_clouds_1024.png';
@@ -17,9 +17,11 @@ function updateProgress() {
     progressFill.style.width = Math.min((loaded / 4) * 100, 100) + '%';
   }
   if (loaded >= 4) {
-    setTimeout(() => loading.classList.add('hidden'), 300);
+    setTimeout(() => loading.classList.add('hidden'), 200);
   }
 }
+
+setTimeout(() => loading.classList.add('hidden'), 3000);
 
 const texLoader = new THREE.TextureLoader();
 
@@ -67,7 +69,7 @@ texLoader.load(EARTH_MAP, (tex) => {
   earthMat.map = tex;
   earthMat.needsUpdate = true;
   updateProgress();
-});
+}, undefined, () => { updateProgress(); });
 
 texLoader.load(EARTH_NORMAL, (tex) => {
   tex.anisotropy = maxAniso;
@@ -75,14 +77,14 @@ texLoader.load(EARTH_NORMAL, (tex) => {
   earthMat.normalScale = new THREE.Vector2(1.2, 1.2);
   earthMat.needsUpdate = true;
   updateProgress();
-});
+}, undefined, () => { updateProgress(); });
 
 texLoader.load(EARTH_SPEC, (tex) => {
   tex.anisotropy = maxAniso;
   earthMat.specularMap = tex;
   earthMat.needsUpdate = true;
   updateProgress();
-});
+}, undefined, () => { updateProgress(); });
 
 const earth = new THREE.Mesh(earthGeo, earthMat);
 earthGroup.add(earth);
@@ -102,9 +104,7 @@ texLoader.load(CLOUD_MAP, (tex) => {
   clouds.name = 'clouds';
   earthGroup.add(clouds);
   updateProgress();
-});
-
-setTimeout(() => loading.classList.add('hidden'), 12000);
+}, undefined, () => { updateProgress(); });
 
 function makeGlow(radius, color, intensity, powFactor) {
   const geo = new THREE.SphereGeometry(radius, 512, 512);

@@ -27,17 +27,17 @@ const planetInfo = document.getElementById('planetInfo');
 const btnBack = document.getElementById('btnBack');
 
 let loadedCount = 0;
-const totalAssets = PLANETS.filter(p => !p.isSun).length + 2;
+const totalAssets = PLANETS.filter(p => !p.isSun).length;
 
 function tickLoad() {
   loadedCount++;
   if (progressFill) progressFill.style.width = Math.min(loadedCount / totalAssets * 100, 100) + '%';
   if (loadedCount >= totalAssets) {
-    setTimeout(() => loading.classList.add('hidden'), 400);
+    setTimeout(() => loading.classList.add('hidden'), 200);
   }
 }
 
-setTimeout(() => loading.classList.add('hidden'), 15000);
+setTimeout(() => loading.classList.add('hidden'), 3000);
 
 const W = window.innerWidth;
 const H = window.innerHeight;
@@ -256,12 +256,20 @@ PLANETS.forEach((p, idx) => {
     texLoader.load(EARTH_MAP, t => {
       t.colorSpace = THREE.SRGBColorSpace;
       t.anisotropy = maxAniso;
-      planetMeshes[idx].material.map = t;
-      planetMeshes[idx].material.needsUpdate = true;
-      tickLoad();
-    });
+      if (planetMeshes[idx]) {
+        planetMeshes[idx].material.map = t;
+        planetMeshes[idx].material.needsUpdate = true;
+      }
+    }, undefined, () => {});
     tex = makeCanvas(512, 256, (ctx, w, h) => {
-      ctx.fillStyle = '#4477aa'; ctx.fillRect(0, 0, w, h);
+      const g = ctx.createLinearGradient(0,0,0,h);
+      g.addColorStop(0,'#4488bb'); g.addColorStop(0.5,'#66aa77'); g.addColorStop(1,'#4488bb');
+      ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+      for (let i=0;i<200;i++) {
+        const x=Math.random()*w,y=Math.random()*h,s=2+Math.random()*6,a=Math.random()*0.2;
+        ctx.beginPath(); ctx.arc(x,y,s,0,Math.PI*2);
+        ctx.fillStyle=`rgba(0,80,0,${a})`; ctx.fill();
+      }
     });
   } else if (p.hasRing) {
     tex = drawGasGiant(['#d4c090','#c8b080','#d0b888','#b89860'], 1024, 512);
@@ -304,8 +312,7 @@ PLANETS.forEach((p, idx) => {
       mat.normalMap = t;
       mat.normalScale = new THREE.Vector2(0.8, 0.8);
       mat.needsUpdate = true;
-      tickLoad();
-    });
+    }, undefined, () => {});
   }
 
   if (p.hasRing) {
