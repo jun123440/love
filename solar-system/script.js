@@ -45,6 +45,18 @@ sunLight.shadow.mapSize.height = 4096;
 scene.add(sunLight);
 scene.add(new THREE.HemisphereLight(0xaaaaaa, 0x000000, 0.5));
 
+const planetsData = [
+    { name: "Mercury", size: 3, distance: 50, orbitalPeriod: 0.24, rotationPeriod: 58.6, axialTilt: 0.03, texture: loadTex('mercury.jpg'), color: 0xAAAAAA },
+    { name: "Venus", size: 4.8, distance: 80, orbitalPeriod: 0.62, rotationPeriod: -243, axialTilt: 177.3, texture: loadTex('venus.jpg'), cloudsTexture: loadTex('venus%20atmosphere.jpg'), color: 0xFFAAAA },
+    { name: "Earth", size: 5, distance: 120, orbitalPeriod: 1, rotationPeriod: 1, axialTilt: 23.5, texture: loadTex('earth-day.jpg'), cloudsTexture: loadTex('earth%20clouds.jpg'), nightTexture: loadTex('earth%20night.jpg'), color: 0x0000FF },
+    { name: "Mars", size: 3.5, distance: 180, orbitalPeriod: 1.88, rotationPeriod: 1.03, axialTilt: 25.2, texture: loadTex('mars.jpg'), color: 0xFF0000 },
+    { name: "Jupiter", size: 25, distance: 300, orbitalPeriod: 11.86, rotationPeriod: 0.41, axialTilt: 3.1, texture: loadTex('jupiter.jpg'), color: 0xFFA500 },
+    { name: "Saturn", size: 20, distance: 450, orbitalPeriod: 29.46, rotationPeriod: 0.44, axialTilt: 26.7, texture: loadTex('saturn.jpg'), ringTexture: loadTex('saturn%20ring.png'), ringInnerRadius: 25, ringOuterRadius: 40, color: 0xFFD700 },
+    { name: "Uranus", size: 18, distance: 600, orbitalPeriod: 84.01, rotationPeriod: -0.72, axialTilt: 97.8, texture: loadTex('uranus.jpg'), color: 0xADD8E6 },
+    { name: "Neptune", size: 17, distance: 750, orbitalPeriod: 164.79, rotationPeriod: 0.67, axialTilt: 28.3, texture: loadTex('naptune.jpg'), color: 0x00008B },
+    { name: "Pluto", size: 1.5, distance: 850, orbitalPeriod: 248, rotationPeriod: 6.39, axialTilt: 119.6, texture: loadTex('pluto.jpg'), color: 0xc8d1ff }
+];
+
 function createCoronaTexture() {
     const canvas = document.createElement('canvas');
     canvas.width = 256;
@@ -59,18 +71,6 @@ function createCoronaTexture() {
     ctx.fillRect(0, 0, 256, 256);
     return new THREE.CanvasTexture(canvas);
 }
-
-const planetsData = [
-    { name: "Mercury", size: 3, distance: 50, orbitalPeriod: 0.24, rotationPeriod: 58.6, axialTilt: 0.03, texture: loadTex('mercury.jpg'), color: 0xAAAAAA },
-    { name: "Venus", size: 4.8, distance: 80, orbitalPeriod: 0.62, rotationPeriod: -243, axialTilt: 177.3, texture: loadTex('venus.jpg'), cloudsTexture: loadTex('venus%20atmosphere.jpg'), color: 0xFFAAAA },
-    { name: "Earth", size: 5, distance: 120, orbitalPeriod: 1, rotationPeriod: 1, axialTilt: 23.5, texture: loadTex('earth-day.jpg'), cloudsTexture: loadTex('earth%20clouds.jpg'), nightTexture: loadTex('earth%20night.jpg'), color: 0x0000FF },
-    { name: "Mars", size: 3.5, distance: 180, orbitalPeriod: 1.88, rotationPeriod: 1.03, axialTilt: 25.2, texture: loadTex('mars.jpg'), color: 0xFF0000 },
-    { name: "Jupiter", size: 25, distance: 300, orbitalPeriod: 11.86, rotationPeriod: 0.41, axialTilt: 3.1, texture: loadTex('jupiter.jpg'), color: 0xFFA500 },
-    { name: "Saturn", size: 20, distance: 450, orbitalPeriod: 29.46, rotationPeriod: 0.44, axialTilt: 26.7, texture: loadTex('saturn.jpg'), ringTexture: loadTex('saturn%20ring.png'), ringInnerRadius: 25, ringOuterRadius: 40, color: 0xFFD700 },
-    { name: "Uranus", size: 18, distance: 600, orbitalPeriod: 84.01, rotationPeriod: -0.72, axialTilt: 97.8, texture: loadTex('uranus.jpg'), color: 0xADD8E6 },
-    { name: "Neptune", size: 17, distance: 750, orbitalPeriod: 164.79, rotationPeriod: 0.67, axialTilt: 28.3, texture: loadTex('naptune.jpg'), color: 0x00008B },
-    { name: "Pluto", size: 1.5, distance: 850, orbitalPeriod: 248, rotationPeriod: 6.39, axialTilt: 119.6, texture: loadTex('pluto.jpg'), color: 0xc8d1ff }
-];
 
 const sunGeometry = new THREE.SphereGeometry(20, 64, 64);
 const sunMaterial = new THREE.MeshBasicMaterial({ map: loadTex('sun.jpg') });
