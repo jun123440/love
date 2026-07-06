@@ -53,7 +53,9 @@ controls.target.set(0, 0, 0);
 const earthGroup = new THREE.Group();
 scene.add(earthGroup);
 
-const earthGeo = new THREE.SphereGeometry(1, 1024, 1024);
+const maxAniso = renderer.capabilities.getMaxAnisotropy();
+
+const earthGeo = new THREE.SphereGeometry(1, 2048, 2048);
 const earthMat = new THREE.MeshPhongMaterial({
   shininess: 8,
   specular: new THREE.Color(0x555555),
@@ -61,19 +63,22 @@ const earthMat = new THREE.MeshPhongMaterial({
 
 texLoader.load(EARTH_MAP, (tex) => {
   tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = maxAniso;
   earthMat.map = tex;
   earthMat.needsUpdate = true;
   updateProgress();
 });
 
 texLoader.load(EARTH_NORMAL, (tex) => {
+  tex.anisotropy = maxAniso;
   earthMat.normalMap = tex;
-  earthMat.normalScale = new THREE.Vector2(0.8, 0.8);
+  earthMat.normalScale = new THREE.Vector2(1.2, 1.2);
   earthMat.needsUpdate = true;
   updateProgress();
 });
 
 texLoader.load(EARTH_SPEC, (tex) => {
+  tex.anisotropy = maxAniso;
   earthMat.specularMap = tex;
   earthMat.needsUpdate = true;
   updateProgress();
@@ -83,7 +88,8 @@ const earth = new THREE.Mesh(earthGeo, earthMat);
 earthGroup.add(earth);
 
 texLoader.load(CLOUD_MAP, (tex) => {
-  const cloudGeo = new THREE.SphereGeometry(1.008, 512, 512);
+  tex.anisotropy = maxAniso;
+  const cloudGeo = new THREE.SphereGeometry(1.008, 1024, 1024);
   const cloudMat = new THREE.MeshPhongMaterial({
     map: tex,
     transparent: true,
@@ -101,7 +107,7 @@ texLoader.load(CLOUD_MAP, (tex) => {
 setTimeout(() => loading.classList.add('hidden'), 12000);
 
 function makeGlow(radius, color, intensity, powFactor) {
-  const geo = new THREE.SphereGeometry(radius, 256, 256);
+  const geo = new THREE.SphereGeometry(radius, 512, 512);
   const mat = new THREE.ShaderMaterial({
     vertexShader: `
       varying vec3 vNormal;
@@ -143,7 +149,7 @@ earthGroup.add(makeGlow(1.035, 0xffffff, 0.06, 8.0));
 earthGroup.add(makeGlow(1.06, 0x88ddff, 0.10, 5.0));
 earthGroup.add(makeGlow(1.12, 0x6688cc, 0.04, 3.0));
 
-const starCount = 40000;
+const starCount = 80000;
 const starPos = new Float32Array(starCount * 3);
 const starCol = new Float32Array(starCount * 3);
 const starSize = new Float32Array(starCount);
