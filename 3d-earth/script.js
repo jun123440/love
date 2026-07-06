@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const EARTH_MAP = 'https://clouds.matteason.co.uk/images/4096x2048/earth.jpg';
 const EARTH_NORMAL = 'https://threejs.org/examples/textures/planets/earth_normal_2048.jpg';
 const EARTH_SPEC = 'https://threejs.org/examples/textures/planets/earth_specular_2048.jpg';
-const CLOUD_MAP = 'https://clouds.matteason.co.uk/images/4096x2048/clouds.jpg';
+const CLOUD_MAP = 'https://threejs.org/examples/textures/planets/earth_clouds_1024.png';
 
 const progressFill = document.getElementById('progressFill');
 const loading = document.getElementById('loading');
@@ -87,7 +87,7 @@ texLoader.load(CLOUD_MAP, (tex) => {
   const cloudMat = new THREE.MeshPhongMaterial({
     map: tex,
     transparent: true,
-    opacity: 0.35,
+    opacity: 0.45,
     blending: THREE.AdditiveBlending,
     side: THREE.DoubleSide,
     depthWrite: false,
