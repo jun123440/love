@@ -6,6 +6,26 @@ const EARTH_NORMAL = 'https://threejs.org/examples/textures/planets/earth_normal
 const EARTH_SPEC = 'https://threejs.org/examples/textures/planets/earth_specular_2048.jpg';
 const CLOUD_MAP = 'https://threejs.org/examples/textures/planets/earth_clouds_1024.png';
 
+function makeProceduralEarth() {
+  const c = document.createElement('canvas'); c.width = 1024; c.height = 512;
+  const ctx = c.getContext('2d');
+  for (let y = 0; y < 512; y++) {
+    for (let x = 0; x < 1024; x++) {
+      const u = x / 1024, v = y / 512;
+      const n = Math.sin(u * 20 + v * 10) * 0.5 + Math.sin(u * 8 - v * 15 + 2) * 0.3 + Math.sin(u * 35 + v * 25 + 4) * 0.2;
+      const lat = (v - 0.5) * Math.PI;
+      const polar = Math.abs(lat) > 1.2 ? 1 : 0;
+      if (polar) { ctx.fillStyle = '#e8e8f0'; }
+      else if (n > 0.15) { ctx.fillStyle = `rgb(${80+Math.random()*40|0},${120+Math.random()*50|0},${40+Math.random()*30|0})`; }
+      else { ctx.fillStyle = `rgb(${30+Math.random()*30|0},${70+Math.random()*40|0},${120+Math.random()*40|0})`; }
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.anisotropy = maxAniso;
+  return t;
+}
+
 const progressFill = document.getElementById('progressFill');
 const loading = document.getElementById('loading');
 
@@ -61,6 +81,7 @@ const earthGeo = new THREE.SphereGeometry(1, 2048, 2048);
 const earthMat = new THREE.MeshPhongMaterial({
   shininess: 8,
   specular: new THREE.Color(0x555555),
+  map: makeProceduralEarth(),
 });
 
 texLoader.load(EARTH_MAP, (tex) => {
