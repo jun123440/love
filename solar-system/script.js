@@ -115,27 +115,10 @@ controls.target.set(0,0,0);
 
 const clock = new THREE.Clock();
 
-// --- BACKGROUND NEBULA ---
-const nebulaVS = ['varying vec3 vPos;void main(){vPos=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}'].join('\n');
-const nebulaFS = ['uniform float uTime;varying vec3 vPos;',
-'float h(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}',
-'float n(vec3 p){vec3 i=floor(p);vec3 f=fract(p);f=f*f*(3.-2.*f);return mix(mix(mix(h(i),h(i+vec3(1,0,0)),f.x),mix(h(i+vec3(0,1,0)),h(i+vec3(1,1,0)),f.x),f.y),mix(mix(h(i+vec3(0,0,1)),h(i+vec3(1,0,1)),f.x),mix(h(i+vec3(0,1,1)),h(i+vec3(1,1,1)),f.x),f.y),f.z);}',
-'void main(){',
-'vec3 p=vPos*0.003+uTime*0.0005;float a=n(p)*0.5;',
-'a+=0.25*n(p*2.);a+=0.125*n(p*4.);a/=0.875;',
-'float s=n(p*6.+100.)*0.3;',
-'vec3 col=mix(vec3(.01,.005,.02),vec3(.06,.02,.08),a*smoothstep(.3,.7,a));',
-'col+=mix(vec3(.1,.01,.02),vec3(.02,.03,.08),sin(a*10.+p.x)*.5+.5)*s*.15;',
-'float star=smoothstep(.85,.95,s);',
-'vec3 sc=vec3(.8,.7,.6)*star;',
-'gl_FragColor=vec4(col+sc,1.);}',
-].join('\n');
-const nebulaMat = new THREE.ShaderMaterial({
-  uniforms:{ uTime:{ value:0 } },
-  vertexShader:nebulaVS, fragmentShader:nebulaFS, side:THREE.BackSide,
-});
-const nebulaMesh = new THREE.Mesh(new THREE.SphereGeometry(900, 64, 64), nebulaMat);
-scene.add(nebulaMesh);
+// --- BACKGROUND (Milky Way) ---
+const bgMat = new THREE.MeshBasicMaterial({ side:THREE.BackSide });
+loadTex(CDN+'_stars_milky_way.jpg',t=>{t.colorSpace=THREE.SRGBColorSpace;bgMat.map=t;bgMat.needsUpdate=true});
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(900,64,64),bgMat));
 
 // --- SUN ---
 const sunGroup = new THREE.Group(); scene.add(sunGroup);
@@ -432,7 +415,7 @@ function animate(){
   const dt=Math.min(clock.getDelta(),.05);
   sunMat.uniforms.uTime.value+=dt;coronaMat.uniforms.uTime.value+=dt;
   chromoMat.uniforms.uTime.value+=dt;flareMat.uniforms.uTime.value+=dt;
-  nebulaMat.uniforms.uTime.value+=dt*0.3;
+
 
   if(camState==='focusing')updateFocusCamera(dt);
   else if(camState==='focused'&&focusedPlanet){
