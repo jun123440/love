@@ -23,6 +23,11 @@ function updateProgress() {
   }
 }
 
+const onTexLoad = (tex) => {
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  updateProgress();
+};
+
 const texLoader = new THREE.TextureLoader();
 
 const scene = new THREE.Scene();
@@ -54,30 +59,17 @@ controls.target.set(0, 0, 0);
 const earthGroup = new THREE.Group();
 scene.add(earthGroup);
 
-const maxAniso = renderer.capabilities.getMaxAnisotropy();
-
 const dayTex = texLoader.load(EARTH_MAP, (tex) => {
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = maxAniso;
-  updateProgress();
+  onTexLoad(tex);
 });
-const normalTex = texLoader.load(EARTH_NORMAL, (tex) => {
-  tex.anisotropy = maxAniso;
-  updateProgress();
-});
-const specTex = texLoader.load(EARTH_SPEC, (tex) => {
-  tex.anisotropy = maxAniso;
-  updateProgress();
-});
+const normalTex = texLoader.load(EARTH_NORMAL, onTexLoad);
+const specTex = texLoader.load(EARTH_SPEC, onTexLoad);
 const nightTex = texLoader.load(NIGHT_MAP, (tex) => {
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = maxAniso;
-  updateProgress();
+  onTexLoad(tex);
 });
-const cloudTex = texLoader.load(CLOUD_MAP, (tex) => {
-  tex.anisotropy = maxAniso;
-  updateProgress();
-});
+const cloudTex = texLoader.load(CLOUD_MAP, onTexLoad);
 
 const sunDir = new THREE.Vector3(0.6, 0.3, 0.8).normalize();
 const earthMat = new THREE.ShaderMaterial({
@@ -87,20 +79,16 @@ const earthMat = new THREE.ShaderMaterial({
     uNormalTex: { value: normalTex },
     uSpecTex: { value: specTex },
     uSunDir: { value: sunDir.clone() },
-    uGlowIntensity: { value: 0.0 },
-    uTime: { value: 0 },
   },
   vertexShader: [
     'varying vec2 vUv;',
     'varying vec3 vNormal;',
     'varying vec3 vViewPos;',
-    'varying vec3 vWorldNormal;',
     'void main() {',
     '  vUv = uv;',
     '  vNormal = normalize(normalMatrix * normal);',
     '  vec4 mvPos = modelViewMatrix * vec4(position, 1.0);',
     '  vViewPos = mvPos.xyz;',
-    '  vWorldNormal = normalize(mat3(modelMatrix) * normal);',
     '  gl_Position = projectionMatrix * mvPos;',
     '}',
   ].join('\n'),
@@ -110,47 +98,33 @@ const earthMat = new THREE.ShaderMaterial({
     'uniform sampler2D uNormalTex;',
     'uniform sampler2D uSpecTex;',
     'uniform vec3 uSunDir;',
-    'uniform float uGlowIntensity;',
-    '',
     'varying vec2 vUv;',
     'varying vec3 vNormal;',
     'varying vec3 vViewPos;',
-    'varying vec3 vWorldNormal;',
-    '',
     'void main() {',
     '  vec3 dayColor = texture2D(uDayTex, vUv).rgb;',
     '  vec3 nightColor = texture2D(uNightTex, vUv).rgb;',
-    '  vec3 normal = texture2D(uNormalTex, vUv).rgb * 2.0 - 1.0;',
-    '  normal = normalize(normal * vec3(1.2, 1.2, 1.0));',
-    '  mat3 TBN = mat3(1.0);',
-    '  vec3 perturbedNormal = normalize(TBN * normal);',
-    '',
+    '  vec3 n = texture2D(uNormalTex, vUv).rgb * 2.0 - 1.0;',
+    '  n = normalize(n * vec3(1.2, 1.2, 1.0));',
     '  vec3 lightDir = normalize(uSunDir);',
-    '  float NdotL = dot(perturbedNormal, lightDir);',
-    '',
+    '  float NdotL = dot(n, lightDir);',
     '  float dayFactor = smoothstep(-0.05, 0.25, NdotL);',
     '  vec3 baseColor = mix(nightColor, dayColor, dayFactor);',
-    '',
     '  vec3 viewDir = normalize(-vViewPos);',
     '  vec3 halfDir = normalize(lightDir + viewDir);',
-    '  float spec = pow(max(dot(perturbedNormal, halfDir), 0.0), 64.0);',
+    '  float spec = pow(max(dot(n, halfDir), 0.0), 64.0);',
     '  float specMask = texture2D(uSpecTex, vUv).r;',
     '  vec3 specular = vec3(1.0, 0.95, 0.85) * spec * 0.6 * specMask;',
-    '',
-    '  float rim = 1.0 - max(0.0, dot(perturbedNormal, viewDir));',
+    '  float rim = 1.0 - max(0.0, dot(n, viewDir));',
     '  rim = pow(rim, 4.0);',
     '  vec3 rimColor = vec3(0.4, 0.6, 1.0) * rim * 0.25;',
-    '',
     '  float cityGlow = 1.0 - smoothstep(-0.2, 0.05, NdotL);',
     '  vec3 cityLight = nightColor * 0.5 * cityGlow;',
-    '',
     '  vec3 finalColor = baseColor;',
     '  finalColor += specular * clamp(dayFactor * 2.0, 0.0, 1.0);',
     '  finalColor += rimColor;',
     '  finalColor += cityLight;',
     '  finalColor += nightColor * 0.08;',
-    '  finalColor *= 1.0 + uGlowIntensity * 0.3;',
-    '',
     '  gl_FragColor = vec4(finalColor, 1.0);',
     '}',
   ].join('\n'),
@@ -315,61 +289,39 @@ const starMat = new THREE.ShaderMaterial({
 const stars = new THREE.Points(starGeo, starMat);
 scene.add(stars);
 
-const sunGroup = new THREE.Group();
-const sunGeo = new THREE.SphereGeometry(0.08, 16, 16);
-const sunMat = new THREE.ShaderMaterial({
-  vertexShader: [
-    'varying vec3 vNormal;',
-    'varying vec3 vWorldPos;',
-    'void main() {',
-    '  vNormal = normalize(normalMatrix * normal);',
-    '  vec4 wp = modelMatrix * vec4(position, 1.0);',
-    '  vWorldPos = wp.xyz;',
-    '  gl_Position = projectionMatrix * viewMatrix * wp;',
-    '}',
-  ].join('\n'),
-  fragmentShader: [
-    'varying vec3 vNormal;',
-    'varying vec3 vWorldPos;',
-    'void main() {',
-    '  vec3 viewDir = normalize(cameraPosition - vWorldPos);',
-    '  float rim = 1.0 - max(0.0, dot(viewDir, vNormal));',
-    '  rim = pow(rim, 3.0);',
-    '  vec3 col = mix(vec3(1.0, 0.9, 0.6), vec3(1.0, 0.7, 0.2), rim);',
-    '  gl_FragColor = vec4(col, 1.0);',
-    '}',
-  ].join('\n'),
-});
-const sunMesh = new THREE.Mesh(sunGeo, sunMat);
-sunGroup.add(sunMesh);
+const sunPivot = new THREE.Group();
+scene.add(sunPivot);
 
-const sunGlowGeo = new THREE.SpriteGeometry(0.5, 0.5);
+const sunGeo = new THREE.SphereGeometry(0.06, 12, 12);
+const sunMat = new THREE.MeshBasicMaterial({ color: 0xffdd88 });
+const sunMesh = new THREE.Mesh(sunGeo, sunMat);
+sunPivot.add(sunMesh);
+
+const glowCanvas = document.createElement('canvas');
+glowCanvas.width = 64;
+glowCanvas.height = 64;
+const ctx = glowCanvas.getContext('2d');
+const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+grad.addColorStop(0, 'rgba(255,220,150,1)');
+grad.addColorStop(0.15, 'rgba(255,200,100,0.5)');
+grad.addColorStop(0.4, 'rgba(255,180,50,0.1)');
+grad.addColorStop(1, 'rgba(255,150,0,0)');
+ctx.fillStyle = grad;
+ctx.fillRect(0, 0, 64, 64);
+const glowTex = new THREE.CanvasTexture(glowCanvas);
+
 const sunGlowMat = new THREE.SpriteMaterial({
-  map: (() => {
-    const c = document.createElement('canvas');
-    c.width = 64; c.height = 64;
-    const ctx = c.getContext('2d');
-    const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-    grad.addColorStop(0, 'rgba(255,220,150,1)');
-    grad.addColorStop(0.2, 'rgba(255,200,100,0.6)');
-    grad.addColorStop(0.5, 'rgba(255,180,50,0.15)');
-    grad.addColorStop(1, 'rgba(255,150,0,0)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 64, 64);
-    return new THREE.CanvasTexture(c);
-  })(),
+  map: glowTex,
   blending: THREE.AdditiveBlending,
   depthWrite: false,
   transparent: true,
 });
 const sunGlow = new THREE.Sprite(sunGlowMat);
-sunGlow.scale.set(4, 4, 1);
-sunGroup.add(sunGlow);
-scene.add(sunGroup);
+sunGlow.scale.set(3, 3, 1);
+sunPivot.add(sunGlow);
 
 const sunLight = new THREE.DirectionalLight(0xffeedd, 2.0);
 scene.add(sunLight);
-sunLight.position.copy(sunDir.clone().multiplyScalar(8));
 
 const fillLight = new THREE.DirectionalLight(0x4488ff, 0.3);
 fillLight.position.set(-3, -1, -4);
@@ -378,7 +330,7 @@ scene.add(fillLight);
 const ambient = new THREE.AmbientLight(0x111122, 0.4);
 scene.add(ambient);
 
-const SUN_DIST = 6;
+const SUN_DIST = 5;
 let sunAngle = Math.PI * 0.5;
 let speedMult = 1;
 const baseSpeed = 0.1 / 60;
@@ -397,10 +349,9 @@ function updateSun(angle) {
   const x = SUN_DIST * Math.cos(angle);
   const z = SUN_DIST * Math.sin(angle);
   const y = 0.3 * Math.sin(angle * 2);
-  const pos = new THREE.Vector3(x, y, z);
-  sunGroup.position.copy(pos);
-  sunLight.position.copy(pos);
-  const dir = pos.clone().negate().normalize();
+  sunPivot.position.set(x, y, z);
+  sunLight.position.set(x, y, z);
+  const dir = new THREE.Vector3(-x, -y, -z).normalize();
   earthMat.uniforms.uSunDir.value.copy(dir);
   cloudMat.uniforms.uSunDir.value.copy(dir);
 
