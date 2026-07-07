@@ -5,45 +5,46 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
 const TEX = 'https://www.solarsystemscope.com/textures/download/';
+const THREE_TEX = 'https://threejs.org/examples/textures/planets/';
 
 const PLANET_DATA = [
   { name:'\u6C34\u661F', nameEn:'Mercury', r:0.18, d:4.0, orbit:0.24, rot:58.6, tilt:0.03, color:0xbcbcbc,
-    tex:TEX+'4k_mercury.jpg', rough:TEX+'4k_mercury_roughness.jpg', metal:TEX+'4k_mercury_metallic.jpg',
+    tex:TEX+'2k_mercury.jpg',
     desc:'\u592A\u9633\u7CFB\u6700\u5C0F\u884C\u661F\uFF0C\u76F4\u5F84\u4EC54878km\uFF0C\u8868\u9762\u6E29\u5DEE\u8D85\uFFE600\u00B0C\u3002',
     detail:'\u5BC6\u5EA6 5.43 g/cm\u00B3 | \u5F15\u529B 3.7 m/s\u00B2 | \u65E0\u5927\u6C14\u5C42' },
   { name:'\u91D1\u661F', nameEn:'Venus', r:0.32, d:5.8, orbit:0.615, rot:-243, tilt:177.4, color:0xe8c87a,
-    tex:TEX+'4k_venus_surface.jpg', atmos:true,
+    tex:TEX+'2k_venus_surface.jpg', atmos:true,
     desc:'\u6700\u70ED\u884C\u661F\uFF0C\u8868\u9762\u6E29\u5EA6\u8FBE462\u00B0C\uFF0C\u81EA\u8F6C\u65B9\u5411\u4E0E\u5176\u4ED6\u884C\u661F\u76F8\u53CD\u3002',
     detail:'\u5BC6\u5EA6 5.24 g/cm\u00B3 | \u5927\u6C14\u538B 92\u500D\u5730\u7403 | CO\u2082 96.5%' },
   { name:'\u5730\u7403', nameEn:'Earth', r:0.34, d:7.6, orbit:1, rot:1, tilt:23.44, color:0x4488ff,
-    tex:TEX+'4k_earth_daymap.jpg', normal:TEX+'4k_earth_normal_map.jpg', rough:TEX+'4k_earth_specular_map.jpg',
-    cloud:TEX+'4k_earth_cloud_map.jpg', night:TEX+'4k_earth_night_map.jpg', atmos:true,
+    tex:TEX+'2k_earth_daymap.jpg', normal:THREE_TEX+'earth_normal_2048.jpg',
+    cloud:THREE_TEX+'earth_clouds_1024.png', atmos:true,
     desc:'\u6211\u4EEC\u7684\u5BB6\u56ED\uFF0C\u76F4\u5F8412742km\uFF0C70%\u8868\u9762\u88AB\u6D77\u6D0B\u8986\u76D6\u3002',
     detail:'\u5BC6\u5EA6 5.51 g/cm\u00B3 | \u536B\u661F 1\u9897 | \u5927\u6C14\u542B\u6C27 21%' },
   { name:'\u706B\u661F', nameEn:'Mars', r:0.22, d:10.0, orbit:1.88, rot:1.03, tilt:25.19, color:0xd4734a,
-    tex:TEX+'4k_mars.jpg', normal:TEX+'4k_mars_normal_map.jpg', rough:TEX+'4k_mars_roughness.jpg', atmos:true,
+    tex:TEX+'2k_mars.jpg', atmos:true,
     desc:'\u7EA2\u8272\u884C\u661F\uFF0C\u62E5\u6709\u592A\u9633\u7CFB\u6700\u5927\u706B\u5C71\u5965\u6797\u5339\u65AF\u5C71\uFF08\u9AD821.9km\uFF09\u3002',
     detail:'\u5BC6\u5EA6 3.93 g/cm\u00B3 | \u536B\u661F 2\u9897 | CO\u2082\u5927\u6C14 95%' },
   { name:'\u6728\u661F', nameEn:'Jupiter', r:1.1, d:15.0, orbit:11.86, rot:0.41, tilt:3.13, color:0xd4a06a,
-    tex:TEX+'4k_jupiter.jpg', atmos:true,
+    tex:TEX+'2k_jupiter.jpg', atmos:true,
     desc:'\u6700\u5927\u884C\u661F\uFF0C\u76F4\u5F84139822km\uFF0C\u8D28\u91CF\u662F\u5176\u4ED6\u6240\u6709\u884C\u661F\u603B\u548C\u76842.5\u500D\u3002',
     detail:'\u5BC6\u5EA6 1.33 g/cm\u00B3 | \u536B\u661F 95\u9897 | \u5927\u7EA2\u724E\u98CE\u66B4' },
   { name:'\u571F\u661F', nameEn:'Saturn', r:0.95, d:19.5, orbit:29.46, rot:0.45, tilt:26.73, color:0xe8d5a0,
-    tex:TEX+'4k_saturn.jpg', ring:TEX+'4k_saturn_ring_alpha.png', atmos:true,
+    tex:TEX+'2k_saturn.jpg', ring:TEX+'2k_saturn_ring_alpha.png', atmos:true,
     desc:'\u4EE5\u5D14\u7384\u5149\u73AF\u95FB\u540D\uFF0C\u5BC6\u5EA6\u4EC50.687 g/cm\u00B3\u6BD4\u6C34\u8FD8\u4F4E\u3002',
     detail:'\u5BC6\u5EA6 0.69 g/cm\u00B3 | \u536B\u661F 146\u9897 | \u5149\u73AF\u539A\u5EA610m' },
   { name:'\u5929\u738B\u661F', nameEn:'Uranus', r:0.5, d:25.0, orbit:84.01, rot:-0.72, tilt:97.77, color:0x7ec8e3,
-    tex:TEX+'4k_uranus.jpg', atmos:true,
+    tex:TEX+'2k_uranus.jpg', atmos:true,
     desc:'\u5012\u7740\u8F6C\u7684\u884C\u661F\uFF0C\u8F74\u5411\u503E\u659C97.77\u00B0\uFF0C\u4E3A\u4F53\u7CFB\u6700\u51B7\u7684\u884C\u661F\u4E4B\u4E00\u3002',
     detail:'\u5BC6\u5EA6 1.27 g/cm\u00B3 | \u536B\u661F 27\u9897 | \u6C27\u6C2E\u5927\u6C14' },
   { name:'\u6D77\u738B\u661F', nameEn:'Neptune', r:0.45, d:29.0, orbit:164.8, rot:0.67, tilt:28.32, color:0x3355ff,
-    tex:TEX+'4k_neptune.jpg', atmos:true,
+    tex:TEX+'2k_neptune.jpg', atmos:true,
     desc:'\u6700\u8FDC\u884C\u661F\uFF0C\u98CE\u901F\u53EF\u8FBE2100km/h\uFF0C\u9A6C\u8FBE\u7F57\u7EB9\u50CF\u5927\u9ED1\u6591\u3002',
     detail:'\u5BC6\u5EA6 1.64 g/cm\u00B3 | \u536B\u661F 16\u9897 | \u6700\u9AD8\u98CE\u901F\u8D852100km/h' },
 ];
 
 const MOON_DATA = [
-  { parent:2, name:'\u6708\u4EAE', nameEn:'Moon', r:0.07, d:0.7, orbit:0.075, rot:27.3, color:0xcccccc, tex:TEX+'4k_moon.jpg' },
+  { parent:2, name:'\u6708\u4EAE', nameEn:'Moon', r:0.07, d:0.7, orbit:0.075, rot:27.3, color:0xcccccc, tex:TEX+'2k_moon.jpg' },
   { parent:3, name:'\u706B\u536B\u4E00', nameEn:'Phobos', r:0.025, d:0.45, orbit:0.02, rot:0.32, color:0x999988 },
   { parent:3, name:'\u706B\u536B\u4E8C', nameEn:'Deimos', r:0.018, d:0.65, orbit:0.04, rot:1.26, color:0x888877 },
   { parent:4, name:'\u6728\u536B\u4E00', nameEn:'Io', r:0.08, d:1.1, orbit:0.05, rot:1.77, color:0xeeddaa },
@@ -226,8 +227,6 @@ function createPlanet(pd,idx){
   if(pd.tex){const t=loadTex(pd.tex,(t)=>{t.colorSpace=THREE.SRGBColorSpace;mat.map=t;mat.needsUpdate=true});}
   else mat.color.setHex(pd.color);
   if(pd.normal){loadTex(pd.normal,(t)=>{mat.normalMap=t;mat.normalScale=new THREE.Vector2(1.2,1.2);mat.needsUpdate=true})}
-  if(pd.rough){loadTex(pd.rough,(t)=>{mat.roughnessMap=t;mat.roughness=1;mat.needsUpdate=true})}
-  if(pd.metal){loadTex(pd.metal,(t)=>{mat.metalnessMap=t;mat.metalness=1;mat.needsUpdate=true})}
   const mesh=new THREE.Mesh(geo,mat);mesh.castShadow=true;mesh.receiveShadow=true;
   mesh.rotation.z=pd.tilt*Math.PI/180;group.add(mesh);
   const obj={group,mesh,pd,angle:Math.random()*Math.PI*2,clouds:null,moons:[],atmoMat:null};
