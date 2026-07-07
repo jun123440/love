@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const EARTH_MAP = 'https://clouds.matteason.co.uk/images/4096x2048/earth.jpg';
@@ -90,7 +90,7 @@ const earthMat = new THREE.ShaderMaterial({
     uGlowIntensity: { value: 0.0 },
     uTime: { value: 0 },
   },
-  vertexShader: `
+  vertexShader: 
     varying vec2 vUv;
     varying vec3 vNormal;
     varying vec3 vViewPos;
@@ -103,8 +103,8 @@ const earthMat = new THREE.ShaderMaterial({
       vWorldNormal = normalize(mat3(modelMatrix) * normal);
       gl_Position = projectionMatrix * mvPos;
     }
-  `,
-  fragmentShader: `
+  ,
+  fragmentShader: 
     uniform sampler2D uDayTex;
     uniform sampler2D uNightTex;
     uniform sampler2D uNormalTex;
@@ -129,7 +129,6 @@ const earthMat = new THREE.ShaderMaterial({
       float NdotL = dot(perturbedNormal, lightDir);
 
       float dayFactor = smoothstep(-0.05, 0.25, NdotL);
-      float nightMix = smoothstep(0.25, -0.05, NdotL);
       vec3 baseColor = mix(nightColor, dayColor, dayFactor);
 
       vec3 viewDir = normalize(-vViewPos);
@@ -142,8 +141,7 @@ const earthMat = new THREE.ShaderMaterial({
       rim = pow(rim, 4.0);
       vec3 rimColor = vec3(0.4, 0.6, 1.0) * rim * 0.25;
 
-      float cityGlow = smoothstep(-0.2, 0.05, NdotL);
-      cityGlow = 1.0 - cityGlow;
+      float cityGlow = 1.0 - smoothstep(-0.2, 0.05, NdotL);
       vec3 cityLight = nightColor * 0.5 * cityGlow;
 
       vec3 finalColor = baseColor;
@@ -155,7 +153,7 @@ const earthMat = new THREE.ShaderMaterial({
 
       gl_FragColor = vec4(finalColor, 1.0);
     }
-  `,
+  ,
 });
 
 const earthGeo = new THREE.SphereGeometry(1, 1024, 1024);
@@ -168,7 +166,7 @@ const cloudMat = new THREE.ShaderMaterial({
     uCloudTex: { value: cloudTex },
     uSunDir: { value: sunDir.clone() },
   },
-  vertexShader: `
+  vertexShader: 
     varying vec2 vUv;
     varying vec3 vNormal;
     varying vec3 vViewPos;
@@ -179,8 +177,8 @@ const cloudMat = new THREE.ShaderMaterial({
       vViewPos = mvPos.xyz;
       gl_Position = projectionMatrix * mvPos;
     }
-  `,
-  fragmentShader: `
+  ,
+  fragmentShader: 
     uniform sampler2D uCloudTex;
     uniform vec3 uSunDir;
     varying vec2 vUv;
@@ -194,7 +192,7 @@ const cloudMat = new THREE.ShaderMaterial({
       vec3 col = cloud.rgb * light * vec3(1.0, 0.98, 0.95);
       gl_FragColor = vec4(col, alpha);
     }
-  `,
+  ,
   transparent: true,
   blending: THREE.AdditiveBlending,
   side: THREE.DoubleSide,
@@ -207,7 +205,7 @@ earthGroup.add(clouds);
 function makeGlow(radius, color, intensity, powFactor) {
   const geo = new THREE.SphereGeometry(radius, 128, 128);
   const mat = new THREE.ShaderMaterial({
-    vertexShader: `
+    vertexShader: 
       varying vec3 vNormal;
       varying vec3 vWorldPos;
       void main() {
@@ -216,8 +214,8 @@ function makeGlow(radius, color, intensity, powFactor) {
         vWorldPos = wp.xyz;
         gl_Position = projectionMatrix * viewMatrix * wp;
       }
-    `,
-    fragmentShader: `
+    ,
+    fragmentShader: 
       varying vec3 vNormal;
       varying vec3 vWorldPos;
       uniform vec3 uColor;
@@ -229,7 +227,7 @@ function makeGlow(radius, color, intensity, powFactor) {
         rim = pow(rim, uPow);
         gl_FragColor = vec4(uColor, rim * uIntensity);
       }
-    `,
+    ,
     uniforms: {
       uColor: { value: new THREE.Color(color) },
       uIntensity: { value: intensity },
@@ -285,7 +283,7 @@ starGeo.setAttribute('phase', new THREE.BufferAttribute(starPhase, 1));
 
 const starMat = new THREE.ShaderMaterial({
   uniforms: { uTime: { value: 0 } },
-  vertexShader: `
+  vertexShader: 
     attribute float size;
     attribute vec3 customColor;
     attribute float phase;
@@ -298,8 +296,8 @@ const starMat = new THREE.ShaderMaterial({
       gl_PointSize = size * (150.0 / -mvPos.z) * twinkle;
       gl_Position = projectionMatrix * mvPos;
     }
-  `,
-  fragmentShader: `
+  ,
+  fragmentShader: 
     varying vec3 vColor;
     void main() {
       vec2 c = gl_PointCoord - vec2(0.5);
@@ -309,7 +307,7 @@ const starMat = new THREE.ShaderMaterial({
       a = pow(a, 1.5);
       gl_FragColor = vec4(vColor, a * 0.85);
     }
-  `,
+  ,
   transparent: true,
   depthWrite: false,
   blending: THREE.AdditiveBlending,
@@ -320,7 +318,7 @@ scene.add(stars);
 const sunGroup = new THREE.Group();
 const sunGeo = new THREE.SphereGeometry(0.08, 16, 16);
 const sunMat = new THREE.ShaderMaterial({
-  vertexShader: `
+  vertexShader: 
     varying vec3 vNormal;
     varying vec3 vWorldPos;
     void main() {
@@ -329,8 +327,8 @@ const sunMat = new THREE.ShaderMaterial({
       vWorldPos = wp.xyz;
       gl_Position = projectionMatrix * viewMatrix * wp;
     }
-  `,
-  fragmentShader: `
+  ,
+  fragmentShader: 
     varying vec3 vNormal;
     varying vec3 vWorldPos;
     void main() {
@@ -341,7 +339,7 @@ const sunMat = new THREE.ShaderMaterial({
       float glow = pow(rim, 2.0);
       gl_FragColor = vec4(col, 1.0);
     }
-  `,
+  ,
 });
 const sunMesh = new THREE.Mesh(sunGeo, sunMat);
 sunGroup.add(sunMesh);
@@ -410,7 +408,7 @@ function updateSun(angle) {
   const hours = ((angle / (Math.PI * 2)) * 24 + 24) % 24;
   const h = Math.floor(hours);
   const m = Math.floor((hours - h) * 60);
-  timeDisplay.textContent = `褰撳湴鏃堕棿 ${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  timeDisplay.textContent = '\u5F53\u5730\u65F6\u95F4 ' + h.toString().padStart(2, '0') + ':' + m.toString().padStart(2, '0');
 
   const altDeg = Math.round(Math.asin(Math.min(1, Math.max(-1, y / SUN_DIST))) * 180 / Math.PI);
   sunAltDisplay.textContent = altDeg + '\u00B0';
