@@ -3,22 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>3D 旋转地球 Plus</title>
+<title>鍦扮悆 Plus 鈥?鐪熷疄鏄煎寰幆</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div id="info">
-  <h1>🌍 3D 旋转地球 Plus</h1>
-  <p>拖拽旋转 · 滚轮缩放 · 自动旋转</p>
+  <h1>馃實 鍦扮悆 Plus</h1>
+  <p>鎷栨嫿鏃嬭浆 路 婊氳疆缂╂斁 路 鏄煎寰幆</p>
   <div id="stats">
-    <span>2048 段球体</span><span>·</span><span>4K 地表纹理</span><span>·</span><span>各向异性过滤</span><span>·</span><span>法线凹凸</span><span>·</span><span>海洋镜面反射</span><span>·</span><span>实时云层</span><span>·</span><span>80000 星辰</span>
+    <span id="timeDisplay">褰撳湴鏃堕棿 00:00</span><span>路</span><span>澶槼楂樺害 <span id="sunAlt">0掳</span></span>
   </div>
+</div>
+
+<div id="controls">
+  <label>鏄煎閫熷害</label>
+  <input type="range" id="speedSlider" min="0" max="5" step="0.1" value="1">
+  <span id="speedLabel">1脳</span>
 </div>
 
 <div id="loading">
   <div class="spinner"></div>
-  <p>正在加载高精度地球数据...</p>
+  <p>姝ｅ湪鍔犺浇楂樼簿搴﹀湴鐞冩暟鎹?..</p>
   <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
 </div>
 
