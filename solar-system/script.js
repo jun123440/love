@@ -4,7 +4,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-const CDN = 'https://cdn.jsdelivr.net/gh/Devashyasahu/solarsystem@main/assets/';
+const CDN = 'https://cdn.jsdelivr.net/gh/jun123440/love@main/solar-system/textures/';
 const THREE_TEX = 'https://threejs.org/examples/textures/planets/';
 
 const PLANET_DATA = [
@@ -18,7 +18,7 @@ const PLANET_DATA = [
     detail:'\u5BC6\u5EA6 5.24 g/cm\u00B3 | \u5927\u6C14\u538B 92\u500D\u5730\u7403 | CO\u2082 96.5%' },
   { name:'\u5730\u7403', nameEn:'Earth', r:0.34, d:7.6, orbit:1, rot:1, tilt:23.44, color:0x4488ff,
     tex:CDN+'earth-day.jpg', normal:THREE_TEX+'earth_normal_2048.jpg',
-    cloud:CDN+'earth%20clouds.jpg', atmos:true,
+    cloud:CDN+'earth-clouds.jpg', atmos:true,
     desc:'\u6211\u4EEC\u7684\u5BB6\u56ED\uFF0C\u76F4\u5F8412742km\uFF0C70%\u8868\u9762\u88AB\u6D77\u6D0B\u8986\u76D6\u3002',
     detail:'\u5BC6\u5EA6 5.51 g/cm\u00B3 | \u536B\u661F 1\u9897 | \u5927\u6C14\u542B\u6C27 21%' },
   { name:'\u706B\u661F', nameEn:'Mars', r:0.22, d:10.0, orbit:1.88, rot:1.03, tilt:25.19, color:0xd4734a,
@@ -30,7 +30,7 @@ const PLANET_DATA = [
     desc:'\u6700\u5927\u884C\u661F\uFF0C\u76F4\u5F84139822km\uFF0C\u8D28\u91CF\u662F\u5176\u4ED6\u6240\u6709\u884C\u661F\u603B\u548C\u76842.5\u500D\u3002',
     detail:'\u5BC6\u5EA6 1.33 g/cm\u00B3 | \u536B\u661F 95\u9897 | \u5927\u7EA2\u724E\u98CE\u66B4' },
   { name:'\u571F\u661F', nameEn:'Saturn', r:0.95, d:19.5, orbit:29.46, rot:0.45, tilt:26.73, color:0xe8d5a0,
-    tex:CDN+'saturn.jpg', ring:CDN+'saturn%20ring.png', atmos:true,
+    tex:CDN+'saturn.jpg', ring:CDN+'saturn-ring.png', atmos:true,
     desc:'\u4EE5\u5D14\u7384\u5149\u73AF\u95FB\u540D\uFF0C\u5BC6\u5EA6\u4EC50.687 g/cm\u00B3\u6BD4\u6C34\u8FD8\u4F4E\u3002',
     detail:'\u5BC6\u5EA6 0.69 g/cm\u00B3 | \u536B\u661F 146\u9897 | \u5149\u73AF\u539A\u5EA610m' },
   { name:'\u5929\u738B\u661F', nameEn:'Uranus', r:0.5, d:25.0, orbit:84.01, rot:-0.72, tilt:97.77, color:0x7ec8e3,
@@ -117,7 +117,7 @@ const clock = new THREE.Clock();
 
 // --- BACKGROUND (Milky Way) ---
 const bgMat = new THREE.MeshBasicMaterial({ side:THREE.BackSide });
-loadTex(CDN+'_stars_milky_way.jpg',t=>{t.colorSpace=THREE.SRGBColorSpace;bgMat.map=t;bgMat.needsUpdate=true});
+loadTex(CDN+'milky-way.jpg',t=>{t.colorSpace=THREE.SRGBColorSpace;bgMat.map=t;bgMat.needsUpdate=true});
 scene.add(new THREE.Mesh(new THREE.SphereGeometry(900,64,64),bgMat));
 
 // --- SUN ---
