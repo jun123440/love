@@ -90,70 +90,70 @@ const earthMat = new THREE.ShaderMaterial({
     uGlowIntensity: { value: 0.0 },
     uTime: { value: 0 },
   },
-  vertexShader: 
-    varying vec2 vUv;
-    varying vec3 vNormal;
-    varying vec3 vViewPos;
-    varying vec3 vWorldNormal;
-    void main() {
-      vUv = uv;
-      vNormal = normalize(normalMatrix * normal);
-      vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-      vViewPos = mvPos.xyz;
-      vWorldNormal = normalize(mat3(modelMatrix) * normal);
-      gl_Position = projectionMatrix * mvPos;
-    }
-  ,
-  fragmentShader: 
-    uniform sampler2D uDayTex;
-    uniform sampler2D uNightTex;
-    uniform sampler2D uNormalTex;
-    uniform sampler2D uSpecTex;
-    uniform vec3 uSunDir;
-    uniform float uGlowIntensity;
-
-    varying vec2 vUv;
-    varying vec3 vNormal;
-    varying vec3 vViewPos;
-    varying vec3 vWorldNormal;
-
-    void main() {
-      vec3 dayColor = texture2D(uDayTex, vUv).rgb;
-      vec3 nightColor = texture2D(uNightTex, vUv).rgb;
-      vec3 normal = texture2D(uNormalTex, vUv).rgb * 2.0 - 1.0;
-      normal = normalize(normal * vec3(1.2, 1.2, 1.0));
-      mat3 TBN = mat3(1.0);
-      vec3 perturbedNormal = normalize(TBN * normal);
-
-      vec3 lightDir = normalize(uSunDir);
-      float NdotL = dot(perturbedNormal, lightDir);
-
-      float dayFactor = smoothstep(-0.05, 0.25, NdotL);
-      vec3 baseColor = mix(nightColor, dayColor, dayFactor);
-
-      vec3 viewDir = normalize(-vViewPos);
-      vec3 halfDir = normalize(lightDir + viewDir);
-      float spec = pow(max(dot(perturbedNormal, halfDir), 0.0), 64.0);
-      float specMask = texture2D(uSpecTex, vUv).r;
-      vec3 specular = vec3(1.0, 0.95, 0.85) * spec * 0.6 * specMask;
-
-      float rim = 1.0 - max(0.0, dot(perturbedNormal, viewDir));
-      rim = pow(rim, 4.0);
-      vec3 rimColor = vec3(0.4, 0.6, 1.0) * rim * 0.25;
-
-      float cityGlow = 1.0 - smoothstep(-0.2, 0.05, NdotL);
-      vec3 cityLight = nightColor * 0.5 * cityGlow;
-
-      vec3 finalColor = baseColor;
-      finalColor += specular * clamp(dayFactor * 2.0, 0.0, 1.0);
-      finalColor += rimColor;
-      finalColor += cityLight;
-      finalColor += nightColor * 0.08;
-      finalColor *= 1.0 + uGlowIntensity * 0.3;
-
-      gl_FragColor = vec4(finalColor, 1.0);
-    }
-  ,
+  vertexShader: [
+    'varying vec2 vUv;',
+    'varying vec3 vNormal;',
+    'varying vec3 vViewPos;',
+    'varying vec3 vWorldNormal;',
+    'void main() {',
+    '  vUv = uv;',
+    '  vNormal = normalize(normalMatrix * normal);',
+    '  vec4 mvPos = modelViewMatrix * vec4(position, 1.0);',
+    '  vViewPos = mvPos.xyz;',
+    '  vWorldNormal = normalize(mat3(modelMatrix) * normal);',
+    '  gl_Position = projectionMatrix * mvPos;',
+    '}',
+  ].join('\n'),
+  fragmentShader: [
+    'uniform sampler2D uDayTex;',
+    'uniform sampler2D uNightTex;',
+    'uniform sampler2D uNormalTex;',
+    'uniform sampler2D uSpecTex;',
+    'uniform vec3 uSunDir;',
+    'uniform float uGlowIntensity;',
+    '',
+    'varying vec2 vUv;',
+    'varying vec3 vNormal;',
+    'varying vec3 vViewPos;',
+    'varying vec3 vWorldNormal;',
+    '',
+    'void main() {',
+    '  vec3 dayColor = texture2D(uDayTex, vUv).rgb;',
+    '  vec3 nightColor = texture2D(uNightTex, vUv).rgb;',
+    '  vec3 normal = texture2D(uNormalTex, vUv).rgb * 2.0 - 1.0;',
+    '  normal = normalize(normal * vec3(1.2, 1.2, 1.0));',
+    '  mat3 TBN = mat3(1.0);',
+    '  vec3 perturbedNormal = normalize(TBN * normal);',
+    '',
+    '  vec3 lightDir = normalize(uSunDir);',
+    '  float NdotL = dot(perturbedNormal, lightDir);',
+    '',
+    '  float dayFactor = smoothstep(-0.05, 0.25, NdotL);',
+    '  vec3 baseColor = mix(nightColor, dayColor, dayFactor);',
+    '',
+    '  vec3 viewDir = normalize(-vViewPos);',
+    '  vec3 halfDir = normalize(lightDir + viewDir);',
+    '  float spec = pow(max(dot(perturbedNormal, halfDir), 0.0), 64.0);',
+    '  float specMask = texture2D(uSpecTex, vUv).r;',
+    '  vec3 specular = vec3(1.0, 0.95, 0.85) * spec * 0.6 * specMask;',
+    '',
+    '  float rim = 1.0 - max(0.0, dot(perturbedNormal, viewDir));',
+    '  rim = pow(rim, 4.0);',
+    '  vec3 rimColor = vec3(0.4, 0.6, 1.0) * rim * 0.25;',
+    '',
+    '  float cityGlow = 1.0 - smoothstep(-0.2, 0.05, NdotL);',
+    '  vec3 cityLight = nightColor * 0.5 * cityGlow;',
+    '',
+    '  vec3 finalColor = baseColor;',
+    '  finalColor += specular * clamp(dayFactor * 2.0, 0.0, 1.0);',
+    '  finalColor += rimColor;',
+    '  finalColor += cityLight;',
+    '  finalColor += nightColor * 0.08;',
+    '  finalColor *= 1.0 + uGlowIntensity * 0.3;',
+    '',
+    '  gl_FragColor = vec4(finalColor, 1.0);',
+    '}',
+  ].join('\n'),
 });
 
 const earthGeo = new THREE.SphereGeometry(1, 1024, 1024);
@@ -166,33 +166,33 @@ const cloudMat = new THREE.ShaderMaterial({
     uCloudTex: { value: cloudTex },
     uSunDir: { value: sunDir.clone() },
   },
-  vertexShader: 
-    varying vec2 vUv;
-    varying vec3 vNormal;
-    varying vec3 vViewPos;
-    void main() {
-      vUv = uv;
-      vNormal = normalize(normalMatrix * normal);
-      vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-      vViewPos = mvPos.xyz;
-      gl_Position = projectionMatrix * mvPos;
-    }
-  ,
-  fragmentShader: 
-    uniform sampler2D uCloudTex;
-    uniform vec3 uSunDir;
-    varying vec2 vUv;
-    varying vec3 vNormal;
-    varying vec3 vViewPos;
-    void main() {
-      vec4 cloud = texture2D(uCloudTex, vUv);
-      float alpha = cloud.r * 0.5;
-      float NdotL = dot(normalize(vNormal), normalize(uSunDir));
-      float light = 0.3 + 0.7 * clamp(NdotL * 1.5 + 0.2, 0.0, 1.0);
-      vec3 col = cloud.rgb * light * vec3(1.0, 0.98, 0.95);
-      gl_FragColor = vec4(col, alpha);
-    }
-  ,
+  vertexShader: [
+    'varying vec2 vUv;',
+    'varying vec3 vNormal;',
+    'varying vec3 vViewPos;',
+    'void main() {',
+    '  vUv = uv;',
+    '  vNormal = normalize(normalMatrix * normal);',
+    '  vec4 mvPos = modelViewMatrix * vec4(position, 1.0);',
+    '  vViewPos = mvPos.xyz;',
+    '  gl_Position = projectionMatrix * mvPos;',
+    '}',
+  ].join('\n'),
+  fragmentShader: [
+    'uniform sampler2D uCloudTex;',
+    'uniform vec3 uSunDir;',
+    'varying vec2 vUv;',
+    'varying vec3 vNormal;',
+    'varying vec3 vViewPos;',
+    'void main() {',
+    '  vec4 cloud = texture2D(uCloudTex, vUv);',
+    '  float alpha = cloud.r * 0.5;',
+    '  float NdotL = dot(normalize(vNormal), normalize(uSunDir));',
+    '  float light = 0.3 + 0.7 * clamp(NdotL * 1.5 + 0.2, 0.0, 1.0);',
+    '  vec3 col = cloud.rgb * light * vec3(1.0, 0.98, 0.95);',
+    '  gl_FragColor = vec4(col, alpha);',
+    '}',
+  ].join('\n'),
   transparent: true,
   blending: THREE.AdditiveBlending,
   side: THREE.DoubleSide,
@@ -205,29 +205,29 @@ earthGroup.add(clouds);
 function makeGlow(radius, color, intensity, powFactor) {
   const geo = new THREE.SphereGeometry(radius, 128, 128);
   const mat = new THREE.ShaderMaterial({
-    vertexShader: 
-      varying vec3 vNormal;
-      varying vec3 vWorldPos;
-      void main() {
-        vNormal = normalize(normalMatrix * normal);
-        vec4 wp = modelMatrix * vec4(position, 1.0);
-        vWorldPos = wp.xyz;
-        gl_Position = projectionMatrix * viewMatrix * wp;
-      }
-    ,
-    fragmentShader: 
-      varying vec3 vNormal;
-      varying vec3 vWorldPos;
-      uniform vec3 uColor;
-      uniform float uIntensity;
-      uniform float uPow;
-      void main() {
-        vec3 viewDir = normalize(cameraPosition - vWorldPos);
-        float rim = 1.0 - max(0.0, dot(viewDir, vNormal));
-        rim = pow(rim, uPow);
-        gl_FragColor = vec4(uColor, rim * uIntensity);
-      }
-    ,
+    vertexShader: [
+      'varying vec3 vNormal;',
+      'varying vec3 vWorldPos;',
+      'void main() {',
+      '  vNormal = normalize(normalMatrix * normal);',
+      '  vec4 wp = modelMatrix * vec4(position, 1.0);',
+      '  vWorldPos = wp.xyz;',
+      '  gl_Position = projectionMatrix * viewMatrix * wp;',
+      '}',
+    ].join('\n'),
+    fragmentShader: [
+      'varying vec3 vNormal;',
+      'varying vec3 vWorldPos;',
+      'uniform vec3 uColor;',
+      'uniform float uIntensity;',
+      'uniform float uPow;',
+      'void main() {',
+      '  vec3 viewDir = normalize(cameraPosition - vWorldPos);',
+      '  float rim = 1.0 - max(0.0, dot(viewDir, vNormal));',
+      '  rim = pow(rim, uPow);',
+      '  gl_FragColor = vec4(uColor, rim * uIntensity);',
+      '}',
+    ].join('\n'),
     uniforms: {
       uColor: { value: new THREE.Color(color) },
       uIntensity: { value: intensity },
@@ -283,31 +283,31 @@ starGeo.setAttribute('phase', new THREE.BufferAttribute(starPhase, 1));
 
 const starMat = new THREE.ShaderMaterial({
   uniforms: { uTime: { value: 0 } },
-  vertexShader: 
-    attribute float size;
-    attribute vec3 customColor;
-    attribute float phase;
-    varying vec3 vColor;
-    uniform float uTime;
-    void main() {
-      vColor = customColor;
-      vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-      float twinkle = 0.55 + 0.45 * sin(uTime * 1.2 + phase + position.x * 6.0 + position.y * 5.0);
-      gl_PointSize = size * (150.0 / -mvPos.z) * twinkle;
-      gl_Position = projectionMatrix * mvPos;
-    }
-  ,
-  fragmentShader: 
-    varying vec3 vColor;
-    void main() {
-      vec2 c = gl_PointCoord - vec2(0.5);
-      float d = length(c);
-      if (d > 0.5) discard;
-      float a = 1.0 - smoothstep(0.0, 0.5, d);
-      a = pow(a, 1.5);
-      gl_FragColor = vec4(vColor, a * 0.85);
-    }
-  ,
+  vertexShader: [
+    'attribute float size;',
+    'attribute vec3 customColor;',
+    'attribute float phase;',
+    'varying vec3 vColor;',
+    'uniform float uTime;',
+    'void main() {',
+    '  vColor = customColor;',
+    '  vec4 mvPos = modelViewMatrix * vec4(position, 1.0);',
+    '  float twinkle = 0.55 + 0.45 * sin(uTime * 1.2 + phase + position.x * 6.0 + position.y * 5.0);',
+    '  gl_PointSize = size * (150.0 / -mvPos.z) * twinkle;',
+    '  gl_Position = projectionMatrix * mvPos;',
+    '}',
+  ].join('\n'),
+  fragmentShader: [
+    'varying vec3 vColor;',
+    'void main() {',
+    '  vec2 c = gl_PointCoord - vec2(0.5);',
+    '  float d = length(c);',
+    '  if (d > 0.5) discard;',
+    '  float a = 1.0 - smoothstep(0.0, 0.5, d);',
+    '  a = pow(a, 1.5);',
+    '  gl_FragColor = vec4(vColor, a * 0.85);',
+    '}',
+  ].join('\n'),
   transparent: true,
   depthWrite: false,
   blending: THREE.AdditiveBlending,
@@ -318,28 +318,27 @@ scene.add(stars);
 const sunGroup = new THREE.Group();
 const sunGeo = new THREE.SphereGeometry(0.08, 16, 16);
 const sunMat = new THREE.ShaderMaterial({
-  vertexShader: 
-    varying vec3 vNormal;
-    varying vec3 vWorldPos;
-    void main() {
-      vNormal = normalize(normalMatrix * normal);
-      vec4 wp = modelMatrix * vec4(position, 1.0);
-      vWorldPos = wp.xyz;
-      gl_Position = projectionMatrix * viewMatrix * wp;
-    }
-  ,
-  fragmentShader: 
-    varying vec3 vNormal;
-    varying vec3 vWorldPos;
-    void main() {
-      vec3 viewDir = normalize(cameraPosition - vWorldPos);
-      float rim = 1.0 - max(0.0, dot(viewDir, vNormal));
-      rim = pow(rim, 3.0);
-      vec3 col = mix(vec3(1.0, 0.9, 0.6), vec3(1.0, 0.7, 0.2), rim);
-      float glow = pow(rim, 2.0);
-      gl_FragColor = vec4(col, 1.0);
-    }
-  ,
+  vertexShader: [
+    'varying vec3 vNormal;',
+    'varying vec3 vWorldPos;',
+    'void main() {',
+    '  vNormal = normalize(normalMatrix * normal);',
+    '  vec4 wp = modelMatrix * vec4(position, 1.0);',
+    '  vWorldPos = wp.xyz;',
+    '  gl_Position = projectionMatrix * viewMatrix * wp;',
+    '}',
+  ].join('\n'),
+  fragmentShader: [
+    'varying vec3 vNormal;',
+    'varying vec3 vWorldPos;',
+    'void main() {',
+    '  vec3 viewDir = normalize(cameraPosition - vWorldPos);',
+    '  float rim = 1.0 - max(0.0, dot(viewDir, vNormal));',
+    '  rim = pow(rim, 3.0);',
+    '  vec3 col = mix(vec3(1.0, 0.9, 0.6), vec3(1.0, 0.7, 0.2), rim);',
+    '  gl_FragColor = vec4(col, 1.0);',
+    '}',
+  ].join('\n'),
 });
 const sunMesh = new THREE.Mesh(sunGeo, sunMat);
 sunGroup.add(sunMesh);
