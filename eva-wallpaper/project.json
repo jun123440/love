@@ -1,0 +1,24 @@
+{
+	"contentrating" : "Everyone",
+	"description" : "JS特效，壁纸随鼠标运动，初号机暴走壁纸。\n壁纸是网上的，侵删。\n图层修改了一下，原图分辨率1080P，16:9最佳，我4K屏幕也凑合。",
+	"file" : "index.html",
+	"general" : 
+	{
+		"properties" : 
+		{
+			"schemecolor" : 
+			{
+				"order" : 0,
+				"text" : "ui_browse_properties_scheme_color",
+				"type" : "color",
+				"value" : "0 0 0"
+			}
+		}
+	},
+	"preview" : "preview.jpg",
+	"tags" : [ "Anime" ],
+	"title" : "EVA初号机暴走-5",
+	"type" : "web",
+	"visibility" : "public",
+	"workshopid" : "1184182304"
+}

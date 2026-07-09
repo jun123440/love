@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="zh">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"> 
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<title>EVA初号机暴走</title>
+	<link rel="stylesheet" type="text/css" href="css/normalize.css" />
+	<link rel="stylesheet" type="text/css" href="css/default.css">
+	<link rel="stylesheet" type="text/css" href="css/styles.css">
+	<style>
+		body { touch-action: none; }
+		#mode-switch {
+			position: fixed;
+			bottom: 20px;
+			left: 50%;
+			transform: translateX(-50%);
+			z-index: 999;
+			background: rgba(0,0,0,0.6);
+			color: #fff;
+			border: 1px solid rgba(255,255,255,0.3);
+			padding: 8px 20px;
+			border-radius: 20px;
+			font-size: 14px;
+			cursor: pointer;
+			backdrop-filter: blur(8px);
+			-webkit-backdrop-filter: blur(8px);
+			user-select: none;
+			transition: background 0.3s;
+		}
+		#mode-switch:hover { background: rgba(0,0,0,0.8); }
+		#mode-label {
+			position: fixed;
+			top: 20px;
+			right: 20px;
+			z-index: 999;
+			color: rgba(255,255,255,0.4);
+			font-size: 12px;
+			font-family: Arial, sans-serif;
+			pointer-events: none;
+		}
+	</style>
+</head>
+<body>
+	<main>
+      <div id="overlay"></div>
+      <ul id="scene">
+      <li class="layer" data-depth="0.2">
+          <div class="layer0"></div>
+        </li>
+        <li class="layer" data-depth="0.4">
+          <div class="layer1"></div>
+        </li>
+        <li class="layer" data-depth="0.6">
+          <div class="layer2"></div>
+        </li>
+		<li class="layer" data-depth="0.8">
+          <div class="layer3"></div>
+        </li>
+		<li class="layer" data-depth="0.9">
+          <div class="layer4"></div>
+        </li>
+      </ul>
+	</main>
+
+	<div id="mode-label">触控 / 陀螺仪</div>
+	<div id="mode-switch">切换为陀螺仪控制</div>
+
+<script>window.jQuery || document.write('<script src="js/jquery-2.1.1.min.js"><\/script>')</script>
+	<script src='js/jquery.parallax.min.js'></script>
+	<script>
+	$(document).ready(function () {
+	    var $scene = $('#scene');
+	    var instance = $scene.parallax({
+			calibrateX: false,
+			calibrateY: true,
+			invertX: true,
+			invertY: true,
+			limitX: 20,
+			limitY: 20,
+			scalarX: 15,
+			scalarY: 15,
+			frictionX: 0.1,
+			frictionY: 0.1
+		}).data('api');
+
+		var mode = 'touch';
+		var gyroEnabled = false;
+
+		function setMode(m) {
+			mode = m;
+			if (mode === 'gyro') {
+				$('#mode-switch').text('切换为触摸控制');
+				$('#mode-label').text('陀螺仪 / 触控');
+			} else {
+				$('#mode-switch').text('切换为陀螺仪控制');
+				$('#mode-label').text('触摸 / 陀螺仪');
+			}
+		}
+
+		// 陀螺仪控制
+		function enableGyro() {
+			if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+				DeviceOrientationEvent.requestPermission().then(function(state) {
+					if (state === 'granted') {
+						gyroEnabled = true;
+						startGyro();
+					}
+				});
+			} else {
+				gyroEnabled = true;
+				startGyro();
+			}
+		}
+
+		function startGyro() {
+			var smoothBeta = 0, smoothGamma = 0;
+			window.addEventListener('deviceorientation', function(e) {
+				if (!gyroEnabled || mode !== 'gyro') return;
+				var beta = e.beta || 0;
+				var gamma = e.gamma || 0;
+				beta = Math.max(-45, Math.min(45, beta - 0));
+				gamma = Math.max(-45, Math.min(45, gamma - 0));
+				smoothBeta += (beta - smoothBeta) * 0.15;
+				smoothGamma += (gamma - smoothGamma) * 0.15;
+				var normX = smoothGamma / 45;
+				var normY = smoothBeta / 45;
+				applyParallax(normX, normY);
+			});
+			$('#mode-label').text('陀螺仪 ✓');
+		}
+
+		function applyParallax(nx, ny) {
+			var w = window.innerWidth;
+			var h = window.innerHeight;
+			var cx = w / 2;
+			var cy = h / 2;
+			var dx = nx * 40;
+			var dy = ny * 40;
+			$('.layer').each(function() {
+				var depth = parseFloat($(this).data('depth')) || 0.5;
+				var x = -dx * depth;
+				var y = -dy * depth;
+				$(this).find('> div').css({
+					'transform': 'translate(' + x + 'px, ' + y + 'px)',
+					'transition': 'transform 0.08s ease-out'
+				});
+			});
+		}
+
+		// iOS 需请求权限
+		$('#mode-switch').on('click', function() {
+			if (mode === 'touch') {
+				mode = 'gyro';
+				if (!gyroEnabled) enableGyro();
+				updateMode('gyro');
+			} else {
+				mode = 'touch';
+				// 恢复默认 parallax
+				$('.layer > div').css({ 'transform': '', 'transition': '' });
+				instance.enabled = true;
+				updateMode('touch');
+			}
+		});
+
+		function updateMode(m) {
+			if (m === 'gyro') {
+				instance.enabled = false;
+				$('#mode-switch').text('切换为触摸控制');
+				$('#mode-label').text('陀螺仪 ✓');
+			} else {
+				$('#mode-switch').text('切换为陀螺仪控制');
+				$('#mode-label').text('触摸 ✓');
+			}
+		}
+
+		// 自动检测设备类型
+		var isMobile = /Mobi|Android|iPad|iPhone|iPod/i.test(navigator.userAgent);
+		if (isMobile) {
+			$('#mode-label').text('触摸模式');
+			// 提示可切换陀螺仪
+			if (typeof DeviceOrientationEvent !== 'undefined') {
+				setTimeout(function() {
+					$('#mode-switch').text('切换为陀螺仪控制');
+				}, 1000);
+			}
+		}
+	});
+	</script>
+</body>
+</html>
