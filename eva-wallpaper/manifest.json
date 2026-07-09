@@ -1,0 +1,18 @@
+{
+  "name": "EVA初号机暴走",
+  "short_name": "EVA壁纸",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "description": "EVA初号机暴走 视差动态壁纸",
+  "icons": [
+    {
+      "src": "img/s1.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
