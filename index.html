@@ -8,8 +8,7 @@
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{
-  background:#fff;
-  color:#1d1d1f;
+  background:#fff;color:#1d1d1f;
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif;
   -webkit-font-smoothing:antialiased;
   line-height:1.47059;
@@ -27,15 +26,15 @@ nav .inner{
   padding:0 22px;height:44px;
 }
 nav a{
-  color:#1d1d1f;text-decoration:none;font-size:12px;font-weight:400;
-  letter-spacing:.3px;opacity:.8;transition:opacity .2s;
+  color:#1d1d1f;text-decoration:none;font-size:12px;
+  opacity:.8;transition:opacity .2s;
 }
 nav a:hover{opacity:1}
 section{
   max-width:980px;margin:0 auto;padding:0 22px;
 }
 .hero{
-  padding:140px 0 80px;text-align:center;
+  padding:140px 0 64px;text-align:center;
 }
 .hero h1{
   font-size:clamp(2.8rem,5vw,4rem);
@@ -44,15 +43,13 @@ section{
   margin-bottom:8px;
   color:#1d1d1f;
 }
-.hero h1 .light{font-weight:400;color:#86868b}
 .hero .sub{
   font-size:clamp(1.1rem,1.8vw,1.35rem);
   color:#86868b;
-  margin-top:12px;
-  max-width:600px;margin-left:auto;margin-right:auto;
+  max-width:600px;margin:12px auto 0;
 }
 .hero .intro{
-  margin-top:40px;
+  margin-top:32px;
   max-width:640px;margin-left:auto;margin-right:auto;
   font-size:1.05rem;color:#515154;line-height:1.6;
 }
@@ -61,10 +58,9 @@ section{
   margin:0 22px;
 }
 .section-title{
-  padding:80px 22px 24px;
+  padding:64px 22px 24px;
   max-width:980px;margin:0 auto;
   font-size:clamp(1.5rem,2.5vw,2rem);font-weight:700;color:#1d1d1f;
-  letter-spacing:-.002em;
 }
 .grid{
   max-width:980px;margin:0 auto;padding:0 22px 60px;
@@ -74,23 +70,16 @@ section{
 }
 .card{
   display:flex;flex-direction:column;
-  background:#f5f5f7;
-  border-radius:18px;
+  background:#f5f5f7;border-radius:18px;
   padding:28px 24px 24px;
   text-decoration:none;color:#1d1d1f;
   transition:all .25s ease;
-  position:relative;
 }
 .card:hover{background:#e8e8ed}
-.card .em{
-  font-size:28px;margin-bottom:10px;
-}
+.card .em{font-size:28px;margin-bottom:10px}
 .card h3{font-size:1.05rem;font-weight:600;margin-bottom:4px}
 .card p{font-size:.9rem;color:#86868b;line-height:1.5}
-.card .badge{
-  display:inline-block;margin-top:12px;
-  font-size:12px;color:#06c;font-weight:400;
-}
+.card .badge{margin-top:12px;font-size:12px;color:#06c}
 .card .badge span{display:inline-block;transition:transform .2s}
 .card:hover .badge span{transform:translateX(4px)}
 footer{
@@ -101,9 +90,9 @@ footer{
 footer a{color:#515154;text-decoration:none}
 footer a:hover{text-decoration:underline}
 @media(max-width:640px){
-  .hero{padding:100px 0 50px}
+  .hero{padding:100px 0 40px}
   .grid{grid-template-columns:1fr;gap:12px;padding:0 16px 40px}
-  .section-title{padding:50px 16px 20px}
+  .section-title{padding:40px 16px 20px}
 }
 </style>
 </head>
@@ -116,12 +105,12 @@ footer a:hover{text-decoration:underline}
 </nav>
 
 <section class="hero">
-  <h1>jun<span class="light">123440</span></h1>
-  <div class="sub">全栈开发者 · 创意程序员</div>
+  <h1>jun123440</h1>
+  <div class="sub">全栈开发者 · 创意编程</div>
   <div class="intro">
-    我是蒋文俊，一个喜欢用代码创造有趣东西的开发者。
+    喜欢用代码创造有趣的东西。<br>
     从3D视觉到AI应用，从交互艺术到实用工具——
-    这里是我的一些实验和作品。
+    这里是一些实验和作品。
   </div>
 </section>
 
@@ -131,7 +120,7 @@ footer a:hover{text-decoration:underline}
 <div class="grid" id="grid"></div>
 
 <footer>
-  <p>© jun123440 · <a href="https://jun123440.github.io" target="_blank">GitHub Pages</a> · 保持创造</p>
+  <p>© jun123440 · <a href="https://jun123440.github.io" target="_blank">GitHub Pages</a></p>
 </footer>
 
 <script>
@@ -153,7 +142,7 @@ p.forEach(function(x){
   a.className='card';
   a.href='/'+x.n+'/';
   a.target='_top';
-  a.innerHTML='<div class="em">'+x.e+'</div><h3>'+x.l+'</h3><p>'+x.d+'</p><div class="badge">查看项目 <span>→</span></div>';
+  a.innerHTML='<div class="em">'+x.e+'</div><h3>'+x.l+'</h3><p>'+x.d+'</p><div class="badge">查看 <span>→</span></div>';
   g.appendChild(a);
 });
 </script>
