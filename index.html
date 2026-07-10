@@ -368,7 +368,19 @@ document.addEventListener('mousemove',e=>{mx=(e.clientX/innerWidth)*2-1;my=(e.cl
 window.addEventListener('resize',()=>{
   renderer.setSize(innerWidth,innerHeight);
   cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();
+  updateSectionTops();
 });
+let sectionTops=[];
+function updateSectionTops(){
+  const ss=document.querySelectorAll('.section');let acc=0;
+  sectionTops=Array.from(ss).map(s=>{const t=acc;acc+=s.offsetHeight;return t});
+  sectionTops.push(acc);
+}
+function getRP(){
+  const st=window.pageYOffset||document.documentElement.scrollTop;
+  for(let i=0;i<sectionTops.length-1;i++){if(st>=sectionTops[i]&&st<sectionTops[i+1])return i+(st-sectionTops[i])/(sectionTops[i+1]-sectionTops[i])}
+  return sectionTops.length-1;
+}
 
 function setOp(grp,op){
   if(op<0.01&&grp.group.visible){grp.group.visible=false;return}
@@ -406,7 +418,7 @@ const clock=new THREE.Clock();
 function animate(){
   requestAnimationFrame(animate);
   const t=clock.getElapsedTime();
-  const sy=window.scrollY,vh=window.innerHeight,rp=sy/vh;
+  const rp=getRP();
 
   // Background images
   bgLayers.forEach((img,i)=>{img.style.opacity=0});
@@ -466,6 +478,7 @@ function animate(){
   renderer.render(scene,cam);
 }
 
+updateSectionTops();
 setTimeout(()=>{
   groups.forEach(grp=>{grp.opacity=grp.targetOpacity;setOp(grp,grp.opacity)});
 },50);
