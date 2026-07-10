@@ -71,7 +71,8 @@ const COLORS = [
   {main:0x44aacc,em:0x1a4a5a},
   {main:0xcc4444,em:0x5a1a1a},
   {main:0xcc8844,em:0x5a3a1a},
-  {main:0x6644cc,em:0x2a1a5a}
+  {main:0x6644cc,em:0x2a1a5a},
+  {main:0xddbb33,em:0x887711}
 ];
 
 const BGS = [
@@ -84,7 +85,8 @@ const BGS = [
   'https://images.unsplash.com/photo-1550684376-efcbd6e3f031?w=1920&q=80',
   'https://images.unsplash.com/photo-1751569543798-ced8c41a37ee?w=1920&q=80',
   'https://images.unsplash.com/photo-1708257106582-3734df4532e7?w=1920&q=80',
-  'https://images.unsplash.com/photo-1761232007928-258c9bd98d66?w=1920&q=80'
+  'https://images.unsplash.com/photo-1761232007928-258c9bd98d66?w=1920&q=80',
+  'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1920&q=80'
 ];
 
 const projects = [
@@ -97,7 +99,8 @@ const projects = [
   {name:'Particle Magic',path:'particle-magic/',type:'particles',tag:'Visual Effect',desc:'Real-time particle system with mouse interaction',ci:6},
   {name:'Rose',path:'rose/',type:'flower',tag:'Generative Art',desc:'Mathematical rose curve rendered in 3D space',ci:7},
   {name:'Solar System',path:'solar-system/',type:'orbit',tag:'Simulation',desc:'Full solar system model with orbital mechanics',ci:8},
-  {name:'Black Hole+',path:'black-hole.html',type:'vortex',tag:'Simulation',desc:'Gravitational field simulation with particle accretion disk',ci:9}
+  {name:'Black Hole+',path:'black-hole.html',type:'vortex',tag:'Simulation',desc:'Gravitational field simulation with particle accretion disk',ci:9},
+  {name:'Pac-Man',path:'pacman/',type:'pacman',tag:'Arcade Game',desc:'Classic maze arcade game — eat pellets, avoid ghosts',ci:10}
 ];
 
 // Build background images
@@ -301,7 +304,40 @@ function createTech(g,c){
   };
 }
 
-const map={globe:createGlobe,vortex:createVortex,orbit:createOrbit,heart:createHeart,flower:createFlower,particles:createParticles,eva:createEva,tech:createTech};
+function createPacman(g,c){
+  const body=new THREE.Mesh(new THREE.SphereGeometry(0.75,28,28),new THREE.MeshPhongMaterial({color:0xffcc00,emissive:0xcc8800,emissiveIntensity:0.55,shininess:80}));
+  const mouth=new THREE.Mesh(new THREE.SphereGeometry(0.2,12,12,0,Math.PI),new THREE.MeshBasicMaterial({color:0x08080f}));
+  mouth.position.set(0,0,0.65);body.add(mouth);
+  const glow=new THREE.Mesh(new THREE.RingGeometry(0.9,1.1,32),new THREE.MeshBasicMaterial({color:0xffcc00,side:THREE.DoubleSide,transparent:true,opacity:0.08}));
+  glow.rotation.x=-Math.PI*0.5;
+  const dc=180;const dp=new Float32Array(dc*3);
+  for(let i=0;i<dc;i++){const a=Math.random()*Math.PI*2;const r=1.1+Math.random()*2.8;dp[i*3]=r*Math.cos(a);dp[i*3+1]=(Math.random()-0.5)*0.35;dp[i*3+2]=r*Math.sin(a)}
+  const dGeo=new THREE.BufferGeometry();dGeo.setAttribute('position',new THREE.BufferAttribute(dp,3));
+  const dots=new THREE.Points(dGeo,new THREE.PointsMaterial({color:0xffff88,size:0.055,transparent:true,opacity:0.75,blending:THREE.AdditiveBlending}));
+  const gcols=[0xff5555,0xff88cc,0x44ddff,0xffaa44];const ghs=[];
+  gcols.forEach((col,i)=>{
+    const ghost=new THREE.Mesh(new THREE.SphereGeometry(0.13,10,10),new THREE.MeshPhongMaterial({color:col,emissive:col,emissiveIntensity:0.25,transparent:true,opacity:0.7}));
+    const a=(i/4)*Math.PI*2;const d=1.6+Math.random()*0.6;
+    ghost.position.set(d*Math.cos(a),0.2,d*Math.sin(a));
+    ghost.userData={a,d,sp:0.25+i*0.12,ph:i*1.5};g.add(ghost);ghs.push(ghost);
+  });
+  const floor=new THREE.Mesh(new THREE.RingGeometry(1.0,3.8,36,4),new THREE.MeshBasicMaterial({color:0xffcc00,side:THREE.DoubleSide,transparent:true,opacity:0.05,wireframe:true}));
+  floor.rotation.x=-Math.PI*0.5;
+  g.add(body,glow,dots,floor);
+  return {
+    updateIdle(t,prog){
+      const sc=1+Math.sin(t*2.8)*0.06;body.scale.set(sc,sc,sc);body.rotation.y=t*0.25;mouth.rotation.x=Math.sin(t*3.5)*0.3;
+      glow.rotation.z=t*0.1;floor.rotation.z=t*0.04;
+      const dpp=dots.geometry.attributes.position.array;
+      for(let i=0;i<dc;i++){const i3=i*3;const x=dpp[i3],z=dpp[i3+2];const r=Math.sqrt(x*x+z*z);const a=Math.atan2(z,x)+0.004;dpp[i3]=r*Math.cos(a);dpp[i3+2]=r*Math.sin(a)}
+      dots.geometry.attributes.position.needsUpdate=true;
+      ghs.forEach(g=>{const a=g.userData.a+t*g.userData.sp;g.position.x=g.userData.d*Math.cos(a);g.position.z=g.userData.d*Math.sin(a);g.position.y=0.2+Math.sin(t*1.4+g.userData.ph)*0.12});
+    },
+    updateTrans(t,m){g.scale.setScalar(1-m*0.3);body.rotation.y=t*0.5}
+  };
+}
+
+const map={globe:createGlobe,vortex:createVortex,orbit:createOrbit,heart:createHeart,flower:createFlower,particles:createParticles,eva:createEva,tech:createTech,pacman:createPacman};
 
 const groups=[];
 projects.forEach((p,i)=>{
