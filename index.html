@@ -1,149 +1,245 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>jun123440</title>
+<title>Creative Code</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{
-  background:#fff;color:#1d1d1f;
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif;
-  -webkit-font-smoothing:antialiased;
-  line-height:1.47059;
-}
-nav{
-  position:fixed;top:0;left:0;right:0;z-index:100;
-  background:rgba(255,255,255,.8);
-  backdrop-filter:saturate(180%) blur(20px);
-  -webkit-backdrop-filter:saturate(180%) blur(20px);
-  border-bottom:1px solid rgba(0,0,0,.08);
-}
-nav .inner{
-  max-width:980px;margin:0 auto;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 22px;height:44px;
-}
-nav a{
-  color:#1d1d1f;text-decoration:none;font-size:12px;
-  opacity:.8;transition:opacity .2s;
-}
-nav a:hover{opacity:1}
-section{
-  max-width:980px;margin:0 auto;padding:0 22px;
-}
-.hero{
-  padding:140px 0 64px;text-align:center;
-}
-.hero h1{
-  font-size:clamp(2.8rem,5vw,4rem);
-  font-weight:700;
-  letter-spacing:-.003em;
-  margin-bottom:8px;
-  color:#1d1d1f;
-}
-.hero .sub{
-  font-size:clamp(1.1rem,1.8vw,1.35rem);
-  color:#86868b;
-  max-width:600px;margin:12px auto 0;
-}
-.hero .intro{
-  margin-top:32px;
-  max-width:640px;margin-left:auto;margin-right:auto;
-  font-size:1.05rem;color:#515154;line-height:1.6;
-}
-.divider{
-  height:1px;background:linear-gradient(90deg,transparent,#d2d2d7,transparent);
-  margin:0 22px;
-}
-.section-title{
-  padding:64px 22px 24px;
-  max-width:980px;margin:0 auto;
-  font-size:clamp(1.5rem,2.5vw,2rem);font-weight:700;color:#1d1d1f;
-}
-.grid{
-  max-width:980px;margin:0 auto;padding:0 22px 60px;
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(290px,1fr));
-  gap:16px;
-}
-.card{
-  display:flex;flex-direction:column;
-  background:#f5f5f7;border-radius:18px;
-  padding:28px 24px 24px;
-  text-decoration:none;color:#1d1d1f;
-  transition:all .25s ease;
-}
-.card:hover{background:#e8e8ed}
-.card .em{font-size:28px;margin-bottom:10px}
-.card h3{font-size:1.05rem;font-weight:600;margin-bottom:4px}
-.card p{font-size:.9rem;color:#86868b;line-height:1.5}
-.card .badge{margin-top:12px;font-size:12px;color:#06c}
-.card .badge span{display:inline-block;transition:transform .2s}
-.card:hover .badge span{transform:translateX(4px)}
-footer{
-  max-width:980px;margin:0 auto;
-  padding:40px 22px 60px;
-  text-align:center;font-size:12px;color:#86868b;
-}
-footer a{color:#515154;text-decoration:none}
-footer a:hover{text-decoration:underline}
-@media(max-width:640px){
-  .hero{padding:100px 0 40px}
-  .grid{grid-template-columns:1fr;gap:12px;padding:0 16px 40px}
-  .section-title{padding:40px 16px 20px}
-}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-snap-type:y mandatory;overflow-y:scroll;scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:#050510;color:#fff;overflow-x:hidden}
+
+canvas#bg{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;pointer-events:none}
+
+section{scroll-snap-align:start;width:100vw;height:100vh;position:relative;z-index:1;display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:hidden}
+
+/* Hero */
+#hero .title{font-size:clamp(3rem,10vw,8rem);font-weight:800;letter-spacing:-0.04em;background:linear-gradient(135deg,#00d4ff,#ff00e4,#7b2ff7);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:gradientShift 6s ease infinite;position:relative;z-index:2;text-align:center;line-height:1.1}
+#hero .subtitle{font-size:clamp(1rem,2vw,1.5rem);font-weight:300;color:rgba(255,255,255,0.5);margin-top:1rem;letter-spacing:0.3em;text-transform:uppercase;position:relative;z-index:2}
+.scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.3);font-size:0.75rem;letter-spacing:0.2em;text-transform:uppercase;animation:bounce 2s ease infinite;z-index:2}
+
+@keyframes gradientShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-8px)}}
+
+/* Projects */
+#works{justify-content:center;gap:2rem}
+#works h2{font-size:clamp(1.5rem,3vw,2.5rem);font-weight:600;color:rgba(255,255,255,0.15);letter-spacing:0.15em;text-transform:uppercase;position:relative;z-index:2}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;max-width:800px;width:90%;position:relative;z-index:2}
+.card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:1.5rem;text-decoration:none;color:#fff;transition:all 0.4s cubic-bezier(0.25,0.1,0.25,1);cursor:pointer;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(circle at 50% 0%,var(--glow,rgba(0,212,255,0.15)),transparent 70%);opacity:0;transition:opacity 0.4s}
+.card:hover{transform:translateY(-6px) scale(1.02);border-color:rgba(255,255,255,0.2);background:rgba(255,255,255,0.06)}
+.card:hover::before{opacity:1}
+.card-icon{font-size:1.8rem;margin-bottom:0.6rem;display:block}
+.card-name{font-size:0.9rem;font-weight:600;letter-spacing:0.02em}
+.card-count{font-size:0.7rem;color:rgba(255,255,255,0.3);margin-top:0.3rem}
+
+/* Footer */
+#end{justify-content:center;align-items:center;gap:1.5rem}
+#end p{font-size:clamp(0.8rem,1.2vw,1rem);color:rgba(255,255,255,0.25);letter-spacing:0.1em;position:relative;z-index:2}
+#end a{color:rgba(255,255,255,0.4);text-decoration:none;transition:color 0.3s;position:relative;z-index:2;font-size:0.9rem}
+#end a:hover{color:#00d4ff}
+
+/* Responsive */
+@media(max-width:640px){.grid{grid-template-columns:repeat(2,1fr);gap:0.6rem}.card{padding:1rem}.card-icon{font-size:1.3rem}.card-name{font-size:0.75rem}}
 </style>
 </head>
 <body>
-<nav>
-  <div class="inner">
-    <a href="/">jun123440</a>
-    <a href="https://github.com/jun123440" target="_blank">GitHub ↗</a>
-  </div>
-</nav>
 
-<section class="hero">
-  <h1>jun123440</h1>
-  <div class="sub">全栈开发者 · 创意编程</div>
-  <div class="intro">
-    喜欢用代码创造有趣的东西。<br>
-    从3D视觉到AI应用，从交互艺术到实用工具——
-    这里是一些实验和作品。
-  </div>
+<canvas id="bg"></canvas>
+
+<section id="hero">
+  <div class="title">Creative Code</div>
+  <div class="subtitle">A Collection of Experiments</div>
+  <div class="scroll-hint">Scroll</div>
 </section>
 
-<div class="divider"></div>
+<section id="works">
+  <h2>Projects</h2>
+  <div class="grid" id="projectGrid"></div>
+</section>
 
-<div class="section-title">项目</div>
-<div class="grid" id="grid"></div>
+<section id="end">
+  <p>Explore &middot; Play &middot; Repeat</p>
+  <a href="https://github.com/jun123440" target="_blank" rel="noopener">GitHub</a>
+</section>
 
-<footer>
-  <p>© jun123440 · <a href="https://jun123440.github.io" target="_blank">GitHub Pages</a></p>
-</footer>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-var p=[
-  {n:'3d-earth',e:'🌍',l:'3D地球',d:'可交互的3D地球模型，拖拽旋转缩放'},
-  {n:'app',e:'📱',l:'颜值测试器',d:'AI颜值评分，上传照片即刻分析'},
-  {n:'blackhole',e:'🕳️',l:'黑洞',d:'模拟黑洞引力场的视觉化体验'},
-  {n:'confession',e:'💌',l:'告白',d:'浪漫表白页，温馨动画效果'},
-  {n:'earth-plus',e:'🌏',l:'地球+',d:'增强版3D地球，带大气层特效'},
-  {n:'particle-magic',e:'✨',l:'粒子魔法',d:'粒子系统生成炫酷视觉效果'},
-  {n:'rose',e:'🌹',l:'玫瑰',d:'3D玫瑰花的数学之美'},
-  {n:'solar-system',e:'🪐',l:'太阳系',d:'模拟太阳系行星公转轨道'},
-  {n:'poem',e:'📝',l:'为你写诗',d:'诗意生成页面，文字与视觉交融'},
-  {n:'eva-wallpaper',e:'🎨',l:'EVA壁纸',d:'EVA主题壁纸生成工具'}
+// ============ Project Data ============
+const projects = [
+  {name:'3D Earth',path:'3d-earth/',color:'#00d4ff'},
+  {name:'App',path:'app/',color:'#ff6b6b'},
+  {name:'Black Hole',path:'blackhole/',color:'#7b2ff7'},
+  {name:'Confession',path:'confession/',color:'#ff00e4'},
+  {name:'Earth Plus',path:'earth-plus/',color:'#00e676'},
+  {name:'EVA Wallpaper',path:'eva-wallpaper/',color:'#ff9100'},
+  {name:'Particle Magic',path:'particle-magic/',color:'#ffeb3b'},
+  {name:'Rose',path:'rose/',color:'#ff1744'},
+  {name:'Solar System',path:'solar-system/',color:'#ff6f00'},
+  {name:'Black Hole',path:'black-hole.html',color:'#9c27b0'}
 ];
-var g=document.getElementById('grid');
-p.forEach(function(x){
-  var a=document.createElement('a');
-  a.className='card';
-  a.href='/'+x.n+'/';
-  a.target='_top';
-  a.innerHTML='<div class="em">'+x.e+'</div><h3>'+x.l+'</h3><p>'+x.d+'</p><div class="badge">查看 <span>→</span></div>';
-  g.appendChild(a);
+
+const grid = document.getElementById('projectGrid');
+projects.forEach((p,i)=>{
+  const a = document.createElement('a');
+  a.className = 'card';
+  a.href = p.path;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  a.style.setProperty('--glow', p.color + '33');
+  a.innerHTML = `<span class="card-icon">${['✦','◆','●','▲','■','★','♦','◉','⬢','◆'][i]}</span>
+    <div class="card-name">${p.name}</div>
+    <div class="card-count">${String(i+1).padStart(2,'0')}</div>`;
+  grid.appendChild(a);
+
+  a.addEventListener('mousemove',e=>{
+    const r=a.getBoundingClientRect();
+    const x=(e.clientX-r.left)/r.width-0.5;
+    const y=(e.clientY-r.top)/r.height-0.5;
+    a.style.transform=`perspective(600px) rotateY(${x*12}deg) rotateX(${-y*12}deg) translateY(-6px) scale(1.02)`;
+  });
+  a.addEventListener('mouseleave',()=>{
+    a.style.transform='';
+  });
+});
+
+// ============ Three.js Scene ============
+const canvas = document.getElementById('bg');
+const renderer = new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setSize(window.innerWidth,window.innerHeight);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x050510,0.035);
+
+const camera = new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,100);
+camera.position.z = 5;
+
+// Main object
+const torusGeo = new THREE.TorusKnotGeometry(1.2,0.35,180,24);
+const torusMat = new THREE.MeshBasicMaterial({color:0x00d4ff,wireframe:true});
+const torus = new THREE.Mesh(torusGeo,torusMat);
+scene.add(torus);
+
+// Inner solid with transparent color
+const solidMat = new THREE.MeshBasicMaterial({
+  color:0x00d4ff,
+  transparent:true,
+  opacity:0.08,
+  side:THREE.DoubleSide
+});
+const solid = new THREE.Mesh(torusGeo.clone(),solidMat);
+solid.scale.set(0.98,0.98,0.98);
+scene.add(solid);
+
+// Secondary ring
+const ringGeo = new THREE.TorusGeometry(1.8,0.02,32,64);
+const ringMat = new THREE.MeshBasicMaterial({color:0x7b2ff7,transparent:true,opacity:0.4});
+const ring = new THREE.Mesh(ringGeo,ringMat);
+ring.rotation.x = Math.PI / 3;
+scene.add(ring);
+
+// Particles
+const count = 2500;
+const pos = new Float32Array(count * 3);
+const sizes = new Float32Array(count);
+const colors = new Float32Array(count * 3);
+const vel = new Float32Array(count);
+
+for(let i=0;i<count;i++){
+  const r = 4 + Math.random() * 6;
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(2 * Math.random() - 1);
+  pos[i*3] = r * Math.sin(phi) * Math.cos(theta);
+  pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+  pos[i*3+2] = r * Math.cos(phi);
+  sizes[i] = 0.5 + Math.random() * 1.5;
+  vel[i] = 0.1 + Math.random() * 0.3;
+  const c = new THREE.Color().setHSL(0.55 + Math.random() * 0.2,0.8,0.5 + Math.random() * 0.3);
+  colors[i*3] = c.r;
+  colors[i*3+1] = c.g;
+  colors[i*3+2] = c.b;
+}
+
+const partGeo = new THREE.BufferGeometry();
+partGeo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+partGeo.setAttribute('size',new THREE.BufferAttribute(sizes,1));
+partGeo.setAttribute('color',new THREE.BufferAttribute(colors,3));
+
+const partMat = new THREE.PointsMaterial({
+  size:0.04,
+  vertexColors:true,
+  transparent:true,
+  opacity:0.6,
+  blending:THREE.AdditiveBlending,
+  depthWrite:false,
+  sizeAttenuation:true
+});
+const particleSystem = new THREE.Points(partGeo,partMat);
+scene.add(particleSystem);
+
+// Mouse
+const mouse = {x:0,y:0};
+document.addEventListener('mousemove',e=>{
+  mouse.x = (e.clientX / window.innerWidth - 0.5) * 2;
+  mouse.y = (e.clientY / window.innerHeight - 0.5) * 2;
+});
+
+// Scroll state
+let scrollProgress = 0;
+let targetColor = 0x00d4ff;
+let hue = 0.55;
+
+window.addEventListener('scroll',()=>{
+  const totalH = document.body.scrollHeight - window.innerHeight;
+  scrollProgress = window.scrollY / totalH;
+  hue = 0.55 - scrollProgress * 0.3;
+});
+
+// Color transition
+let currentHue = 0.55;
+let progress = 0;
+
+// Animation
+function animate(){
+  requestAnimationFrame(animate);
+  
+  // Camera follows mouse
+  camera.position.x += (mouse.x * 0.5 - camera.position.x) * 0.05;
+  camera.position.y += (-mouse.y * 0.3 - camera.position.y) * 0.05;
+  camera.lookAt(0,0,0);
+
+  // Rotate main objects
+  torus.rotation.x += 0.003;
+  torus.rotation.y += 0.006;
+  solid.rotation.x = torus.rotation.x;
+  solid.rotation.y = torus.rotation.y;
+  ring.rotation.z += 0.002;
+
+  // Animate hue
+  currentHue += (hue - currentHue) * 0.03;
+  const c = new THREE.Color().setHSL(currentHue,0.8,0.55);
+  torusMat.color.copy(c);
+  solidMat.color.copy(c);
+  
+  const c2 = new THREE.Color().setHSL(currentHue + 0.2,0.8,0.5);
+  ringMat.color.copy(c2);
+
+  // Slowly rotate particles
+  particleSystem.rotation.y += 0.0005;
+  particleSystem.rotation.x += 0.0003;
+
+  renderer.render(scene,camera);
+}
+animate();
+
+// Resize
+window.addEventListener('resize',()=>{
+  const w=window.innerWidth,h=window.innerHeight;
+  renderer.setSize(w,h);
+  camera.aspect=w/h;
+  camera.updateProjectionMatrix();
 });
 </script>
 </body>
