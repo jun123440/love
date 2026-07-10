@@ -4,65 +4,73 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Creative Code</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@200;300;400;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-snap-type:y mandatory;overflow-y:scroll}
 body{font-family:'Inter',sans-serif;background:#06060e;color:#fff;overflow-x:hidden}
 
-canvas#bg{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0}
+canvas#bg{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;pointer-events:none}
 
-section{scroll-snap-align:start;width:100vw;height:100vh;position:relative;z-index:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2rem}
+section{scroll-snap-align:start;width:100vw;height:100vh;position:relative;z-index:1;display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:hidden}
+.section-bg{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;opacity:0.15;transition:opacity 0.8s}
+.section-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,6,14,0.7) 0%,rgba(6,6,14,0.3) 50%,rgba(6,6,14,0.8) 100%)}
+.project-section .section-bg{opacity:0.25}
 
-/* ==== Hero ==== */
-#hero{justify-content:center;align-items:center}
-.hero-label{font-family:'Outfit',sans-serif;font-weight:300;font-size:clamp(0.7rem,1vw,0.85rem);letter-spacing:0.5em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:1.5rem;position:relative;z-index:2}
-.hero-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:clamp(3.5rem,12vw,10rem);letter-spacing:-0.06em;line-height:0.95;text-align:center;position:relative;z-index:2}
-.hero-title .line{display:block}
-.hero-title .line1{background:linear-gradient(135deg,#818cf8,#06b6d4,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.hero-title .line2{color:rgba(255,255,255,0.08);-webkit-text-fill-color:rgba(255,255,255,0.08);background:none}
-.hero-sub{font-size:clamp(0.85rem,1.2vw,1.1rem);font-weight:300;color:rgba(255,255,255,0.35);margin-top:2rem;letter-spacing:0.15em;position:relative;z-index:2}
-.scroll-indicator{position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:0.5rem;z-index:2}
-.scroll-line{width:1px;height:40px;background:linear-gradient(to bottom,rgba(255,255,255,0.4),transparent);animation:scrollPulse 2.5s ease infinite}
-.scroll-text{font-size:0.6rem;letter-spacing:0.3em;text-transform:uppercase;color:rgba(255,255,255,0.2)}
-@keyframes scrollPulse{0%,100%{opacity:1;transform:scaleY(1)}50%{opacity:0.3;transform:scaleY(0.6)}}
+/* ==== HERO ==== */
+#hero{justify-content:center;align-items:center;gap:0}
+.hero-label{font-family:'DM Mono',monospace;font-size:clamp(0.55rem,0.75vw,0.7rem);letter-spacing:0.6em;text-transform:uppercase;color:rgba(255,255,255,0.2);position:relative;z-index:2;margin-bottom:1.5rem}
+.hero-title{position:relative;z-index:2;text-align:center;line-height:0.9}
+.hero-title .line1{display:block;font-family:'Outfit',sans-serif;font-weight:800;font-size:clamp(3rem,12vw,10rem);letter-spacing:-0.07em;background:linear-gradient(135deg,#a78bfa 0%,#06b6d4 50%,#f472b6 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:heroGrad 8s ease infinite}
+.hero-title .line2{display:block;font-family:'Outfit',sans-serif;font-weight:800;font-size:clamp(3rem,12vw,10rem);letter-spacing:-0.07em;color:rgba(255,255,255,0.06);margin-top:-0.08em;position:relative}
+.hero-title .line2 .char{display:inline-block;animation:floatUp 0.6s ease backwards}
+.hero-title .line2 .char:nth-child(1){animation-delay:0.0s}
+.hero-title .line2 .char:nth-child(2){animation-delay:0.05s}
+.hero-title .line2 .char:nth-child(3){animation-delay:0.1s}
+.hero-title .line2 .char:nth-child(4){animation-delay:0.15s}
+@keyframes floatUp{0%{transform:translateY(40px);opacity:0}100%{transform:translateY(0);opacity:1}}
+@keyframes heroGrad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 
-/* ==== Works ==== */
-#works{justify-content:center;gap:2.5rem;padding-top:4rem;padding-bottom:4rem}
-.section-label{font-family:'Outfit',sans-serif;font-weight:300;font-size:clamp(0.65rem,0.8vw,0.75rem);letter-spacing:0.5em;text-transform:uppercase;color:rgba(255,255,255,0.12);position:relative;z-index:2}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;max-width:780px;width:88%;position:relative;z-index:2}
+.hero-sub{font-family:'Outfit',sans-serif;font-weight:300;font-size:clamp(0.8rem,1.1vw,1rem);color:rgba(255,255,255,0.25);letter-spacing:0.4em;text-transform:uppercase;margin-top:2rem;position:relative;z-index:2}
+.scroll-indicator{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:0.6rem;z-index:2}
+.scroll-line{width:1px;height:32px;background:linear-gradient(to bottom,rgba(255,255,255,0.3),transparent);animation:scrollPulse 2s ease infinite}
+.scroll-text{font-family:'DM Mono',monospace;font-size:0.5rem;letter-spacing:0.4em;text-transform:uppercase;color:rgba(255,255,255,0.15)}
+@keyframes scrollPulse{0%,100%{opacity:1;transform:scaleY(1)}50%{opacity:0.2;transform:scaleY(0.5)}}
 
-.card{display:flex;flex-direction:column;gap:0.4rem;padding:1.25rem 1.5rem;border-radius:14px;text-decoration:none;color:#fff;position:relative;overflow:hidden;cursor:pointer;
-background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
-transition:all 0.5s cubic-bezier(0.23,1,0.32,1);transform-style:preserve-3d;perspective:600px}
-.card::before{content:'';position:absolute;inset:0;background:radial-gradient(120% 120% at 50% -20%,var(--glow),transparent 70%);opacity:0;transition:opacity 0.5s;pointer-events:none}
-.card::after{content:'';position:absolute;inset:0;border-radius:14px;padding:1px;background:linear-gradient(135deg,var(--glow),transparent 60%);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:0;transition:opacity 0.5s;pointer-events:none}
-.card:hover{transform:translateY(-6px) scale(1.015);border-color:rgba(255,255,255,0.12);background:rgba(255,255,255,0.06)}
-.card:hover::before{opacity:1}
-.card:hover::after{opacity:1}
-.card-num{font-size:0.6rem;font-weight:500;color:rgba(255,255,255,0.15);letter-spacing:0.05em}
-.card-name{font-size:0.9rem;font-weight:600;letter-spacing:0.01em}
+/* ==== PROJECT SECTIONS ==== */
+.project-section{justify-content:center;align-items:center;gap:1.5rem;padding:2rem}
+.project-content{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:0.75rem;text-align:center;max-width:600px}
+.project-index{font-family:'DM Mono',monospace;font-size:clamp(0.5rem,0.65vw,0.6rem);letter-spacing:0.3em;color:rgba(255,255,255,0.12)}
+.project-tag{font-family:'DM Mono',monospace;font-size:clamp(0.55rem,0.7vw,0.65rem);letter-spacing:0.25em;text-transform:uppercase;padding:0.3rem 0.8rem;border-radius:100px;border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.3)}
+.project-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:clamp(2rem,5vw,4rem);letter-spacing:-0.03em;line-height:1.05;margin:0.3rem 0}
+.project-name .highlight{background:linear-gradient(135deg,var(--pc1),var(--pc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.project-desc{font-weight:300;font-size:clamp(0.8rem,1vw,0.9rem);color:rgba(255,255,255,0.35);max-width:400px;line-height:1.5}
+.project-btn{display:inline-flex;align-items:center;gap:0.5rem;padding:0.6rem 1.5rem;border-radius:100px;text-decoration:none;font-size:0.75rem;font-weight:500;letter-spacing:0.05em;margin-top:0.5rem;
+background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);transition:all 0.3s}
+.project-btn:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.2);color:#fff;transform:translateY(-2px)}
+.project-btn .arrow{display:inline-block;transition:transform 0.3s}
+.project-btn:hover .arrow{transform:translateX(4px)}
 
-/* ==== End ==== */
+/* ==== END ==== */
 #end{justify-content:center;align-items:center;gap:1.5rem}
-#end .end-text{font-family:'Outfit',sans-serif;font-weight:300;font-size:clamp(0.8rem,1.2vw,1rem);color:rgba(255,255,255,0.15);letter-spacing:0.15em;position:relative;z-index:2}
-#end a{color:rgba(255,255,255,0.3);text-decoration:none;transition:color 0.3s;position:relative;z-index:2;font-size:0.8rem;letter-spacing:0.05em}
-#end a:hover{color:#818cf8}
+#end .end-text{font-family:'Outfit',sans-serif;font-weight:200;font-size:clamp(0.9rem,1.3vw,1.1rem);color:rgba(255,255,255,0.12);letter-spacing:0.2em;position:relative;z-index:2}
+#end a{color:rgba(255,255,255,0.25);text-decoration:none;transition:color 0.3s;position:relative;z-index:2;font-size:0.75rem;letter-spacing:0.1em;font-family:'DM Mono',monospace}
+#end a:hover{color:#a78bfa}
 
-/* ==== Responsive ==== */
-@media(max-width:640px){.grid{grid-template-columns:repeat(2,1fr);gap:0.5rem;width:92%}.card{padding:1rem 1.2rem}.card-name{font-size:0.8rem}}
-@media(min-width:1200px){.grid{max-width:900px;gap:1rem}.card{padding:1.5rem 1.75rem}.card-name{font-size:1rem}}
+/* ==== RESPONSIVE ==== */
+@media(max-width:640px){.project-section{gap:1rem;padding:1.5rem}.project-name{font-size:clamp(1.5rem,8vw,2.5rem)}}
 </style>
 </head>
 <body>
 
 <canvas id="bg"></canvas>
 
+<!-- HERO -->
 <section id="hero">
   <div class="hero-label">Portfolio</div>
   <div class="hero-title">
-    <span class="line line1">Creative</span>
-    <span class="line line2">Code</span>
+    <span class="line1">Creative</span>
+    <span class="line2"><span class="char">C</span><span class="char">o</span><span class="char">d</span><span class="char">e</span></span>
   </div>
   <div class="hero-sub">A Collection of Experiments</div>
   <div class="scroll-indicator">
@@ -71,11 +79,10 @@ transition:all 0.5s cubic-bezier(0.23,1,0.32,1);transform-style:preserve-3d;pers
   </div>
 </section>
 
-<section id="works">
-  <div class="section-label">Projects</div>
-  <div class="grid" id="projectGrid"></div>
-</section>
+<!-- PROJECT SECTIONS will be injected here -->
+<div id="projectSections"></div>
 
+<!-- END -->
 <section id="end">
   <div class="end-text">Explore &middot; Create &middot; Repeat</div>
   <a href="https://github.com/jun123440" target="_blank" rel="noopener">GitHub ↗</a>
@@ -83,315 +90,386 @@ transition:all 0.5s cubic-bezier(0.23,1,0.32,1);transform-style:preserve-3d;pers
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-// ==== Project Data ====
+// ============ PROJECT DATA ============
 const projects = [
-  {name:'3D Earth',path:'3d-earth/',hsl:0.58},
-  {name:'App',path:'app/',hsl:0.02},
-  {name:'Black Hole',path:'blackhole/',hsl:0.75},
-  {name:'Confession',path:'confession/',hsl:0.88},
-  {name:'Earth Plus',path:'earth-plus/',hsl:0.42},
-  {name:'EVA Wallpaper',path:'eva-wallpaper/',hsl:0.08},
-  {name:'Particle Magic',path:'particle-magic/',hsl:0.12},
-  {name:'Rose',path:'rose/',hsl:0.95},
-  {name:'Solar System',path:'solar-system/',hsl:0.05},
-  {name:'Black Hole+',path:'black-hole.html',hsl:0.72}
+  {name:'3D Earth',path:'3d-earth/',type:'globe',hsl:0.58,tag:'3D Visualization',bg:'https://picsum.photos/seed/earth3d/1920/1080'},
+  {name:'App',path:'app/',type:'tech',hsl:0.02,tag:'Interactive Tool',bg:'https://picsum.photos/seed/appui/1920/1080'},
+  {name:'Black Hole',path:'blackhole/',type:'vortex',hsl:0.75,tag:'Simulation',bg:'https://picsum.photos/seed/blackhole/1920/1080'},
+  {name:'Confession',path:'confession/',type:'heart',hsl:0.88,tag:'Interactive Art',bg:'https://picsum.photos/seed/romance/1920/1080'},
+  {name:'Earth Plus',path:'earth-plus/',type:'globe',hsl:0.42,tag:'3D Visualization',bg:'https://picsum.photos/seed/earthplus/1920/1080'},
+  {name:'EVA Wallpaper',path:'eva-wallpaper/',type:'grid',hsl:0.08,tag:'Generator Tool',bg:'https://picsum.photos/seed/evaneon/1920/1080'},
+  {name:'Particle Magic',path:'particle-magic/',type:'particles',hsl:0.12,tag:'Visual Effect',bg:'https://picsum.photos/seed/particles/1920/1080'},
+  {name:'Rose',path:'rose/',type:'flower',hsl:0,tag:'Generative Art',bg:'https://picsum.photos/seed/rose3d/1920/1080'},
+  {name:'Solar System',path:'solar-system/',type:'orbit',hsl:0.05,tag:'Simulation',bg:'https://picsum.photos/seed/solarsys/1920/1080'},
+  {name:'Black Hole+',path:'black-hole.html',type:'vortex',hsl:0.72,tag:'Simulation',bg:'https://picsum.photos/seed/wormhole/1920/1080'}
 ];
 
-const grid = document.getElementById('projectGrid');
+// ============ GENERATE PROJECT SECTIONS ============
+const container = document.getElementById('projectSections');
 projects.forEach((p,i)=>{
-  const a = document.createElement('a');
-  a.className = 'card';
-  a.href = p.path;
-  a.target = '_blank';
-  a.rel = 'noopener';
-  const c = new THREE.Color().setHSL(p.hsl,0.7,0.5);
-  const hex = '#'+c.getHexString();
-  a.style.setProperty('--glow', hex + '44');
-  a.innerHTML = '<div class="card-num">'+(i+1).toString().padStart(2,'0')+'</div><div class="card-name">'+p.name+'</div>';
-  grid.appendChild(a);
-  a.addEventListener('mousemove',function(e){
-    const r=this.getBoundingClientRect();
-    const x=(e.clientX-r.left)/r.width-0.5;
-    const y=(e.clientY-r.top)/r.height-0.5;
-    this.style.transform='perspective(600px) rotateY('+(x*8)+'deg) rotateX('+(-y*8)+'deg) translateY(-6px) scale(1.015)';
-  });
-  a.addEventListener('mouseleave',function(){this.style.transform='';});
+  const c = new THREE.Color().setHSL(p.hsl,0.65,0.5);
+  const hex1 = '#'+c.getHexString();
+  const c2 = new THREE.Color().setHSL(p.hsl+0.15,0.65,0.5);
+  const hex2 = '#'+c2.getHexString();
+
+  const sec = document.createElement('section');
+  sec.className = 'project-section';
+  sec.dataset.index = i;
+  sec.dataset.type = p.type;
+  sec.dataset.hsl = p.hsl;
+
+  sec.innerHTML = '<div class="section-bg" style="background-image:url('+p.bg+')"></div>'
+    +'<div class="project-content">'
+    +'<div class="project-index">'+(i+1).toString().padStart(2,'0')+'</div>'
+    +'<div class="project-name"><span class="highlight" style="--pc1:'+hex1+';--pc2:'+hex2+'">'+p.name+'</span></div>'
+    +'<div class="project-tag">'+p.tag+'</div>'
+    +'<div class="project-desc">'+getDescription(p.type)+'</div>'
+    +'<a href="'+p.path+'" target="_blank" rel="noopener" class="project-btn">View Project <span class="arrow">→</span></a>'
+    +'</div>';
+  container.appendChild(sec);
 });
 
-// ==== Three.js Scene ====
-const canvas = document.getElementById('bg');
-const renderer = new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-renderer.setSize(window.innerWidth,window.innerHeight);
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0;
-
-const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x06060e, 0.03);
-
-const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 100);
-camera.position.set(0, 0, 8);
-
-// ==== Centerpiece: Octahedron ====
-const centerGeo = new THREE.OctahedronGeometry(1.2, 0);
-const centerMat = new THREE.MeshPhysicalMaterial({
-  color: 0x818cf8,
-  metalness: 0.3,
-  roughness: 0.2,
-  transparent: true,
-  opacity: 0.9,
-  clearcoat: 0.3,
-  envMapIntensity: 0.5
-});
-const center = new THREE.Mesh(centerGeo, centerMat);
-scene.add(center);
-
-// Center wireframe overlay
-const wireMat = new THREE.MeshBasicMaterial({
-  color: 0x818cf8,
-  wireframe: true,
-  transparent: true,
-  opacity: 0.15
-});
-const centerWire = new THREE.Mesh(centerGeo.clone(), wireMat);
-centerWire.scale.set(1.05, 1.05, 1.05);
-scene.add(centerWire);
-
-// ==== Orbiting Elements ====
-const orbiters = [];
-const orbiterConfigs = [
-  { radius: 2.8, speed: 0.4, size: 0.5, geo: 'icosahedron', color: 0x06b6d4, offset: 0, plane: 'xz' },
-  { radius: 3.4, speed: -0.3, size: 0.4, geo: 'dodecahedron', color: 0xd946ef, offset: 2.1, plane: 'xy' },
-  { radius: 4.0, speed: 0.2, size: 0.35, geo: 'octahedron', color: 0xf59e0b, offset: 4.2, plane: 'yz' },
-  { radius: 2.2, speed: -0.5, size: 0.25, geo: 'tetrahedron', color: 0x34d399, offset: 1.5, plane: 'xz' }
-];
-
-orbiterConfigs.forEach((cfg, idx) => {
-  let geo;
-  switch(cfg.geo) {
-    case 'icosahedron': geo = new THREE.IcosahedronGeometry(cfg.size, 0); break;
-    case 'dodecahedron': geo = new THREE.DodecahedronGeometry(cfg.size, 0); break;
-    case 'octahedron': geo = new THREE.OctahedronGeometry(cfg.size, 0); break;
-    case 'tetrahedron': geo = new THREE.TetrahedronGeometry(cfg.size, 0); break;
-  }
-  
-  const mat = new THREE.MeshPhysicalMaterial({
-    color: cfg.color,
-    metalness: 0.2,
-    roughness: 0.3,
-    transparent: true,
-    opacity: 0.7,
-    clearcoat: 0.2
-  });
-  
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.userData = cfg;
-  mesh.userData.angle = cfg.offset;
-  scene.add(mesh);
-  
-  // Small glow ring around each orbiter
-  const glowGeo = new THREE.SphereGeometry(cfg.size * 1.8, 16, 16);
-  const glowMat = new THREE.MeshBasicMaterial({
-    color: cfg.color,
-    transparent: true,
-    opacity: 0.05,
-    wireframe: true
-  });
-  const glow = new THREE.Mesh(glowGeo, glowMat);
-  scene.add(glow);
-  
-  orbiters.push({ mesh, glow, cfg });
-});
-
-// ==== Connecting Lines ====
-const lineMat = new THREE.LineBasicMaterial({
-  color: 0x818cf8,
-  transparent: true,
-  opacity: 0.08
-});
-
-const linePositions = new Float32Array(orbiterConfigs.length * 6);
-const lineGeo = new THREE.BufferGeometry();
-lineGeo.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
-const line = new THREE.LineSegments(lineGeo, lineMat);
-scene.add(line);
-
-// ==== Particles ====
-const count = 2000;
-const pos = new Float32Array(count * 3);
-const col = new Float32Array(count * 3);
-const sizes = new Float32Array(count);
-
-for(let i=0; i<count; i++){
-  const r = 2 + Math.random() * 8;
-  const theta = Math.random() * Math.PI * 2;
-  const phi = Math.acos(2 * Math.random() - 1);
-  pos[i*3] = r * Math.sin(phi) * Math.cos(theta);
-  pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-  pos[i*3+2] = r * Math.cos(phi);
-  sizes[i] = 0.3 + Math.random() * 0.7;
-  const c = new THREE.Color().setHSL(0.65 + Math.random() * 0.2, 0.6, 0.4 + Math.random() * 0.3);
-  col[i*3] = c.r; col[i*3+1] = c.g; col[i*3+2] = c.b;
+function getDescription(type){
+  const map={
+    'globe':'Interactive 3D globe with rotation and zoom controls',
+    'tech':'Multi-page application with modern UI interactions',
+    'vortex':'Gravitational field simulation with particle accretion disk',
+    'heart':'Romantic animated page with dynamic visual effects',
+    'grid':'Neon-themed wallpaper generator with custom patterns',
+    'particles':'Real-time particle system with mouse interaction',
+    'flower':'Mathematical rose curve rendered in 3D space',
+    'orbit':'Full solar system model with orbital mechanics',
+    'default':'Interactive 3D experience'
+  };
+  return map[type]||map.default;
 }
 
-const pGeo = new THREE.BufferGeometry();
-pGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-pGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-pGeo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+// ============ THREE.JS - PER-PROJECT 3D ELEMENTS ============
+const renderer = new THREE.WebGLRenderer({canvas:document.getElementById('bg'),alpha:true,antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
 
-const pMat = new THREE.PointsMaterial({
-  size: 0.03,
-  vertexColors: true,
-  transparent: true,
-  opacity: 0.5,
-  blending: THREE.AdditiveBlending,
-  depthWrite: false,
-  sizeAttenuation: true
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x06060e,0.025);
+
+const camera = new THREE.PerspectiveCamera(50,window.innerWidth/window.innerHeight,0.1,100);
+camera.position.set(0,0,7);
+
+// ==== Shared scene elements ====
+const starCount = 1500;
+const starPos = new Float32Array(starCount*3);
+for(let i=0;i<starCount;i++){
+  const r=8+Math.random()*20;
+  const t=Math.random()*Math.PI*2;
+  const p=Math.acos(2*Math.random()-1);
+  starPos[i*3]=r*Math.sin(p)*Math.cos(t);
+  starPos[i*3+1]=r*Math.sin(p)*Math.sin(t);
+  starPos[i*3+2]=r*Math.cos(p);
+}
+const starGeo=new THREE.BufferGeometry();
+starGeo.setAttribute('position',new THREE.BufferAttribute(starPos,3));
+const starMat=new THREE.PointsMaterial({size:0.04,color:0xffffff,transparent:true,opacity:0.3,blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true});
+const stars=new THREE.Points(starGeo,starMat);
+scene.add(stars);
+
+// ==== Project 3D Objects Factory ====
+const projectObjects = [];
+
+function createProjectObjects(type, hsl){
+  const group = new THREE.Group();
+  const hue = typeof hsl === 'number' ? hsl : 0.58;
+  const color = new THREE.Color().setHSL(hue,0.7,0.55);
+  const color2 = new THREE.Color().setHSL(hue+0.1,0.7,0.5);
+
+  switch(type){
+    case 'globe': {
+      const geo=new THREE.SphereGeometry(1.2,32,32);
+      const mat=new THREE.MeshPhysicalMaterial({color:color,metalness:0.3,roughness:0.2,transparent:true,opacity:0.85,clearcoat:0.4});
+      const mesh=new THREE.Mesh(geo,mat);
+      const wire=new THREE.Mesh(new THREE.SphereGeometry(1.25,20,20),new THREE.MeshBasicMaterial({color:color,wireframe:true,transparent:true,opacity:0.12}));
+      group.add(mesh);group.add(wire);
+
+      // Particle ring
+      const rc=800;const rp=new Float32Array(rc*3);
+      for(let i=0;i<rc;i++){
+        const a=Math.random()*Math.PI*2,b=Math.random()*Math.PI*2;
+        const rad=1.8+Math.random()*0.5;
+        rp[i*3]=Math.cos(a)*Math.sin(b)*rad;
+        rp[i*3+1]=Math.sin(a)*Math.sin(b)*rad;
+        rp[i*3+2]=Math.cos(b)*rad;
+      }
+      const rg=new THREE.BufferGeometry();rg.setAttribute('position',new THREE.BufferAttribute(rp,3));
+      const rm=new THREE.PointsMaterial({size:0.015,color:color2,transparent:true,opacity:0.4,blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true});
+      const ring=new THREE.Points(rg,rm);
+      group.add(ring);
+      group.userData={mesh,wire,ring,rotSpeed:0.003};
+      break;
+    }
+    case 'vortex': {
+      const count=2000;
+      const pos=new Float32Array(count*3);
+      for(let i=0;i<count;i++){
+        const t=i/count*Math.PI*6;
+        const r=0.02+0.8*(i/count);
+        pos[i*3]=Math.cos(t)*r;
+        pos[i*3+1]=Math.sin(t*2)*0.3;
+        pos[i*3+2]=Math.sin(t)*r;
+      }
+      const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+      const m=new THREE.PointsMaterial({size:0.04,color:color,transparent:true,opacity:0.6,blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true});
+      const p=new THREE.Points(g,m);
+      
+      const disc=new THREE.Mesh(
+        new THREE.RingGeometry(0.1,1.5,64),
+        new THREE.MeshBasicMaterial({color:color,transparent:true,opacity:0.06,side:THREE.DoubleSide,wireframe:true})
+      );
+      disc.rotation.x=Math.PI/3;
+      group.add(p);group.add(disc);
+      group.userData={particles:p,disc,rotSpeed:0.005};
+      break;
+    }
+    case 'orbit': {
+      const sun=new THREE.Mesh(
+        new THREE.SphereGeometry(0.4,16,16),
+        new THREE.MeshBasicMaterial({color:0xffaa44})
+      );
+      group.add(sun);
+      const orbits=[{r:0.8,size:0.08,spd:0.8},{r:1.2,size:0.06,spd:0.5},{r:1.6,size:0.1,spd:0.3},{r:2.0,size:0.05,spd:0.2}];
+      const planets=[];
+      orbits.forEach((o,i)=>{
+        const p=new THREE.Mesh(new THREE.SphereGeometry(o.size,8,8),new THREE.MeshBasicMaterial({color:new THREE.Color().setHSL(hue+i*0.1,0.7,0.5)}));
+        p.userData={radius:o.r,angle:Math.random()*Math.PI*2,speed:o.spd};
+        group.add(p);planets.push(p);
+        // Orbit ring
+        const ring=new THREE.Mesh(new THREE.RingGeometry(o.r-0.005,o.r+0.005,48),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.04,side:THREE.DoubleSide}));
+        ring.rotation.x=-Math.PI/2;
+        group.add(ring);
+      });
+      group.userData={planets,rotSpeed:0.002};
+      break;
+    }
+    case 'flower': {
+      const pts=[];
+      for(let i=0;i<2000;i++){
+        const t=i/2000*Math.PI*6;
+        const r=0.8*Math.sin(t*3)*Math.cos(t*0.5)+0.3;
+        const x=Math.cos(t)*r;
+        const z=Math.sin(t)*r;
+        const y=Math.sin(t*5)*0.2;
+        pts.push(x,y,z);
+      }
+      const g=new THREE.BufferGeometry();
+      g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(pts),3));
+      const m=new THREE.PointsMaterial({size:0.03,color:color,transparent:true,opacity:0.7,blending:THREE.AdditiveBlending,sizeAttenuation:true});
+      const p=new THREE.Points(g,m);
+      group.add(p);
+      group.userData={rotSpeed:0.002};
+      break;
+    }
+    case 'heart': {
+        const pts=[];
+        for(let i=0;i<1200;i++){
+          const t=i/1200*Math.PI*2;
+          const x=16*Math.pow(Math.sin(t),3);
+          const y=13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t);
+          const z=(Math.random()-0.5)*0.3;
+          pts.push(x*0.08,y*0.08,z);
+        }
+        const g=new THREE.BufferGeometry();
+        g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(pts),3));
+        const m=new THREE.PointsMaterial({size:0.04,color:color,transparent:true,opacity:0.6,blending:THREE.AdditiveBlending,sizeAttenuation:true});
+        const p=new THREE.Points(g,m);
+        const glow=new THREE.Mesh(
+          new THREE.SphereGeometry(0.6,16,16),
+          new THREE.MeshBasicMaterial({color:color,transparent:true,opacity:0.06,wireframe:true})
+        );
+        group.add(p);group.add(glow);
+        group.userData={rotSpeed:0.002};
+      break;
+    }
+    case 'particles': {
+      const c2=800;const pos=new Float32Array(c2*3);
+      for(let i=0;i<c2;i++){
+        const r=1.5*Math.random();
+        const t=Math.random()*Math.PI*2;
+        const p=Math.acos(2*Math.random()-1);
+        pos[i*3]=r*Math.sin(p)*Math.cos(t);
+        pos[i*3+1]=r*Math.sin(p)*Math.sin(t);
+        pos[i*3+2]=r*Math.cos(p);
+      }
+      const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+      const m=new THREE.PointsMaterial({size:0.04,color:color,transparent:true,opacity:0.6,blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true});
+      const p=new THREE.Points(g,m);
+      const outer=new THREE.Mesh(
+        new THREE.IcosahedronGeometry(1.8,0),
+        new THREE.MeshBasicMaterial({color:color2,wireframe:true,transparent:true,opacity:0.06})
+      );
+      group.add(p);group.add(outer);
+      group.userData={particles:p,outer,rotSpeed:0.003};
+      break;
+    }
+    case 'grid': {
+      const gridHelper=new THREE.LineSegments(
+        new THREE.EdgesGeometry(new THREE.BoxGeometry(3,0.02,3)),
+        new THREE.LineBasicMaterial({color:color,transparent:true,opacity:0.15})
+      );
+      group.add(gridHelper);
+      const lines=[];
+      for(let i=0;i<20;i++){
+        const lineGeo=new THREE.BufferGeometry();
+        const verts=new Float32Array([-1.5,0,-1.5+i*0.158, 1.5,0,-1.5+i*0.158]);
+        lineGeo.setAttribute('position',new THREE.BufferAttribute(verts,3));
+        const line=new THREE.Line(lineGeo,new THREE.LineBasicMaterial({color:color,transparent:true,opacity:0.04}));
+        group.add(line);lines.push(line);
+      }
+      const cube=new THREE.Mesh(
+        new THREE.BoxGeometry(0.5,0.5,0.5),
+        new THREE.MeshPhysicalMaterial({color:color,metalness:0.5,roughness:0.1,transparent:true,opacity:0.3})
+      );
+      cube.position.y=0.3;
+      group.add(cube);
+      group.userData={cube,rotSpeed:0.004};
+      break;
+    }
+    case 'tech': {
+      const shapes=[];
+      for(let i=0;i<4;i++){
+        const s=new THREE.Mesh(
+          new THREE.OctahedronGeometry(0.2+i*0.05,0),
+          new THREE.MeshPhysicalMaterial({color:new THREE.Color().setHSL(hue+i*0.05,0.6,0.5),metalness:0.4,roughness:0.2,transparent:true,opacity:0.5})
+        );
+        const angle=i/4*Math.PI*2;
+        s.position.set(Math.cos(angle)*1,Math.sin(angle)*0.05,Math.sin(angle)*0.8);
+        group.add(s);shapes.push(s);
+      }
+      const ring=new THREE.Mesh(
+        new THREE.TorusGeometry(1.2,0.01,16,48),
+        new THREE.MeshBasicMaterial({color:color,transparent:true,opacity:0.1})
+      );
+      ring.rotation.x=Math.PI/3;
+      group.add(ring);
+      group.userData={shapes,ring,rotSpeed:0.003};
+      break;
+    }
+  }
+  return group;
+}
+
+// Create objects for each project
+let currentSection = 0;
+let targetSection = 0;
+const allGroups = [];
+
+projects.forEach((p,i)=>{
+  const g = createProjectObjects(p.type, p.hsl);
+  g.visible = (i===0);
+  g.userData.sectionIndex = i;
+  scene.add(g);
+  allGroups.push(g);
 });
-const particles = new THREE.Points(pGeo, pMat);
-scene.add(particles);
 
-// ==== Ambient Glow Sphere ====
-const ambGeo = new THREE.SphereGeometry(2.0, 32, 32);
-const ambMat = new THREE.MeshBasicMaterial({
-  color: 0x818cf8,
-  transparent: true,
-  opacity: 0.03,
-  wireframe: true
+// Stars subtle rotation
+stars.rotation.x=0.3;
+
+// ============ SCROLL TRACKING ============
+let heroDone = false;
+window.addEventListener('scroll', ()=>{
+  const sections = document.querySelectorAll('.project-section');
+  const scrollY = window.scrollY;
+  const vh = window.innerHeight;
+  
+  let found = false;
+  sections.forEach((sec,i)=>{
+    const rect = sec.getBoundingClientRect();
+    if(rect.top < vh*0.5 && rect.bottom > vh*0.5){
+      if(targetSection !== i){
+        targetSection = i;
+        update3DScene(i);
+      }
+      found = true;
+    }
+  });
+  
+  if(!found && scrollY < vh*0.5){
+    if(targetSection !== -1){
+      targetSection = -1;
+      update3DScene(-1);
+    }
+  }
 });
-const ambSphere = new THREE.Mesh(ambGeo, ambMat);
-scene.add(ambSphere);
 
-// ==== Mouse ====
-const mouse = { x:0, y:0, targetX:0, targetY:0 };
-document.addEventListener('mousemove', e => {
-  mouse.targetX = (e.clientX / window.innerWidth - 0.5) * 2;
-  mouse.targetY = (e.clientY / window.innerHeight - 0.5) * 2;
+function update3DScene(idx){
+  allGroups.forEach((g,i)=>{
+    g.visible = (i===idx);
+  });
+  currentSection = idx;
+}
+
+// ============ MOUSE ============
+const mouse = {x:0,y:0,targetX:0,targetY:0};
+document.addEventListener('mousemove',e=>{
+  mouse.targetX=(e.clientX/window.innerWidth-0.5)*2;
+  mouse.targetY=(e.clientY/window.innerHeight-0.5)*2;
 });
 
-// ==== Scroll State ====
-let scrollProgress = 0;
-let targetHue = 0.68;
-let currentHue = 0.68;
-
-window.addEventListener('scroll', () => {
-  const totalH = document.body.scrollHeight - window.innerHeight;
-  scrollProgress = Math.min(1, Math.max(0, window.scrollY / totalH));
-  targetHue = 0.68 - scrollProgress * 0.35;
-});
-
-// ==== Animation ====
+// ============ ANIMATION ============
 function animate(){
   requestAnimationFrame(animate);
   
-  // Smooth mouse
-  mouse.x += (mouse.targetX - mouse.x) * 0.05;
-  mouse.y += (mouse.targetY - mouse.y) * 0.05;
+  mouse.x+=(mouse.targetX-mouse.x)*0.05;
+  mouse.y+=(mouse.targetY-mouse.y)*0.05;
   
-  // Smooth hue
-  currentHue += (targetHue - currentHue) * 0.03;
+  camera.position.x+=(mouse.x*0.4-camera.position.x)*0.03;
+  camera.position.y+=(-mouse.y*0.25-camera.position.y)*0.03;
+  camera.lookAt(0,0,0);
 
-  // Camera follows mouse + scroll
-  const camTargetZ = 8 - scrollProgress * 3;
-  camera.position.x += (mouse.x * 0.3 - camera.position.x) * 0.03;
-  camera.position.y += (-mouse.y * 0.2 - camera.position.y) * 0.03;
-  camera.position.z += (camTargetZ - camera.position.z) * 0.03;
-  camera.lookAt(0, 0, 0);
+  stars.rotation.y+=0.0002;
 
-  // Center rotation
-  center.rotation.x += 0.004;
-  center.rotation.y += 0.007;
-  centerWire.rotation.x = center.rotation.x;
-  centerWire.rotation.y = center.rotation.y;
-  
-  // Pulse center on scroll
-  const pulse = 1 + Math.sin(Date.now() * 0.001) * 0.02;
-  const scrollScale = 1 - scrollProgress * 0.3;
-  center.scale.set(pulse * scrollScale, pulse * scrollScale, pulse * scrollScale);
-  centerWire.scale.set(1.05 * pulse * scrollScale, 1.05 * pulse * scrollScale, 1.05 * pulse * scrollScale);
-  
-  // Color shift with scroll
-  const mainColor = new THREE.Color().setHSL(currentHue, 0.7, 0.55);
-  centerMat.color.copy(mainColor);
-  wireMat.color.copy(mainColor);
-  ambMat.color.copy(mainColor);
-  lineMat.color.copy(mainColor);
-
-  // Orbiters
-  const spread = 1 + scrollProgress * 0.6;
-  const orbiterPositions = [];
-  
-  orbiters.forEach((item, idx) => {
-    item.cfg.angle += 0.01 * item.cfg.speed;
-    const a = item.cfg.angle;
-    const r = item.cfg.radius * spread;
-    let x, y, z;
+  allGroups.forEach(g=>{
+    if(!g.visible) return;
+    g.rotation.x+=0.002;
+    g.rotation.y+=0.004;
     
-    switch(item.cfg.plane) {
-      case 'xz':
-        x = Math.cos(a) * r;
-        y = Math.sin(a * 0.5) * 0.5;
-        z = Math.sin(a) * r;
-        break;
-      case 'xy':
-        x = Math.cos(a) * r * 0.7;
-        y = Math.sin(a) * r * 0.7;
-        z = Math.sin(a * 0.7) * 1.5;
-        break;
-      case 'yz':
-        x = Math.sin(a * 0.7) * 1.2;
-        y = Math.cos(a) * r * 0.7;
-        z = Math.sin(a) * r * 0.7;
-        break;
+    if(g.userData.planets){
+      g.userData.planets.forEach(p=>{
+        p.userData.angle+=0.01*p.userData.speed;
+        p.position.x=Math.cos(p.userData.angle)*p.userData.radius;
+        p.position.z=Math.sin(p.userData.angle)*p.userData.radius;
+      });
     }
-    
-    item.mesh.position.set(x, y, z);
-    item.mesh.rotation.x += 0.01 * item.cfg.speed;
-    item.mesh.rotation.y += 0.02 * item.cfg.speed;
-    
-    item.glow.position.copy(item.mesh.position);
-    
-    const orbColor = new THREE.Color().setHSL(currentHue + 0.1 * idx, 0.7, 0.5);
-    item.mesh.material.color.copy(orbColor);
-    item.glow.material.color.copy(orbColor);
-
-    orbiterPositions.push(x, y, z);
+    if(g.userData.particles){
+      g.userData.particles.rotation.y+=0.003;
+      g.userData.particles.rotation.x+=0.001;
+    }
+    if(g.userData.ring){
+      g.userData.ring.rotation.z+=0.002;
+    }
+    if(g.userData.cube){
+      g.userData.cube.rotation.x+=0.01;
+      g.userData.cube.rotation.y+=0.015;
+    }
+    if(g.userData.shapes){
+      g.userData.shapes.forEach((s,i)=>{
+        s.rotation.x+=0.01;
+        s.rotation.y+=0.015;
+      });
+      g.userData.ring.rotation.z+=0.002;
+    }
+    if(g.userData.rotSpeed){
+      g.userData.rotSpeed += 0;
+    }
   });
 
-  // Update lines
-  const lp = line.geometry.attributes.position.array;
-  for(let i=0; i<orbiterPositions.length; i+=3){
-    lp[i] = 0; lp[i+1] = 0; lp[i+2] = 0;
-    lp[i+3] = orbiterPositions[i];
-    lp[i+4] = orbiterPositions[i+1];
-    lp[i+5] = orbiterPositions[i+2];
-  }
-  line.geometry.attributes.position.needsUpdate = true;
-
-  // Ambient sphere pulse
-  ambSphere.rotation.x += 0.001;
-  ambSphere.rotation.y += 0.002;
-  const ambPulse = 1 + Math.sin(Date.now() * 0.0008) * 0.05;
-  ambSphere.scale.set(ambPulse, ambPulse, ambPulse);
-
-  // Particles
-  particles.rotation.y += 0.0003;
-  particles.rotation.x += 0.0001;
-  const pOpacity = 0.3 + scrollProgress * 0.3;
-  pMat.opacity = pOpacity;
-
-  // Scene fog
-  scene.fog.density = 0.03 + scrollProgress * 0.02;
-
-  renderer.render(scene, camera);
+  renderer.render(scene,camera);
 }
 animate();
 
-// ==== Resize ====
-window.addEventListener('resize', () => {
-  const w=window.innerWidth, h=window.innerHeight;
-  renderer.setSize(w, h);
-  camera.aspect = w/h;
+// ============ RESIZE ============
+window.addEventListener('resize',()=>{
+  const w=window.innerWidth,h=window.innerHeight;
+  renderer.setSize(w,h);
+  camera.aspect=w/h;
   camera.updateProjectionMatrix();
 });
 </script>
