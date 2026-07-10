@@ -9,7 +9,7 @@
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{background:#08080f;color:#e8e8f0;font-family:'Outfit',sans-serif;overflow-x:hidden}
 canvas#bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:2;pointer-events:none}
-.bg-layer{position:fixed;top:0;left:0;width:100vw;height:100vh;object-fit:cover;z-index:0;pointer-events:none;opacity:0;filter:saturate(0.6) brightness(0.7)}
+.bg-layer{position:fixed;top:0;left:0;width:100vw;height:100vh;object-fit:cover;z-index:0;pointer-events:none;opacity:0;filter:saturate(0.6) brightness(0.7);transition:opacity 0.15s ease-out}
 #bg-overlay{position:fixed;inset:0;z-index:1;pointer-events:none;background:linear-gradient(135deg,rgba(8,8,15,0.55),rgba(8,8,15,0.25))}
 #content{position:relative;z-index:3}
 .section{height:100vh;display:flex;align-items:center;justify-content:center;position:relative}
@@ -53,10 +53,7 @@ canvas#bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:2;pointer-e
   <section class="section" id="hero">
     <div class="section-content">
       <div class="hero-label">Portfolio</div>
-      <div class="hero-title">
-        <span class="hero-creative">Creative</span>
-        <span class="hero-code"><span>C</span><span>o</span><span>d</span><span>e</span></span>
-      </div>
+      <div class="hero-title"><span class="hero-creative">Creative</span><span class="hero-code"><span>C</span><span>o</span><span>d</span><span>e</span></span></div>
       <div class="hero-sub">A Collection of Experiments</div>
     </div>
   </section>
@@ -79,7 +76,7 @@ const COLORS = [
 
 const BGS = [
   'https://images.unsplash.com/photo-1777047023742-1607aeb1a5bb?w=1920&q=80',
-  'https://images.unsplash.com/photo-1742199009963-c028d0c5a603?w=1920&q=80',
+  'app-bg.jpg',
   'https://images.unsplash.com/photo-1771095436222-e20a8737fcd1?w=1920&q=80',
   'https://images.unsplash.com/photo-1726387871055-35c2c98357f9?w=1920&q=80',
   'https://images.unsplash.com/photo-1766119871772-0bf74304a9e7?w=1920&q=80',
@@ -103,93 +100,69 @@ const projects = [
   {name:'Black Hole+',path:'black-hole.html',type:'vortex',tag:'Simulation',desc:'Gravitational field simulation with particle accretion disk',ci:9}
 ];
 
-// Build background image layers
-const bgContainer = document.getElementById('bg-images');
+// Build background images
+const bgC = document.getElementById('bg-images');
 const bgLayers = [];
 BGS.forEach((src,i)=>{
-  const img = document.createElement('img');
-  img.className = 'bg-layer';
-  img.src = src;
-  img.dataset.idx = i;
-  img.loading = 'lazy';
-  bgContainer.appendChild(img);
-  bgLayers.push(img);
+  const img=document.createElement('img');img.className='bg-layer';img.src=src;img.loading='lazy';
+  bgC.appendChild(img);bgLayers.push(img);
 });
 
-// Build project sections
+// Build sections
 const content = document.getElementById('content');
 projects.forEach((p,i)=>{
-  const sec = document.createElement('section');
-  sec.className = 'section';
-  sec.dataset.idx = i;
-  sec.innerHTML = `<div class="section-content"><div class="project-card"><div class="project-number">${String(i+1).padStart(2,'0')}</div><div class="project-name" style="color:hsl(${p.ci*36+180},50%,55%)">${p.name}</div><div class="project-tag">${p.tag}</div><div class="project-desc">${p.desc}</div><a class="project-link" href="${p.path}">View Project <span>→</span></a></div></div>`;
+  const sec=document.createElement('section');sec.className='section';
+  sec.innerHTML=`<div class="section-content"><div class="project-card"><div class="project-number">${String(i+1).padStart(2,'0')}</div><div class="project-name" style="color:hsl(${p.ci*36+180},50%,55%)">${p.name}</div><div class="project-tag">${p.tag}</div><div class="project-desc">${p.desc}</div><a class="project-link" href="${p.path}">View Project <span>→</span></a></div></div>`;
   content.appendChild(sec);
 });
-const endSec = document.createElement('section');
-endSec.className = 'section end-section';
-endSec.innerHTML = '<div class="section-content"><div class="end-title">Explore · Create · Repeat</div><div class="end-sub">All projects built with curiosity</div><a class="end-link" href="https://github.com/jun123440" target="_blank">GitHub ↗</a></div>';
+const endSec=document.createElement('section');endSec.className='section end-section';
+endSec.innerHTML='<div class="section-content"><div class="end-title">Explore · Create · Repeat</div><div class="end-sub">All projects built with curiosity</div><a class="end-link" href="https://github.com/jun123440" target="_blank">GitHub ↗</a></div>';
 content.appendChild(endSec);
 
-// ---- Three.js Setup ----
-const canvas = document.getElementById('bg');
-const renderer = new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+// ---- THREE.JS ----
+const canvas=document.getElementById('bg');
+const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
 renderer.setSize(innerWidth,innerHeight);
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.0;
 
-const scene = new THREE.Scene();
-const cam = new THREE.PerspectiveCamera(45,innerWidth/innerHeight,0.1,100);
-cam.position.z = 7;
+const scene=new THREE.Scene();
+const cam=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,0.1,100);
+cam.position.z=7;
 
-const ambient = new THREE.AmbientLight(0x4444aa,0.3);
+const ambient=new THREE.AmbientLight(0x4444aa,0.3);
 scene.add(ambient);
-const dl1 = new THREE.DirectionalLight(0xffffff,1.2);
-dl1.position.set(5,5,5);
-scene.add(dl1);
-const dl2 = new THREE.DirectionalLight(0x8888ff,0.5);
-dl2.position.set(-3,-3,4);
-scene.add(dl2);
-const rim = new THREE.DirectionalLight(0x4488ff,0.3);
-rim.position.set(0,-2,5);
-scene.add(rim);
+const dl1=new THREE.DirectionalLight(0xffffff,1.2);
+dl1.position.set(5,5,5);scene.add(dl1);
+const dl2=new THREE.DirectionalLight(0x8888ff,0.5);
+dl2.position.set(-3,-3,4);scene.add(dl2);
+const rim=new THREE.DirectionalLight(0x4488ff,0.3);
+rim.position.set(0,-2,5);scene.add(rim);
 
-// ---- 3D Factories ----
+function smoothstep(edge0,edge1,x){const t=Math.max(0,Math.min(1,(x-edge0)/(edge1-edge0)));return t*t*(3-2*t)}
+
 function createGlobe(g,c){
   const sp=new THREE.Mesh(new THREE.SphereGeometry(1.5,48,48),new THREE.MeshPhongMaterial({color:c.main,emissive:c.em,emissiveIntensity:0.5,shininess:60}));
   const wire=new THREE.Mesh(new THREE.SphereGeometry(1.52,24,24),new THREE.MeshBasicMaterial({color:c.main,wireframe:true,transparent:true,opacity:0.2}));
   const ring=new THREE.Mesh(new THREE.RingGeometry(2.0,2.8,64),new THREE.MeshBasicMaterial({color:c.main,side:THREE.DoubleSide,transparent:true,opacity:0.12}));
   ring.rotation.x=Math.PI*0.3;
-  const pc=300;const pos=new Float32Array(pc*3);
+  const pc=500;const pos=new Float32Array(pc*3);
   for(let i=0;i<pc;i++){const a=Math.random()*Math.PI*2;const r=2.5+Math.random()*1.5;const h=(Math.random()-0.5)*0.5;pos[i*3]=r*Math.cos(a);pos[i*3+1]=h;pos[i*3+2]=r*Math.sin(a)}
   const pGeo=new THREE.BufferGeometry();pGeo.setAttribute('position',new THREE.BufferAttribute(pos,3));
   const pMesh=new THREE.Points(pGeo,new THREE.PointsMaterial({color:c.main,size:0.04,transparent:true,opacity:0.55,blending:THREE.AdditiveBlending}));
   g.add(sp,wire,ring,pMesh);
-  function scatter(){const p=pMesh.geometry.attributes.position.array;for(let i=0;i<pc;i++){const a=Math.random()*Math.PI*2;const r=4+Math.random()*3;p[i*3]=r*Math.cos(a);p[i*3+1]=(Math.random()-0.5)*3;p[i*3+2]=r*Math.sin(a)}pMesh.geometry.attributes.position.needsUpdate=true}
   return {
-    reset(){g.scale.setScalar(1);const p=pMesh.geometry.attributes.position.array;for(let i=0;i<pc;i++){const a=Math.random()*Math.PI*2;const r=2.5+Math.random()*1.5;p[i*3]=r*Math.cos(a);p[i*3+1]=(Math.random()-0.5)*0.5;p[i*3+2]=r*Math.sin(a)}pMesh.geometry.attributes.position.needsUpdate=true},
-    scatter,
-    updateIdle(t){
-      sp.rotation.y=t*0.15;sp.rotation.x=Math.sin(t*0.1)*0.1;
-      wire.rotation.y=t*0.18;wire.rotation.x=Math.sin(t*0.1)*0.1;
+    objects:[sp,wire,ring,pMesh],
+    updateIdle(t,prog){
+      sp.rotation.y=t*0.15+prog*0.3;sp.rotation.x=Math.sin(t*0.1)*0.1;
+      wire.rotation.y=t*0.18+prog*0.3;wire.rotation.x=Math.sin(t*0.1)*0.1;
       ring.rotation.y=t*0.08;ring.rotation.x=Math.PI*0.3+Math.sin(t*0.05)*0.05;
       const p=pMesh.geometry.attributes.position.array;
       for(let i=0;i<pc;i++){const i3=i*3;const x=p[i3],z=p[i3+2];const r=Math.sqrt(x*x+z*z);const a=Math.atan2(z,x)+0.005;p[i3]=r*Math.cos(a);p[i3+2]=r*Math.sin(a)}
       pMesh.geometry.attributes.position.needsUpdate=true;
     },
-    updateOut(t,m){
-      g.scale.setScalar(1-m*0.6);
-      sp.rotation.y=t*0.3;wire.rotation.y=t*0.35;
-      const p=pMesh.geometry.attributes.position.array;
-      for(let i=0;i<pc;i++){const i3=i*3;const x=p[i3],z=p[i3+2];const r=Math.sqrt(x*x+z*z);const a=Math.atan2(z,x)+m*0.1+m*0.3*Math.sin(t+i);p[i3]=(r+0.1)*Math.cos(a);p[i3+2]=(r+0.1)*Math.sin(a);p[i3+1]+=Math.sin(t+i)*0.005*m}
-      pMesh.geometry.attributes.position.needsUpdate=true;
-    },
-    updateIn(t,m){
-      const s=m<0.5?m*2:1;g.scale.setScalar(s);
-      const p=pMesh.geometry.attributes.position.array;
-      for(let i=0;i<pc;i++){const i3=i*3;const x=p[i3],z=p[i3+2];const r=Math.sqrt(x*x+z*z);if(r>4.5){p[i3]*=0.98;p[i3+2]*=0.98}p[i3+1]*=0.99}
-      pMesh.geometry.attributes.position.needsUpdate=true;
-    }
+    updateTrans(t,m){g.scale.setScalar(1-m*0.3);sp.rotation.y=t*0.2;wire.rotation.y=t*0.22}
   };
 }
 
@@ -197,34 +170,19 @@ function createVortex(g,c){
   const bh=new THREE.Mesh(new THREE.SphereGeometry(0.5,32,32),new THREE.MeshPhongMaterial({color:0x000000,emissive:c.main,emissiveIntensity:0.6}));
   const glow=new THREE.Mesh(new THREE.RingGeometry(0.55,0.9,32),new THREE.MeshBasicMaterial({color:c.main,side:THREE.DoubleSide,transparent:true,opacity:0.15}));
   glow.rotation.x=-Math.PI*0.5;
-  const pc=600;const pos=new Float32Array(pc*3);
+  const pc=800;const pos=new Float32Array(pc*3);
   for(let i=0;i<pc;i++){const a=Math.random()*Math.PI*2;const r=0.7+Math.random()*3.5;pos[i*3]=r*Math.cos(a);pos[i*3+1]=(Math.random()-0.5)*0.6*(r/4);pos[i*3+2]=r*Math.sin(a)}
   const dGeo=new THREE.BufferGeometry();dGeo.setAttribute('position',new THREE.BufferAttribute(pos,3));
-  const dMat=new THREE.PointsMaterial({color:c.main,size:0.04,transparent:true,opacity:0.65,blending:THREE.AdditiveBlending});
-  const disk=new THREE.Points(dGeo,dMat);
+  const disk=new THREE.Points(dGeo,new THREE.PointsMaterial({color:c.main,size:0.04,transparent:true,opacity:0.65,blending:THREE.AdditiveBlending}));
   g.add(bh,glow,disk);
-  function scatter(){const p=disk.geometry.attributes.position.array;for(let i=0;i<pc;i++){const a=Math.random()*Math.PI*2;const r=4+Math.random()*3;p[i*3]=r*Math.cos(a);p[i*3+1]=(Math.random()-0.5)*3;p[i*3+2]=r*Math.sin(a)}disk.geometry.attributes.position.needsUpdate=true}
   return {
-    reset(){g.scale.setScalar(1);const p=disk.geometry.attributes.position.array;for(let i=0;i<pc;i++){const a=Math.random()*Math.PI*2;const r=0.7+Math.random()*3.5;p[i*3]=r*Math.cos(a);p[i*3+1]=(Math.random()-0.5)*0.6*(r/4);p[i*3+2]=r*Math.sin(a)}disk.geometry.attributes.position.needsUpdate=true},
-    scatter,
-    updateIdle(t){
+    updateIdle(t,prog){
       bh.rotation.x=Math.sin(t*0.1)*0.1;bh.rotation.z=Math.sin(t*0.08)*0.1;glow.rotation.z=t*0.2;
       const p=disk.geometry.attributes.position.array;
       for(let i=0;i<pc;i++){const i3=i*3;const x=p[i3],z=p[i3+2];const r=Math.sqrt(x*x+z*z);const a=Math.atan2(z,x)+0.008;p[i3]=r*Math.cos(a);p[i3+2]=r*Math.sin(a)}
       disk.geometry.attributes.position.needsUpdate=true;
     },
-    updateOut(t,m){
-      g.scale.setScalar(1-m*0.5);glow.rotation.z=t*0.5;
-      const p=disk.geometry.attributes.position.array;
-      for(let i=0;i<pc;i++){const i3=i*3;const x=p[i3],z=p[i3+2];const r=Math.sqrt(x*x+z*z);const a=Math.atan2(z,x)+m*0.2;p[i3]=(r+m*0.5)*Math.cos(a);p[i3+2]=(r+m*0.5)*Math.sin(a);p[i3+1]+=Math.sin(t+i)*0.01*m}
-      disk.geometry.attributes.position.needsUpdate=true;
-    },
-    updateIn(t,m){
-      g.scale.setScalar(m<0.3?m/0.3:1);
-      const p=disk.geometry.attributes.position.array;
-      for(let i=0;i<pc;i++){const i3=i*3;const x=p[i3],z=p[i3+2];const r=Math.sqrt(x*x+z*z);if(r>4.5){p[i3]*=0.98;p[i3+2]*=0.98}p[i3+1]*=0.99}
-      disk.geometry.attributes.position.needsUpdate=true;
-    }
+    updateTrans(t,m){g.scale.setScalar(1-m*0.3);glow.rotation.z=t*0.4}
   };
 }
 
@@ -240,110 +198,55 @@ function createOrbit(g,c){
     r.rotation.x=-Math.PI*0.5;g.add(m,r);planets.push({m,r,d:p.d,sp:p.sp,ang:a});
   });
   g.add(sun,sg);
-  function scatter(){planets.forEach(p=>{const a=Math.random()*Math.PI*2;const d=5+Math.random()*3;p.m.position.set(d*Math.cos(a),0,d*Math.sin(a))})}
   return {
-    reset(){g.scale.setScalar(1);planets.forEach(p=>{p.ang=Math.random()*Math.PI*2;p.m.position.set(p.d*Math.cos(p.ang),0,p.d*Math.sin(p.ang))})},
-    scatter,
-    updateIdle(t){
+    updateIdle(t,prog){
       sun.rotation.y=t*0.1;sg.scale.setScalar(1+Math.sin(t*0.5)*0.05);
       planets.forEach(p=>{p.ang+=0.004*p.sp;p.m.position.x=p.d*Math.cos(p.ang);p.m.position.z=p.d*Math.sin(p.ang);p.m.rotation.y=t*p.sp});
     },
-    updateOut(t,m){
-      g.scale.setScalar(1-m*0.4);sg.material.opacity=0.08*(1-m);
-      planets.forEach(p=>{p.ang+=0.01*p.sp;p.m.position.x=(p.d+m*2)*Math.cos(p.ang);p.m.position.z=(p.d+m*2)*Math.sin(p.ang);p.m.position.y=m*1.5*Math.sin(t+p.sp)});
-    },
-    updateIn(t,m){
-      g.scale.setScalar(m<0.4?m/0.4:1);
-      planets.forEach(p=>{p.ang+=0.003*p.sp*(1-m);const cd=p.d*(0.3+m*0.7);p.m.position.x=cd*Math.cos(p.ang);p.m.position.z=cd*Math.sin(p.ang);p.m.position.y=(1-m)*2*Math.sin(t+p.sp)});
-    }
+    updateTrans(t,m){g.scale.setScalar(1-m*0.2);sg.material.opacity=0.08*(1-m)}
   };
 }
 
 function createHeart(g,c){
-  const pc=500;const pos=new Float32Array(pc*3);const cols=new Float32Array(pc*3);
+  const pc=700;const pos=new Float32Array(pc*3);const cols=new Float32Array(pc*3);
   for(let i=0;i<pc;i++){const t=Math.random()*Math.PI*2;const r=Math.random()*1.5;const hx=16*Math.pow(Math.sin(t),3)*r/16;const hy=(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))*r/16;const sp=(Math.random()-0.5)*1.0;pos[i*3]=hx*0.7+sp*0.3;pos[i*3+1]=hy*0.7+sp*0.3;pos[i*3+2]=sp;const col=new THREE.Color(c.main).multiplyScalar(0.6+Math.random()*0.4);cols[i*3]=col.r;cols[i*3+1]=col.g;cols[i*3+2]=col.b}
   const hGeo=new THREE.BufferGeometry();hGeo.setAttribute('position',new THREE.BufferAttribute(pos,3));hGeo.setAttribute('color',new THREE.BufferAttribute(cols,3));
-  const hMat=new THREE.PointsMaterial({size:0.055,vertexColors:true,transparent:true,opacity:0.85,blending:THREE.AdditiveBlending});
-  const hMesh=new THREE.Points(hGeo,hMat);
+  const hMesh=new THREE.Points(hGeo,new THREE.PointsMaterial({size:0.055,vertexColors:true,transparent:true,opacity:0.85,blending:THREE.AdditiveBlending}));
   const gr=new THREE.Mesh(new THREE.RingGeometry(1.8,2.5,32),new THREE.MeshBasicMaterial({color:c.main,side:THREE.DoubleSide,transparent:true,opacity:0.06}));
   gr.rotation.x=-Math.PI*0.5;g.add(hMesh,gr);
-  function scatter(){const p=hMesh.geometry.attributes.position.array;for(let i=0;i<pc;i++){p[i*3]=(Math.random()-0.5)*6;p[i*3+1]=(Math.random()-0.5)*4;p[i*3+2]=(Math.random()-0.5)*4}hMesh.geometry.attributes.position.needsUpdate=true}
   return {
-    reset(){g.scale.setScalar(1);const p=hMesh.geometry.attributes.position.array;for(let i=0;i<pc;i++){const t=Math.random()*Math.PI*2;const r=Math.random()*1.5;const hx=16*Math.pow(Math.sin(t),3)*r/16;const hy=(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))*r/16;const sp=(Math.random()-0.5)*1.0;p[i*3]=hx*0.7+sp*0.3;p[i*3+1]=hy*0.7+sp*0.3;p[i*3+2]=sp}hMesh.geometry.attributes.position.needsUpdate=true},
-    scatter,
-    updateIdle(t){const p=1+Math.sin(t*1.5)*0.05;hMesh.scale.setScalar(p);hMesh.rotation.y=Math.sin(t*0.2)*0.1;gr.rotation.z=t*0.1},
-    updateOut(t,m){
-      g.scale.setScalar(1-m*0.5);
-      const p=hMesh.geometry.attributes.position.array;
-      for(let i=0;i<pc;i++){p[i*3]+=Math.sin(t+i)*0.01*m;p[i*3+1]+=Math.cos(t+i)*0.01*m;p[i*3+2]+=Math.sin(t*0.7+i)*0.008*m}
-      hMesh.geometry.attributes.position.needsUpdate=true;
-    },
-    updateIn(t,m){
-      g.scale.setScalar(m<0.3?m/0.3:1);
-      const p=hMesh.geometry.attributes.position.array;
-      for(let i=0;i<pc;i++){if(Math.abs(p[i*3])>2||Math.abs(p[i*3+1])>2||Math.abs(p[i*3+2])>1.5){p[i*3]*=0.97;p[i*3+1]*=0.97;p[i*3+2]*=0.97}}
-      hMesh.geometry.attributes.position.needsUpdate=true;
-    }
+    updateIdle(t,prog){const p=1+Math.sin(t*1.5)*0.05;hMesh.scale.setScalar(p);hMesh.rotation.y=Math.sin(t*0.2)*0.1;gr.rotation.z=t*0.1},
+    updateTrans(t,m){g.scale.setScalar(1-m*0.3)}
   };
 }
 
 function createFlower(g,c){
-  const pc=1000;const pos=new Float32Array(pc*3);const cols=new Float32Array(pc*3);
+  const pc=1200;const pos=new Float32Array(pc*3);const cols=new Float32Array(pc*3);
   for(let i=0;i<pc;i++){const t=Math.random()*Math.PI*2;const p=0.5+Math.random()*0.5;const k=7;const r=Math.cos(k*t)*p*1.8;const sp=(Math.random()-0.5)*0.4;pos[i*3]=r*Math.cos(t)+sp*0.2;pos[i*3+1]=(r*Math.sin(t)+sp*0.2)*0.7;pos[i*3+2]=sp*0.5;const col=new THREE.Color(c.main).multiplyScalar(0.5+Math.random()*0.5);cols[i*3]=col.r;cols[i*3+1]=col.g;cols[i*3+2]=col.b}
   const fGeo=new THREE.BufferGeometry();fGeo.setAttribute('position',new THREE.BufferAttribute(pos,3));fGeo.setAttribute('color',new THREE.BufferAttribute(cols,3));
-  const fMat=new THREE.PointsMaterial({size:0.045,vertexColors:true,transparent:true,opacity:0.85,blending:THREE.AdditiveBlending});
-  const fMesh=new THREE.Points(fGeo,fMat);
+  const fMesh=new THREE.Points(fGeo,new THREE.PointsMaterial({size:0.045,vertexColors:true,transparent:true,opacity:0.85,blending:THREE.AdditiveBlending}));
   g.add(fMesh);
-  function scatter(){const p=fMesh.geometry.attributes.position.array;for(let i=0;i<pc;i++){p[i*3]=(Math.random()-0.5)*5;p[i*3+1]=(Math.random()-0.5)*4;p[i*3+2]=(Math.random()-0.5)*3}fMesh.geometry.attributes.position.needsUpdate=true}
   return {
-    reset(){g.scale.setScalar(1);const p=fMesh.geometry.attributes.position.array;for(let i=0;i<pc;i++){const t=Math.random()*Math.PI*2;const pct=0.5+Math.random()*0.5;const r=Math.cos(7*t)*pct*1.8;const sp=(Math.random()-0.5)*0.4;p[i*3]=r*Math.cos(t)+sp*0.2;p[i*3+1]=(r*Math.sin(t)+sp*0.2)*0.7;p[i*3+2]=sp*0.5}fMesh.geometry.attributes.position.needsUpdate=true},
-    scatter,
-    updateIdle(t){fMesh.rotation.y=t*0.1;fMesh.rotation.x=Math.sin(t*0.05)*0.05},
-    updateOut(t,m){
-      g.scale.setScalar(1-m*0.5);fMesh.rotation.y=t*0.3;
-      const p=fMesh.geometry.attributes.position.array;
-      for(let i=0;i<pc;i++){const i3=i*3;const x=p[i3],y=p[i3+1];const dist=Math.sqrt(x*x+y*y);if(dist>0.01){const a=Math.atan2(y,x)+m*0.1;p[i3]=dist*Math.cos(a);p[i3+1]=dist*Math.sin(a)}p[i3+2]+=Math.sin(t+i)*0.005*m}
-      fMesh.geometry.attributes.position.needsUpdate=true;
-    },
-    updateIn(t,m){
-      g.scale.setScalar(m<0.3?m/0.3:1);
-      const p=fMesh.geometry.attributes.position.array;
-      for(let i=0;i<pc;i++){if(Math.abs(p[i*3])>3||Math.abs(p[i*3+1])>2.5){p[i*3]*=0.96;p[i*3+1]*=0.96;p[i*3+2]*=0.97}}
-      fMesh.geometry.attributes.position.needsUpdate=true;
-    }
+    updateIdle(t,prog){fMesh.rotation.y=t*0.1+prog*0.5;fMesh.rotation.x=Math.sin(t*0.05)*0.05},
+    updateTrans(t,m){g.scale.setScalar(1-m*0.3)}
   };
 }
 
 function createParticles(g,c){
-  const pc=700;const pos=new Float32Array(pc*3);const cols=new Float32Array(pc*3);const vels=[];
+  const pc=1000;const pos=new Float32Array(pc*3);const cols=new Float32Array(pc*3);const vels=[];
   for(let i=0;i<pc;i++){pos[i*3]=(Math.random()-0.5)*8;pos[i*3+1]=(Math.random()-0.5)*8;pos[i*3+2]=(Math.random()-0.5)*6;const col=new THREE.Color(c.main).multiplyScalar(0.4+Math.random()*0.6);cols[i*3]=col.r;cols[i*3+1]=col.g;cols[i*3+2]=col.b;vels.push({x:(Math.random()-0.5)*0.006,y:(Math.random()-0.5)*0.006,z:(Math.random()-0.5)*0.006})}
   const pGeo=new THREE.BufferGeometry();pGeo.setAttribute('position',new THREE.BufferAttribute(pos,3));pGeo.setAttribute('color',new THREE.BufferAttribute(cols,3));
-  const pMat=new THREE.PointsMaterial({size:0.07,vertexColors:true,transparent:true,opacity:0.65,blending:THREE.AdditiveBlending});
-  const pMesh=new THREE.Points(pGeo,pMat);
+  const pMesh=new THREE.Points(pGeo,new THREE.PointsMaterial({size:0.07,vertexColors:true,transparent:true,opacity:0.65,blending:THREE.AdditiveBlending}));
   const sh=new THREE.Mesh(new THREE.IcosahedronGeometry(2.5,1),new THREE.MeshBasicMaterial({color:c.main,wireframe:true,transparent:true,opacity:0.08}));
   g.add(pMesh,sh);
-  function scatter(){const p=pMesh.geometry.attributes.position.array;for(let i=0;i<pc;i++){p[i*3]=(Math.random()-0.5)*10;p[i*3+1]=(Math.random()-0.5)*8;p[i*3+2]=(Math.random()-0.5)*7}pMesh.geometry.attributes.position.needsUpdate=true}
   return {
-    reset(){g.scale.setScalar(1);const p=pMesh.geometry.attributes.position.array;for(let i=0;i<pc;i++){p[i*3]=(Math.random()-0.5)*8;p[i*3+1]=(Math.random()-0.5)*8;p[i*3+2]=(Math.random()-0.5)*6}pMesh.geometry.attributes.position.needsUpdate=true},
-    scatter,
-    updateIdle(t){
+    updateIdle(t,prog){
       sh.rotation.x=t*0.05;sh.rotation.y=t*0.08;
       const p=pMesh.geometry.attributes.position.array;
       for(let i=0;i<pc;i++){p[i*3]+=vels[i].x;p[i*3+1]+=vels[i].y;p[i*3+2]+=vels[i].z;if(Math.abs(p[i*3])>5)vels[i].x*=-1;if(Math.abs(p[i*3+1])>5)vels[i].y*=-1;if(Math.abs(p[i*3+2])>4)vels[i].z*=-1}
       pMesh.geometry.attributes.position.needsUpdate=true;
     },
-    updateOut(t,m){
-      g.scale.setScalar(1-m*0.5);sh.rotation.x=t*0.1;sh.rotation.y=t*0.15;
-      const p=pMesh.geometry.attributes.position.array;
-      for(let i=0;i<pc;i++){p[i*3]+=vels[i].x*2*m;p[i*3+1]+=vels[i].y*2*m;p[i*3+2]+=vels[i].z*2*m}
-      pMesh.geometry.attributes.position.needsUpdate=true;
-    },
-    updateIn(t,m){
-      g.scale.setScalar(m<0.3?m/0.3:1);
-      const p=pMesh.geometry.attributes.position.array;
-      for(let i=0;i<pc;i++){if(Math.abs(p[i*3])>5||Math.abs(p[i*3+1])>5){p[i*3]*=0.97;p[i*3+1]*=0.97;p[i*3+2]*=0.97}}
-      pMesh.geometry.attributes.position.needsUpdate=true;
-    }
+    updateTrans(t,m){g.scale.setScalar(1-m*0.3);sh.rotation.x=t*0.1;sh.rotation.y=t*0.12}
   };
 }
 
@@ -354,18 +257,15 @@ function createEva(g,c){
   r2.rotation.x=-Math.PI*0.5;
   const core=new THREE.Mesh(new THREE.OctahedronGeometry(0.6,0),new THREE.MeshPhongMaterial({color:c.main,emissive:c.em,emissiveIntensity:0.6,shininess:60,transparent:true,opacity:0.85}));
   const ig=new THREE.Mesh(new THREE.OctahedronGeometry(0.8,0),new THREE.MeshBasicMaterial({color:c.main,transparent:true,opacity:0.05,wireframe:true}));
-  const shards=[];const sc=10;
+  const shards=[];const sc=12;
   for(let i=0;i<sc;i++){const sz=0.06+Math.random()*0.12;const sd=new THREE.Mesh(new THREE.TetrahedronGeometry(sz,0),new THREE.MeshPhongMaterial({color:c.main,emissive:c.em,emissiveIntensity:0.3,transparent:true,opacity:0.55}));const a=(i/sc)*Math.PI*2;const d=1.2+Math.random()*0.8;sd.position.set(d*Math.cos(a),(Math.random()-0.5)*0.8,d*Math.sin(a));sd.userData={a,d,sp:0.2+Math.random()*0.3,ph:Math.random()*Math.PI*2};g.add(sd);shards.push(sd)}
-  const ec=250;const ePos=new Float32Array(ec*3);
+  const ec=400;const ePos=new Float32Array(ec*3);
   for(let i=0;i<ec;i++){const a=Math.random()*Math.PI*2;const r=0.5+Math.random()*3.0;ePos[i*3]=r*Math.cos(a);ePos[i*3+1]=(Math.random()-0.5)*2.5;ePos[i*3+2]=r*Math.sin(a)}
   const eGeo=new THREE.BufferGeometry();eGeo.setAttribute('position',new THREE.BufferAttribute(ePos,3));
   const eMesh=new THREE.Points(eGeo,new THREE.PointsMaterial({color:c.main,size:0.025,transparent:true,opacity:0.45,blending:THREE.AdditiveBlending}));
   g.add(ring,r2,core,ig,eMesh,...shards);
-  function scatter(){shards.forEach(sd=>{const a=Math.random()*Math.PI*2;const d=3+Math.random()*2;sd.position.set(d*Math.cos(a),(Math.random()-0.5)*2,d*Math.sin(a));sd.scale.setScalar(0.3)})}
   return {
-    reset(){g.scale.setScalar(1);shards.forEach(sd=>{sd.scale.setScalar(1);const a=sd.userData.a;sd.position.set(sd.userData.d*Math.cos(a),Math.sin(sd.userData.ph)*0.3,sd.userData.d*Math.sin(a))})},
-    scatter,
-    updateIdle(t){
+    updateIdle(t,prog){
       core.rotation.x=t*0.3;core.rotation.y=t*0.5;ig.rotation.x=-t*0.2;ig.rotation.y=t*0.4;
       ring.rotation.z=t*0.08;r2.rotation.z=-t*0.06;
       shards.forEach(sd=>{const a=sd.userData.a+t*sd.userData.sp;sd.position.x=sd.userData.d*Math.cos(a);sd.position.z=sd.userData.d*Math.sin(a);sd.position.y=Math.sin(t*0.7+sd.userData.ph)*0.3;sd.rotation.x=t+sd.userData.ph;sd.rotation.y=t*0.7+sd.userData.ph});
@@ -373,13 +273,9 @@ function createEva(g,c){
       for(let i=0;i<ec;i++){const i3=i*3;const x=ep[i3],z=ep[i3+2];const r=Math.sqrt(x*x+z*z);const a=Math.atan2(z,x)+0.004;ep[i3]=r*Math.cos(a);ep[i3+1]+=Math.sin(t+i*0.01)*0.003;ep[i3+2]=r*Math.sin(a);if(Math.abs(ep[i3+1])>1.5)ep[i3+1]*=-0.8}
       eMesh.geometry.attributes.position.needsUpdate=true;
     },
-    updateOut(t,m){
-      g.scale.setScalar(1-m*0.5);core.rotation.x=t*0.5;core.rotation.y=t*0.8;
-      shards.forEach(sd=>{const a=sd.userData.a+t*sd.userData.sp+m*0.5;const d=sd.userData.d+m*1.5;sd.position.x=d*Math.cos(a);sd.position.z=d*Math.sin(a);sd.position.y=m*1.5*Math.sin(t*0.7+sd.userData.ph);sd.rotation.x=t*2+sd.userData.ph;sd.scale.setScalar(1-m*0.5)});
-    },
-    updateIn(t,m){
-      g.scale.setScalar(m<0.3?m/0.3:1);
-      shards.forEach(sd=>{sd.position.x*=(0.95+0.05*m);sd.position.z*=(0.95+0.05*m);sd.position.y*=0.97;sd.scale.setScalar(m<0.5?m*2:1)});
+    updateTrans(t,m){
+      g.scale.setScalar(1-m*0.3);core.rotation.x=t*0.5;core.rotation.y=t*0.8;
+      shards.forEach(sd=>{sd.position.x*=(1+m*0.05);sd.position.z*=(1+m*0.05)});
     }
   };
 }
@@ -393,161 +289,138 @@ function createTech(g,c){
   });
   const cr=new THREE.Mesh(new THREE.TorusGeometry(2.3,0.015,12,48),new THREE.MeshBasicMaterial({color:c.main,transparent:true,opacity:0.1}));
   cr.rotation.x=-Math.PI*0.5;g.add(cr);
-  function scatter(){shapes.forEach(m=>{const a=Math.random()*Math.PI*2;const d=3+Math.random()*2;m.position.set(d*Math.cos(a),(Math.random()-0.5)*2,d*Math.sin(a));m.scale.setScalar(0.3)})}
   return {
-    reset(){g.scale.setScalar(1);shapes.forEach(m=>{m.scale.setScalar(1);const a=m.userData.a;m.position.set(m.userData.d*Math.cos(a),0,m.userData.d*Math.sin(a))})},
-    scatter,
-    updateIdle(t){
+    updateIdle(t,prog){
       cr.rotation.z=t*0.1;
       shapes.forEach(m=>{const a=m.userData.a+t*m.userData.sp;const d=m.userData.d+Math.sin(t*0.5+m.userData.ph)*0.15;m.position.x=d*Math.cos(a);m.position.z=d*Math.sin(a);m.position.y=Math.sin(t*0.8+m.userData.ph)*0.3;m.rotation.x=t*0.5+m.userData.ph;m.rotation.y=t*0.7+m.userData.ph});
     },
-    updateOut(t,m){
-      g.scale.setScalar(1-m*0.5);
-      shapes.forEach(m=>{const a=m.userData.a+t*m.userData.sp+m*0.3;const d=m.userData.d+m*2;m.position.x=d*Math.cos(a);m.position.z=d*Math.sin(a);m.position.y=m*2*Math.sin(t*0.8+m.userData.ph);m.rotation.x=t+m.userData.ph;m.rotation.y=t*1.5+m.userData.ph});
-    },
-    updateIn(t,m){
-      g.scale.setScalar(m<0.4?m/0.4:1);
-      shapes.forEach(m=>{const a=m.userData.a+t*m.userData.sp*(1-m);const cd=m.userData.d*(0.3+m*0.7);m.position.x=cd*Math.cos(a);m.position.z=cd*Math.sin(a);m.position.y=(1-m)*Math.sin(t*0.8+m.userData.ph);m.rotation.x=t*0.3*(1-m);m.rotation.y=t*0.5*(1-m)});
+    updateTrans(t,m){
+      g.scale.setScalar(1-m*0.3);
+      shapes.forEach(m=>{m.position.x*=(1+m*0.05);m.position.z*=(1+m*0.05)});
     }
   };
 }
 
-const factories = {globe:createGlobe,vortex:createVortex,orbit:createOrbit,heart:createHeart,flower:createFlower,particles:createParticles,eva:createEva,tech:createTech};
+const map={globe:createGlobe,vortex:createVortex,orbit:createOrbit,heart:createHeart,flower:createFlower,particles:createParticles,eva:createEva,tech:createTech};
 
-// ---- Build 3D Groups ----
-const groups = [];
+const groups=[];
 projects.forEach((p,i)=>{
   const g=new THREE.Group();scene.add(g);g.visible=true;
-  const ctrl=factories[p.type](g,COLORS[p.ci]);
-  groups.push({group:g,ctrl,opacity:0,targetOpacity:0,_resetForIn:false});
+  const ctrl=map[p.type](g,COLORS[p.ci]);
+  groups.push({group:g,ctrl,opacity:0,targetOpacity:0});
 });
 
-// Hero group
-const heroGroup=new THREE.Group();scene.add(heroGroup);
-const hc=200;const hp=new Float32Array(hc*3);
+// Hero
+const hg=new THREE.Group();scene.add(hg);
+const hc=300;const hp=new Float32Array(hc*3);
 for(let i=0;i<hc;i++){hp[i*3]=(Math.random()-0.5)*12;hp[i*3+1]=(Math.random()-0.5)*8;hp[i*3+2]=(Math.random()-0.5)*6}
 const hGeo=new THREE.BufferGeometry();hGeo.setAttribute('position',new THREE.BufferAttribute(hp,3));
-const hPMesh=new THREE.Points(hGeo,new THREE.PointsMaterial({color:0x4499cc,size:0.03,transparent:true,opacity:0.25}));
-heroGroup.add(hPMesh);
-let heroOp=1;
+const hPM=new THREE.Points(hGeo,new THREE.PointsMaterial({color:0x4499cc,size:0.03,transparent:true,opacity:0.25}));
+hg.add(hPM);let hOp=1;
 
-// End group
-const endGroup=new THREE.Group();scene.add(endGroup);
-const ec=120;const ep2=new Float32Array(ec*3);
-for(let i=0;i<ec;i++){ep2[i*3]=(Math.random()-0.5)*10;ep2[i*3+1]=(Math.random()-0.5)*6;ep2[i*3+2]=(Math.random()-0.5)*5}
+// End
+const eg=new THREE.Group();scene.add(eg);
+const ec2=200;const ep2=new Float32Array(ec2*3);
+for(let i=0;i<ec2;i++){ep2[i*3]=(Math.random()-0.5)*10;ep2[i*3+1]=(Math.random()-0.5)*6;ep2[i*3+2]=(Math.random()-0.5)*5}
 const eGeo=new THREE.BufferGeometry();eGeo.setAttribute('position',new THREE.BufferAttribute(ep2,3));
-const ePMesh=new THREE.Points(eGeo,new THREE.PointsMaterial({color:0x6688cc,size:0.02,transparent:true,opacity:0.15}));
-endGroup.add(ePMesh);
-let endOp=0;
-
-// ---- Scroll / Opacity Controller ----
-function setGroupOpacity(grp,op){
-  if(op<0.01&&grp.group.visible){grp.group.visible=false;return}
-  if(op>0.01&&!grp.group.visible)grp.group.visible=true;
-  grp.group.traverse(child=>{
-    if(child.isMesh||child.isPoints){
-      child.material.transparent=true;
-      child.material.opacity=Math.max(0,Math.min(1,op));
-      child.material.needsUpdate=true;
-    }
-  });
-}
-
-function applyState(){
-  const scrollY=window.scrollY;
-  const vh=window.innerHeight;
-  const rawPos=scrollY/vh;
-
-  // Image layers opacity
-  bgLayers.forEach((img,i)=>{img.style.opacity=0});
-  if(rawPos<1){
-    heroOp=Math.max(0,1-rawPos*2);
-  }else if(rawPos>=1&&rawPos<1+projects.length){
-    heroOp=0;endOp=0;
-    const pPos=rawPos-1;const idx=Math.floor(pPos);const prog=pPos-idx;
-    if(prog<0.5){
-      if(bgLayers[idx])bgLayers[idx].style.opacity=0.9;
-    }else{
-      const t=(prog-0.5)*2;
-      if(bgLayers[idx])bgLayers[idx].style.opacity=0.9*(1-t);
-      if(bgLayers[idx+1])bgLayers[idx+1].style.opacity=0.9*t;
-    }
-  }else{
-    heroOp=0;endOp=Math.min(1,(rawPos-1-projects.length)*2);
-    bgLayers[projects.length-1].style.opacity=Math.max(0,0.9*(1-(rawPos-1-projects.length)*2));
-  }
-
-  // 3D groups opacity
-  groups.forEach((grp,i)=>{grp.targetOpacity=0});
-  if(rawPos<1){
-    // All hidden
-  }else if(rawPos>=1&&rawPos<1+projects.length){
-    const pPos=rawPos-1;const idx=Math.floor(pPos);const prog=pPos-idx;
-    if(prog<0.5){
-      if(groups[idx])groups[idx].targetOpacity=1;
-    }else{
-      const t=(prog-0.5)*2;
-      if(groups[idx])groups[idx].targetOpacity=1-t;
-      if(groups[idx+1])groups[idx+1].targetOpacity=t;
-    }
-  }else{
-    if(groups[projects.length-1])groups[projects.length-1].targetOpacity=Math.max(0,1-(rawPos-1-projects.length)*2);
-  }
-}
+const ePM=new THREE.Points(eGeo,new THREE.PointsMaterial({color:0x6688cc,size:0.03,transparent:true,opacity:0.2}));
+eg.add(ePM);let eOp=0;
 
 let mx=0,my=0;
 document.addEventListener('mousemove',e=>{mx=(e.clientX/innerWidth)*2-1;my=(e.clientY/innerHeight)*2-1});
 
 window.addEventListener('resize',()=>{
   renderer.setSize(innerWidth,innerHeight);
-  cam.aspect=innerWidth/innerHeight;
-  cam.updateProjectionMatrix();
+  cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();
 });
 
-// ---- Main Loop ----
+function setOp(grp,op){
+  if(op<0.01&&grp.group.visible){grp.group.visible=false;return}
+  if(op>0.01&&!grp.group.visible)grp.group.visible=true;
+  grp.group.traverse(c=>{
+    if(c.isMesh||c.isPoints){c.material.transparent=true;c.material.opacity=Math.max(0,Math.min(1,op));c.material.needsUpdate=true}
+  });
+}
+
+function calcOp(rawPos,i){
+  // rawPos = scrollY / vh
+  // Section 0 = hero, sections 1 to N = projects
+  if(rawPos<1)return 0;
+  const pp=rawPos-1;
+  if(pp<i||pp>=i+1.5)return 0;
+  const prog=pp-i;
+  if(prog<0.15)return 1;
+  if(prog<0.75)return 1-smoothstep(0.15,0.75,prog);
+  return 0;
+}
+function calcNextOp(rawPos,i){
+  if(rawPos<1)return 0;
+  const pp=rawPos-1;
+  if(i===0)return 0;
+  const prevEnd=i-1+0.15;
+  const prevTransEnd=i-1+0.75;
+  if(pp<prevEnd||pp>i+0.5)return 0;
+  const prog=pp-(i-1);
+  if(prog<0.15)return 0;
+  if(prog<0.75)return smoothstep(0.15,0.75,prog);
+  return 1;
+}
+
 const clock=new THREE.Clock();
 function animate(){
   requestAnimationFrame(animate);
   const t=clock.getElapsedTime();
-  applyState();
+  const sy=window.scrollY,vh=window.innerHeight,rp=sy/vh;
 
+  // Background images
+  bgLayers.forEach((img,i)=>{img.style.opacity=0});
+  if(rp>=1&&rp<1+projects.length){
+    const pp=rp-1;const idx=Math.floor(pp);const prog=pp-idx;
+    const curOp=calcOp(rp,idx);
+    const nextOp=calcNextOp(rp,idx+1);
+    if(bgLayers[idx])bgLayers[idx].style.opacity=Math.min(0.9,curOp);
+    if(bgLayers[idx+1])bgLayers[idx+1].style.opacity=Math.min(0.9,nextOp);
+  }else if(rp>=1+projects.length&&bgLayers[projects.length-1]){
+    bgLayers[projects.length-1].style.opacity=Math.max(0,0.9*(1-(rp-1-projects.length)*2));
+  }
+
+  // 3D groups
   groups.forEach((grp,i)=>{
-    grp.opacity+=(grp.targetOpacity-grp.opacity)*0.08;
-    setGroupOpacity(grp,grp.opacity);
+    if(rp<1){grp.targetOpacity=0}
+    else if(rp>=1&&rp<1+projects.length){
+      grp.targetOpacity=Math.max(calcOp(rp,i),calcNextOp(rp,i));
+    }else{
+      grp.targetOpacity=i===projects.length-1?Math.max(0,1-(rp-1-projects.length)*2):0;
+    }
+    grp.opacity+=(grp.targetOpacity-grp.opacity)*0.1;
+    setOp(grp,grp.opacity);
     if(grp.opacity<0.01)return;
 
-    const isOut=grp.targetOpacity<0.5&&grp.opacity>0.1;
-    const isIn=grp.targetOpacity>0.1&&grp.opacity>grp.targetOpacity-0.05&&grp.opacity<grp.targetOpacity+0.05;
-    const isStable=grp.targetOpacity>0.8&&grp.opacity>0.8;
-
-    if(isStable){
-      grp.ctrl.updateIdle(t);
-      grp._resetForIn=false;
-    }else if(isOut){
-      const morph=Math.min(1,Math.max(0,1-grp.opacity));
-      grp.ctrl.updateOut(t,morph);
-    }else if(grp.targetOpacity>0.1&&grp.opacity>0.01){
-      if(!grp._resetForIn){grp.ctrl.scatter();grp._resetForIn=true}
-      const morph=Math.min(1,Math.max(0,grp.opacity/0.8));
-      grp.ctrl.updateIn(t,morph);
-    }else if(grp.opacity>0.01){
-      grp.ctrl.updateIdle(t);
-    }
+    const prog=rp>=1?Math.min(1,Math.max(0,rp-1-i)):0;
+    const isTrans=grp.targetOpacity<0.95&&grp.targetOpacity>0.05;
+    if(isTrans)grp.ctrl.updateTrans(t,1-grp.targetOpacity);
+    else grp.ctrl.updateIdle(t,prog);
   });
 
   // Hero
-  heroOp=Math.max(0,heroOp-0.02);
-  heroGroup.visible=heroOp>0.01;
-  if(heroGroup.visible){
-    hPMesh.material.opacity=heroOp*0.25;
-    const p=hPMesh.geometry.attributes.position.array;
+  hOp=Math.max(0,hOp-0.02);
+  hg.visible=hOp>0.01;
+  if(hg.visible){
+    hPM.material.opacity=hOp*0.25;
+    const p=hPM.geometry.attributes.position.array;
     for(let i=0;i<hc;i++){p[i*3]+=Math.sin(t+i)*0.001;p[i*3+1]+=Math.cos(t*0.7+i*0.1)*0.001}
-    hPMesh.geometry.attributes.position.needsUpdate=true;
+    hPM.geometry.attributes.position.needsUpdate=true;
   }
 
-  // End
-  endGroup.visible=endOp>0.01;
-  if(endGroup.visible){ePMesh.material.opacity=endOp*0.15;endGroup.rotation.y=mx*0.15}
+  // End - just gentle float, no rotation
+  eOp=rp>=1+projects.length?Math.min(1,(rp-1-projects.length)*2):0;
+  eg.visible=eOp>0.01;
+  if(eg.visible){
+    ePM.material.opacity=eOp*0.2;
+    const p=ePM.geometry.attributes.position.array;
+    for(let i=0;i<ec2;i++){p[i*3]+=Math.sin(t*0.5+i)*0.002;p[i*3+1]+=Math.cos(t*0.3+i*0.1)*0.002}
+    ePM.geometry.attributes.position.needsUpdate=true;
+  }
 
   // Camera
   cam.position.x+=(Math.sin(t*0.03)*0.3+mx*0.2-cam.position.x)*0.02;
@@ -557,10 +430,8 @@ function animate(){
   renderer.render(scene,cam);
 }
 
-// Init
 setTimeout(()=>{
-  applyState();
-  groups.forEach(grp=>{grp.opacity=grp.targetOpacity;setGroupOpacity(grp,grp.opacity)});
+  groups.forEach(grp=>{grp.opacity=grp.targetOpacity;setOp(grp,grp.opacity)});
 },50);
 animate();
 </script>
