@@ -21,7 +21,10 @@ section{scroll-snap-align:start;width:100vw;height:100vh;position:relative;z-ind
 .hero-title .line{display:block}
 .hero-title .line1{background:linear-gradient(135deg,#006699,#44aacc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .hero-title .line2{color:rgba(232,232,240,0.1);-webkit-text-fill-color:rgba(232,232,240,0.1);background:none}
-.hero-sub{font-size:clamp(0.8rem,1.2vw,1rem);font-weight:300;color:rgba(232,232,240,0.35);margin-top:2rem;letter-spacing:0.15em;position:relative;z-index:2}
+.hero-char{display:inline-block;opacity:0;animation:loveReveal 0.8s ease both}
+@keyframes loveReveal{0%{opacity:0;transform:translateY(40px) rotate(-6deg) scale(0.8)}100%{opacity:1;transform:translateY(0) rotate(0) scale(1)}}
+.hero-sub{font-size:clamp(0.8rem,1.2vw,1rem);font-weight:300;color:rgba(232,232,240,0.35);margin-top:2rem;letter-spacing:0.15em;position:relative;z-index:2;opacity:0;animation:fadeUp 0.8s ease 1.4s both}
+@keyframes fadeUp{0%{opacity:0;transform:translateY(20px)}100%{opacity:1;transform:translateY(0)}}
 .scroll-indicator{position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:0.5rem;z-index:2}
 .scroll-line{width:1px;height:40px;background:linear-gradient(to bottom,rgba(232,232,240,0.4),transparent);animation:scrollPulse 2.5s ease infinite}
 .scroll-text{font-size:0.6rem;letter-spacing:0.3em;text-transform:uppercase;color:rgba(232,232,240,0.2)}
@@ -61,8 +64,8 @@ transition:all 0.5s cubic-bezier(0.23,1,0.32,1);transform-style:preserve-3d;pers
 <section id="hero">
   <div class="hero-label">Portfolio</div>
   <div class="hero-title">
-    <span class="line line1">love</span>
-    <span class="line line2">collection</span>
+    <span class="line line1"><span class="hero-char" style="animation-delay:0s">l</span><span class="hero-char" style="animation-delay:0.08s">o</span><span class="hero-char" style="animation-delay:0.16s">v</span><span class="hero-char" style="animation-delay:0.24s">e</span></span>
+    <span class="line line2"><span class="hero-char" style="animation-delay:0.4s">c</span><span class="hero-char" style="animation-delay:0.48s">o</span><span class="hero-char" style="animation-delay:0.56s">l</span><span class="hero-char" style="animation-delay:0.64s">l</span><span class="hero-char" style="animation-delay:0.72s">e</span><span class="hero-char" style="animation-delay:0.8s">c</span><span class="hero-char" style="animation-delay:0.88s">t</span><span class="hero-char" style="animation-delay:0.96s">i</span><span class="hero-char" style="animation-delay:1.04s">o</span><span class="hero-char" style="animation-delay:1.12s">n</span></span>
   </div>
   <div class="hero-sub">A Collection of Experiments</div>
   <div class="scroll-indicator">
