@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>jun123440 路 鍒涙剰绌洪棿</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0b0b0f;
+  --surface:#13131a;
+  --border:#1e1e2a;
+  --text:#e8e8f0;
+  --muted:#6b6b7a;
+  --accent:#7c5cfc;
+  --accent2:#f472b6;
+  --accent3:#38bdf8;
+  --radius:16px;
+  --shadow:0 8px 32px rgba(0,0,0,.4);
+}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'DM Mono',monospace;
+  line-height:1.5;
+  overflow-x:hidden;
+}
+canvas#bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.wrapper{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:60px 24px 120px}
+header{padding:40px 0 80px;text-align:center}
+.badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--surface);border:1px solid var(--border);
+  padding:8px 18px;border-radius:100px;font-size:12px;color:var(--muted);
+  margin-bottom:32px;
+}
+.badge span{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+header h1{
+  font-family:'Syne',sans-serif;
+  font-size:clamp(2.4rem,6vw,4.8rem);
+  font-weight:800;
+  line-height:1.1;
+  letter-spacing:-.03em;
+  margin-bottom:20px;
+}
+header h1 .gradient{
+  background:linear-gradient(135deg,var(--accent),var(--accent2),var(--accent3));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+header p{
+  font-size:clamp(1rem,2vw,1.15rem);
+  color:var(--muted);
+  max-width:520px;
+  margin:0 auto 40px;
+}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:16px;
+}
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:28px 24px;
+  text-decoration:none;
+  color:var(--text);
+  transition:all .35s cubic-bezier(.4,0,.2,1);
+  position:relative;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.card::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  border-radius:var(--radius);
+  background:linear-gradient(135deg,transparent 60%,rgba(124,92,252,.08));
+  opacity:0;
+  transition:opacity .35s;
+}
+.card:hover{
+  border-color:var(--accent);
+  transform:translateY(-4px);
+  box-shadow:var(--shadow);
+}
+.card:hover::before{opacity:1}
+.card-icon{
+  width:42px;height:42px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;margin-bottom:4px;
+}
+.card h3{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700}
+.card p{font-size:.85rem;color:var(--muted);line-height:1.5;flex:1}
+.card .tag{
+  display:inline-block;
+  font-size:11px;padding:3px 10px;border-radius:100px;
+  background:rgba(124,92,252,.15);color:var(--accent);
+  align-self:flex-start;
+}
+.card .arrow{
+  position:absolute;top:24px;right:24px;
+  font-size:18px;color:var(--muted);
+  transition:transform .3s,color .3s;
+}
+.card:hover .arrow{transform:translate(4px,-4px);color:var(--accent)}
+.hero-3d{position:relative;height:200px;margin:-20px 0 20px;overflow:hidden;border-radius:var(--radius)}
+footer{text-align:center;padding:60px 0 0;color:var(--muted);font-size:13px}
+footer a{color:var(--accent);text-decoration:none}
+@media(max-width:640px){
+  .wrapper{padding:32px 16px 80px}
+  header{padding:20px 0 40px}
+  .grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div class="wrapper">
+  <header>
+    <div class="badge"><span></span> jun123440.dpdns.org</div>
+    <h1><span class="gradient">鍒涙剰瀹為獙鍦?/span></h1>
+    <p>浜や簰鑹烘湳 路 瑙嗚鎺㈢储 路 鍓嶇瀹為獙<br>鐢ㄤ唬鐮佸垱閫犳湁娓╁害鐨勪綋楠?/p>
+  </header>
+  <div class="grid" id="projectGrid"></div>
+  <footer>
+    <p><a href="https://jun123440.github.io" target="_blank">jun123440</a> 路 淇濇寔鍒涢€?/p>
+  </footer>
+</div>
+<script>
+const projects = [
+  {name:'3d-earth',icon:'馃實',color:'#22c55e',label:'3D鍦扮悆','desc':'鍙氦浜掔殑3D鍦扮悆妯″瀷锛屾嫋鎷芥棆杞缉鏀?,'tag':'Three.js'},
+  {name:'app',icon:'馃摫',color:'#7c5cfc',label:'棰滃€兼祴璇曞櫒','desc':'AI棰滃€艰瘎鍒嗗伐鍏凤紝涓婁紶鐓х墖鍗冲埢鍒嗘瀽','tag:'},
+  {name:'blackhole',icon:'馃暢锔?,color:'#a855f7',label:'榛戞礊','desc':'妯℃嫙榛戞礊寮曞姏鍦虹殑瑙嗚鍖栦綋楠?,'tag':'WebGL'},
+  {name:'confession',icon:'馃拰',color:'#f472b6',label:'鍛婄櫧','desc':'娴极琛ㄧ櫧椤碉紝娓╅Θ鍔ㄧ敾鏁堟灉','tag:'},
+  {name:'earth-plus',icon:'馃審',color:'#38bdf8',label:'鍦扮悆+','desc:'澧炲己鐗?D鍦扮悆锛屽甫澶ф皵灞傜壒鏁?,'tag':'Three.js'},
+  {name:'particle-magic',icon:'鉁?,color:'#eab308',label:'绮掑瓙榄旀硶','desc:'绮掑瓙绯荤粺鐢熸垚鐐叿瑙嗚鏁堟灉','tag:'},
+  {name:'rose',icon:'馃尮',color:'#ef4444',label:'鐜懓','desc:'3D鐜懓鑺辩殑鏁板涔嬬編','tag':'Three.js'},
+  {name:'solar-system',icon:'馃獝',color:'#f97316',label:'澶槼绯?,'desc:'妯℃嫙澶槼绯昏鏄熷叕杞建閬?,'tag':'Three.js'},
+  {name:'poem',icon:'馃摑',color:'#06b6d4',label:'涓轰綘鍐欒瘲','desc:'璇楁剰鐢熸垚椤甸潰锛屾枃瀛椾笌瑙嗚浜よ瀺','tag:'},
+  {name:'eva-wallpaper',icon:'馃帹',color:'#8b5cf6',label:'EVA澹佺焊','desc:'EVA涓婚澹佺焊鐢熸垚宸ュ叿','tag:'Canvas'},
+];
+
+const colors = ['#7c5cfc','#f472b6','#38bdf8','#22c55e','#eab308','#ef4444','#f97316','#a855f7','#06b6d4','#8b5cf6'];
+
+projects.forEach((p,i)=>{
+  const c = p.color || colors[i%colors.length];
+  const card = document.createElement('a');
+  card.className = 'card';
+  card.href = `/${p.name}/`;
+  card.target = '_top';
+  card.innerHTML = `
+    <div class="card-icon" style="background:${c}22;color:${c}">${p.icon}</div>
+    <h3>${p.label}</h3>
+    <p>${p.desc}</p>
+    ${p.tag?`<span class="tag">${p.tag}</span>`:''}
+    <span class="arrow">鈫?/span>
+  `;
+  document.getElementById('projectGrid').appendChild(card);
+});
+
+// animated background
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+let w,h,time=0;
+function resize(){
+  w=canvas.width=window.innerWidth;
+  h=canvas.height=window.innerHeight;
+}
+resize();
+window.addEventListener('resize',resize);
+
+function draw(){
+  time+=.003;
+  ctx.clearRect(0,0,w,h);
+  const cx=w/2,cy=h/2;
+  for(let i=0;i<50;i++){
+    const a=i*Math.PI*2/50+time;
+    const r=120+Math.sin(time*2+i)*40;
+    const x=cx+Math.cos(a)*r;
+    const y=cy+Math.sin(a)*r;
+    const s=2+Math.sin(time*3+i*2)*1.5;
+    ctx.beginPath();
+    ctx.arc(x,y,s,0,Math.PI*2);
+    ctx.fillStyle=`rgba(124,92,252,${.15+Math.sin(time+i)*.08})`;
+    ctx.fill();
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>
