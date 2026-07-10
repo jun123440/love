@@ -21,11 +21,10 @@ section{scroll-snap-align:start;width:100vw;height:100vh;position:relative;z-ind
 .hero-label{font-family:'DM Mono',monospace;font-weight:400;font-size:clamp(0.65rem,0.8vw,0.75rem);letter-spacing:0.5em;text-transform:uppercase;color:rgba(232,232,240,0.25);margin-bottom:1.5rem;position:relative;z-index:2}
 .hero-title{font-family:'Alex Brush',cursive;font-size:clamp(4rem,14vw,12rem);letter-spacing:0.02em;line-height:0.85;text-align:center;position:relative;z-index:2}
 .hero-title .line{display:block;text-align:center}
-.hero-title .line1 svg{display:block;margin:0 auto;width:clamp(200px,60vw,600px);height:clamp(60px,18vw,180px);overflow:visible}
-.hero-title .line1 svg text{font-family:'Alex Brush',cursive}
+.hero-title .line1{font-family:'Alex Brush',cursive;font-size:clamp(3.5rem,12vw,10rem);line-height:0.85;color:rgba(50,160,230,0.55);text-shadow:0 0 12px rgba(50,160,230,0.25),0 0 40px rgba(50,160,230,0.08);-webkit-text-stroke:0.3px rgba(255,255,255,0.15)}
+.hero-title .line1 .hero-char{display:inline-block;opacity:0;animation:loveReveal 0.8s ease both}
 .hero-title .line2{font-family:'Alex Brush',cursive;color:rgba(232,232,240,0.1);font-size:clamp(1.8rem,6vw,5rem);line-height:1}
 .hero-title .line2 .hero-char{display:inline-block;opacity:0;animation:loveReveal 0.8s ease both}
-.svg-char{opacity:0;animation:loveReveal 0.8s ease both}
 @keyframes loveReveal{0%{opacity:0;transform:translateY(40px) rotate(-6deg) scale(0.8)}100%{opacity:1;transform:translateY(0) rotate(0) scale(1)}}
 .hero-sub{font-size:clamp(0.8rem,1.2vw,1rem);font-weight:300;color:rgba(232,232,240,0.35);margin-top:2rem;letter-spacing:0.15em;position:relative;z-index:2;opacity:0;animation:fadeUp 0.8s ease 1.4s both}
 @keyframes fadeUp{0%{opacity:0;transform:translateY(20px)}100%{opacity:1;transform:translateY(0)}}
@@ -68,17 +67,7 @@ transition:all 0.5s cubic-bezier(0.23,1,0.32,1);transform-style:preserve-3d;pers
 <section id="hero">
   <div class="hero-label">Portfolio</div>
   <div class="hero-title">
-    <span class="line line1">
-      <svg viewBox="0 0 400 120">
-        <defs>
-          <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#50a8d8" stop-opacity="0.85"/><stop offset="45%" stop-color="#1a7ab8" stop-opacity="0.55"/><stop offset="100%" stop-color="#3090c8" stop-opacity="0.35"/></linearGradient>
-          <linearGradient id="shine" x1="0" y1="1" x2="1" y2="0"><stop offset="0%" stop-color="#ffffff" stop-opacity="0"/><stop offset="36%" stop-color="#ffffff" stop-opacity="0"/><stop offset="38%" stop-color="#ffffff" stop-opacity="0.5"/><stop offset="45%" stop-color="#ffffff" stop-opacity="0.6"/><stop offset="48%" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
-        </defs>
-        <text x="50%" y="55%" fill="#003c64" fill-opacity="0.35" text-anchor="middle" dominant-baseline="central" font-size="100" transform="translate(2,2.5)">love</text>
-        <text x="50%" y="55%" fill="url(#glass)" stroke="#ffffff" stroke-width="0.7" stroke-opacity="0.3" text-anchor="middle" dominant-baseline="central" font-size="100"><tspan class="svg-char" style="animation-delay:0s">l</tspan><tspan class="svg-char" style="animation-delay:0.08s">o</tspan><tspan class="svg-char" style="animation-delay:0.16s">v</tspan><tspan class="svg-char" style="animation-delay:0.24s">e</tspan></text>
-        <text x="50%" y="55%" fill="url(#shine)" text-anchor="middle" dominant-baseline="central" font-size="100"><tspan class="svg-char" style="animation-delay:0s">l</tspan><tspan class="svg-char" style="animation-delay:0.08s">o</tspan><tspan class="svg-char" style="animation-delay:0.16s">v</tspan><tspan class="svg-char" style="animation-delay:0.24s">e</tspan></text>
-      </svg>
-    </span>
+    <span class="line line1"><span class="hero-char" style="animation-delay:0s">l</span><span class="hero-char" style="animation-delay:0.08s">o</span><span class="hero-char" style="animation-delay:0.16s">v</span><span class="hero-char" style="animation-delay:0.24s">e</span></span>
     <span class="line line2"><span class="hero-char" style="animation-delay:0.4s">c</span><span class="hero-char" style="animation-delay:0.48s">o</span><span class="hero-char" style="animation-delay:0.56s">l</span><span class="hero-char" style="animation-delay:0.64s">l</span><span class="hero-char" style="animation-delay:0.72s">e</span><span class="hero-char" style="animation-delay:0.8s">c</span><span class="hero-char" style="animation-delay:0.88s">t</span><span class="hero-char" style="animation-delay:0.96s">i</span><span class="hero-char" style="animation-delay:1.04s">o</span><span class="hero-char" style="animation-delay:1.12s">n</span></span>
   </div>
   <div class="hero-sub">A Collection of Experiments</div>
