@@ -89,38 +89,64 @@ transition:all 0.5s cubic-bezier(0.23,1,0.32,1);transform-style:preserve-3d;pers
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-const projects = [
-  {name:'3D Earth',path:'3d-earth/',hsl:0.58},
-  {name:'App',path:'app/',hsl:0.55},
-  {name:'Black Hole',path:'blackhole/',hsl:0.75},
-  {name:'Confession',path:'confession/',hsl:0.88},
-  {name:'Earth Plus',path:'earth-plus/',hsl:0.42},
-  {name:'EVA Wallpaper',path:'eva-wallpaper/',hsl:0.60},
-  {name:'Particle Magic',path:'particle-magic/',hsl:0.02},
-  {name:'Rose',path:'rose/',hsl:0.95},
-  {name:'Solar System',path:'solar-system/',hsl:0.05},
-  {name:'Black Hole+',path:'black-hole.html',hsl:0.72},
-  {name:'Snake',path:'snake/',hsl:0.32},
+const FALLBACK = [
+  {name:'3D Earth',path:'3d-earth/'},
+  {name:'Black Hole',path:'blackhole/'},
+  {name:'Confession',path:'confession/'},
+  {name:'Earth Plus',path:'earth-plus/'},
+  {name:'EVA Wallpaper',path:'eva-wallpaper/'},
+  {name:'Particle Magic',path:'particle-magic/'},
+  {name:'Rose',path:'rose/'},
+  {name:'Solar System',path:'solar-system/'},
+  {name:'Black Hole+',path:'black-hole.html'},
+  {name:'Snake',path:'snake/'},
 ];
+const HIDDEN = new Set(['index.html','CNAME','.nojekyll','README.md']);
 
 const grid = document.getElementById('projectGrid');
-projects.forEach((p,i)=>{
-  const a = document.createElement('a');
-  a.className = 'card';
-  a.href = p.path;
-  const c = new THREE.Color().setHSL(p.hsl,0.6,0.5);
-  const hex = '#'+c.getHexString();
-  a.style.setProperty('--glow', hex + '44');
-  a.innerHTML = '<div class="card-num">'+(i+1).toString().padStart(2,'0')+'</div><div class="card-name">'+p.name+'</div>';
-  grid.appendChild(a);
-  a.addEventListener('mousemove',function(e){
-    const r=this.getBoundingClientRect();
-    const x=(e.clientX-r.left)/r.width-0.5;
-    const y=(e.clientY-r.top)/r.height-0.5;
-    this.style.transform='perspective(600px) rotateY('+(x*8)+'deg) rotateX('+(-y*8)+'deg) translateY(-6px) scale(1.015)';
+
+function prettyName(s){
+  return s.replace(/\.html$/,'').split(/[-_]/).filter(Boolean)
+    .map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+}
+function glowFor(i){
+  const c = new THREE.Color().setHSL((i*0.137+0.02)%1, 0.6, 0.55);
+  return '#'+c.getHexString()+'44';
+}
+function renderCards(list){
+  grid.innerHTML='';
+  list.forEach((p,i)=>{
+    const a = document.createElement('a');
+    a.className = 'card';
+    a.href = p.path;
+    a.style.setProperty('--glow', glowFor(i));
+    a.innerHTML = '<div class="card-num">'+(i+1).toString().padStart(2,'0')+'</div><div class="card-name">'+p.name+'</div>';
+    grid.appendChild(a);
+    a.addEventListener('mousemove',function(e){
+      const r=this.getBoundingClientRect();
+      const x=(e.clientX-r.left)/r.width-0.5;
+      const y=(e.clientY-r.top)/r.height-0.5;
+      this.style.transform='perspective(600px) rotateY('+(x*8)+'deg) rotateX('+(-y*8)+'deg) translateY(-6px) scale(1.015)';
+    });
+    a.addEventListener('mouseleave',function(){this.style.transform='';});
   });
-  a.addEventListener('mouseleave',function(){this.style.transform='';});
-});
+}
+
+renderCards(FALLBACK);
+
+fetch('https://api.github.com/repos/jun123440/love/contents/')
+  .then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); })
+  .then(items=>{
+    if(!Array.isArray(items)) return;
+    const list = items
+      .filter(x=>!HIDDEN.has(x.name) && !/\.(jpg|jpeg|png|gif|webp|ico)$/i.test(x.name))
+      .filter(x=>x.type==='dir' || /\.html$/i.test(x.name))
+      .sort((a,b)=>a.name.localeCompare(b.name))
+      .map(x=>({name:prettyName(x.name), path:x.type==='dir' ? x.name+'/' : x.name}));
+    if(list.length) renderCards(list);
+  })
+  .catch(()=>{});
+</script>
 
 // ==== Three.js Scene ====
 const canvas = document.getElementById('bg');
