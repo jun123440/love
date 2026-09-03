@@ -92,8 +92,8 @@ canvas#stage { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
 <div id="camera-status"><div id="camera-dot"></div><span>摄像头已开启</span></div>
 <div id="camera-preview"><video id="video" autoplay playsinline></video></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
 
 <script>
 (function() {
@@ -143,6 +143,12 @@ let cameraReady = false;
 let lastTimestamp = 0;
 let fpsFrames = 0, fpsTime = 0;
 let modelTimeout = null;
+const CDN_LIST = [
+  'https://unpkg.com/@mediapipe/hands@0.4.1675469240/',
+  'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/',
+];
+let cdnIdx = 0;
+const MODEL_LOAD_TIMEOUT = 30000;
 
 function resizeStage() {
   stage.width = window.innerWidth;
@@ -270,9 +276,10 @@ function onHandResults(results) {
       clearTimeout(modelTimeout);
       startBtn.textContent = '✓ 已就绪';
       startBtn.disabled = false;
-      if (detectedNum.textContent.includes('加载') || detectedNum.textContent.includes('超时')) {
+      if (detectedNum.textContent.includes('加载') || detectedNum.textContent.includes('超时') || detectedNum.textContent.includes('重试')) {
         detectedNum.textContent = '比个数字试试吧！';
         detectedNum.style.color = 'rgba(255,255,255,.7)';
+        detectedNum.style.fontSize = '';
       }
     }
     handDetected = true;
@@ -522,12 +529,13 @@ async function startCamera() {
     video.srcObject = stream;
     await video.play();
 
+    console.log('Using CDN:', CDN_LIST[cdnIdx]);
     hands = new Hands({
-      locateFile: (f) => 'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/' + f
+      locateFile: (f) => CDN_LIST[cdnIdx] + f
     });
     hands.setOptions({
       maxNumHands: 1,
-      modelComplexity: 1,
+      modelComplexity: 0,
       minDetectionConfidence: .5,
       minTrackingConfidence: .5,
     });
@@ -546,20 +554,20 @@ async function startCamera() {
 
     cameraStatus.style.display = 'flex';
     cameraPreview.style.display = 'block';
-    startBtn.textContent = '⏳ 模型加载中...';
+    startBtn.textContent = '⏳ 模型加载中 (' + (cdnIdx + 1) + '/' + CDN_LIST.length + ')';
     startBtn.disabled = true;
-    detectedNum.textContent = '⏳ 加载手势识别模型，请稍候...';
+    detectedNum.textContent = '⏳ 加载手势识别模型 (~30秒)，请稍候...';
     detectedNum.style.fontSize = 'clamp(.9rem,1.6vw,1.3rem)';
     detectedNum.style.color = 'rgba(255,255,255,.7)';
-    // 模型加载超时检测：10秒内无结果则提示
+    // 模型加载超时检测
     modelTimeout = setTimeout(() => {
       if (!handDetected && cameraReady) {
-        detectedNum.textContent = '⚠ 模型加载超时，请刷新页面重试';
+        detectedNum.innerHTML = '⚠ 模型加载超时<br>点击下方按钮切换CDN重试';
         detectedNum.style.color = '#ff6b6b';
-        startBtn.textContent = '重新加载';
+        startBtn.textContent = '换 CDN 重试';
         startBtn.disabled = false;
       }
-    }, 10000);
+    }, MODEL_LOAD_TIMEOUT);
   } catch (err) {
     console.warn('Camera/Hands error:', err);
     const msg = err.message || String(err);
@@ -578,6 +586,11 @@ async function startCamera() {
 
 startBtn.addEventListener('click', () => {
   if (cameraReady) return;
+  if (startBtn.textContent === '换 CDN 重试') {
+    cdnIdx = (cdnIdx + 1) % CDN_LIST.length;
+    detectedNum.textContent = '⏳ 切换CDN重试中 (' + (cdnIdx + 1) + '/' + CDN_LIST.length + ')';
+    detectedNum.style.color = 'rgba(255,255,255,.7)';
+  }
   startBtn.textContent = '正在启动...';
   startBtn.disabled = true;
   startCamera();
