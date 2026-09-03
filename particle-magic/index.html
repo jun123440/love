@@ -525,7 +525,12 @@ async function startCamera() {
     await video.play();
 
     hands = new Hands({
-      locateFile: (f) => 'models/' + f
+      locateFile: (f) => {
+        if (f === 'hands_solution_packed_assets.data') {
+          return 'https://unpkg.com/@mediapipe/hands@0.4.1675469240/' + f;
+        }
+        return 'models/' + f;
+      }
     });
     hands.setOptions({
       maxNumHands: 1,
