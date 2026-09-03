@@ -142,6 +142,7 @@ let cameraInstance = null;
 let cameraReady = false;
 let lastTimestamp = 0;
 let fpsFrames = 0, fpsTime = 0;
+let modelTimeout = null;
 
 function resizeStage() {
   stage.width = window.innerWidth;
@@ -264,6 +265,16 @@ function countFingers(landmarks) {
 function onHandResults(results) {
   const now = performance.now() / 1000;
   if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+    if (!handDetected) {
+      // 首次检测到手，清除加载状态和超时定时器
+      clearTimeout(modelTimeout);
+      startBtn.textContent = '✓ 已就绪';
+      startBtn.disabled = false;
+      if (detectedNum.textContent.includes('加载') || detectedNum.textContent.includes('超时')) {
+        detectedNum.textContent = '比个数字试试吧！';
+        detectedNum.style.color = 'rgba(255,255,255,.7)';
+      }
+    }
     handDetected = true;
     lastHandTime = now;
     const lm = results.multiHandLandmarks[0];
@@ -523,7 +534,11 @@ async function startCamera() {
     hands.onResults(onHandResults);
 
     cameraInstance = new Camera(video, {
-      onFrame: async () => { if (hands) await hands.send({ image: video }); },
+      onFrame: async () => {
+        if (!hands) return;
+        try { await hands.send({ image: video }); }
+        catch (e) { console.warn('Hands send error:', e); }
+      },
       width: 640, height: 480,
     });
     await cameraInstance.start();
@@ -531,15 +546,30 @@ async function startCamera() {
 
     cameraStatus.style.display = 'flex';
     cameraPreview.style.display = 'block';
-    startBtn.textContent = '✓ 摄像头已就绪';
-    startBtn.classList.add('ready');
-    startBtn.disabled = false;
-    detectedNum.textContent = '比个数字试试吧！';
+    startBtn.textContent = '⏳ 模型加载中...';
+    startBtn.disabled = true;
+    detectedNum.textContent = '⏳ 加载手势识别模型，请稍候...';
     detectedNum.style.fontSize = 'clamp(.9rem,1.6vw,1.3rem)';
     detectedNum.style.color = 'rgba(255,255,255,.7)';
+    // 模型加载超时检测：10秒内无结果则提示
+    modelTimeout = setTimeout(() => {
+      if (!handDetected && cameraReady) {
+        detectedNum.textContent = '⚠ 模型加载超时，请刷新页面重试';
+        detectedNum.style.color = '#ff6b6b';
+        startBtn.textContent = '重新加载';
+        startBtn.disabled = false;
+      }
+    }, 10000);
   } catch (err) {
-    console.warn('Camera error:', err);
-    detectedNum.textContent = '⚠ 无法访问摄像头，请允许权限后刷新页面';
+    console.warn('Camera/Hands error:', err);
+    const msg = err.message || String(err);
+    if (msg.includes('Permission') || msg.includes('NotAllowed')) {
+      detectedNum.textContent = '⚠ 摄像头权限被拒绝，请在浏览器设置中允许后刷新';
+    } else if (msg.includes('gpu') || msg.includes('WebGL') || msg.includes('context')) {
+      detectedNum.textContent = '⚠ WebGL 初始化失败，请使用最新版 Chrome 浏览器';
+    } else {
+      detectedNum.textContent = '⚠ 启动失败: ' + msg.slice(0, 40);
+    }
     detectedNum.style.color = '#ff6b6b';
     startBtn.textContent = '重新尝试';
     startBtn.disabled = false;
