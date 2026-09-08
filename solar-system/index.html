@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>太阳系 3D 探索</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <style>
+        body { margin: 0; background-color: #000; overflow: hidden; font-family: "Microsoft YaHei", sans-serif; }
+        #container { position: relative; width: 100vw; height: 100vh; }
+        #input_video { position: absolute; bottom: 10px; right: 10px; width: 320px; height: 180px; transform: scaleX(-1); opacity: 0.5; border: 1px solid #333; z-index: 100; display: none; }
+        #output_canvas { position: absolute; bottom: 10px; right: 10px; width: 320px; height: 180px; transform: scaleX(-1); z-index: 101; pointer-events: none; display: none; }
+        #instructions { position: absolute; bottom: 20px; left: 20px; color: rgba(255,255,255,0.7); background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; pointer-events: none; z-index: 50; font-size: 13px; }
+        #instructions h3 { margin: 0 0 5px 0; color: #00ffff; }
+        #instructions p { margin: 3px 0; }
+        #error-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); color: #ff5555; padding: 20px; z-index: 9999; display: none; font-family: monospace; white-space: pre-wrap; box-sizing: border-box; }
+        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #00ffff; font-size: 24px; z-index: 200; pointer-events: none; text-shadow: 0 0 10px #00ffff; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.161/build/three.module.js",
+                "jsm/": "https://cdn.jsdelivr.net/npm/three@0.161/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="error-overlay"></div>
+    <div id="loading">太阳系加载中...</div>
+    <div id="container">
+        <video id="input_video"></video>
+        <canvas id="output_canvas"></canvas>
+        <div id="instructions">
+            <h3>操作指南</h3>
+            <p><b>鼠标拖拽</b>：旋转视角</p>
+            <p><b>滚轮</b>：缩放</p>
+            <p><b>双击</b>：聚焦行星 / 星系跳转</p>
+            <p><b>右键设置</b>：开启手势控制 / 音频</p>
+        </div>
+    </div>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('./sw.js').then(function(r) {
+                    console.log('SW registered:', r);
+                }).catch(function(e) {
+                    console.log('SW failed:', e);
+                });
+            });
+        }
+        var errorOverlay = document.getElementById('error-overlay');
+        window.onerror = function(msg, url, line, col, error) {
+            errorOverlay.style.display = 'block';
+            var errorText = '错误: ' + msg + '\n行: ' + line + '\n文件: ' + url + '\n\n';
+            errorOverlay.innerText += errorText;
+            var loading = document.getElementById('loading');
+            if (loading) loading.style.display = 'none';
+            return false;
+        };
+        if (window.location.protocol === 'file:') {
+            errorOverlay.style.display = 'block';
+            errorOverlay.innerText += "警告: 以 file:// 协议运行。请使用本地服务器（如 python -m http.server）并通过 http:// 访问。\n";
+        }
+    </script>
+    <script type="module" src="./main.js?v=1"></script>
+</body>
+</html>

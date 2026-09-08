@@ -1,0 +1,39 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>地球 Plus — 真实昼夜循环</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="info">
+  <h1>🌍 地球 Plus</h1>
+  <p id="timeDisplay">加载中...</p>
+</div>
+
+<div id="controls">
+  <label>昼夜速度</label>
+  <input type="range" id="speedSlider" min="0" max="5" step="0.1" value="1">
+  <span id="speedLabel">1×</span>
+  <span id="sunAlt">0°</span>
+</div>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <p>正在加载高精度地球数据...</p>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module" src="script.js"></script>
+</body>
+</html>

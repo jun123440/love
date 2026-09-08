@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IP 定位查询</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:#0a0e27;color:#e0e0e0;min-height:100vh}
+.container{max-width:900px;margin:0 auto;padding:40px 20px 60px}
+h1{text-align:center;font-size:1.8em;margin-bottom:8px;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.subtitle{text-align:center;color:#888;margin-bottom:30px;font-size:.9em}
+.search-box{display:flex;gap:10px;margin-bottom:24px}
+.search-box input{flex:1;padding:14px 20px;border:1px solid #2a2f5a;border-radius:12px;background:#12163a;color:#fff;font-size:16px;outline:none;-webkit-appearance:none}
+.search-box input:focus{border-color:#667eea}
+.btn{padding:14px 28px;border:none;border-radius:12px;font-size:16px;cursor:pointer;font-weight:600;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;-webkit-appearance:none}
+.btn:active{transform:scale(.97)}
+.loading{text-align:center;padding:30px;color:#667eea;display:none}
+.loading.show{display:block}
+.spinner{display:inline-block;width:36px;height:36px;border:3px solid #2a2f5a;border-top-color:#667eea;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.result-card{background:#12163a;border:1px solid #2a2f5a;border-radius:16px;padding:24px;margin-bottom:20px;display:none}
+.result-card.show{display:block;animation:fadeIn .4s ease}
+.ip-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #1e2355;flex-wrap:wrap}
+.ip-header .ip{font-size:1.5em;font-weight:700;color:#667eea;font-family:'Courier New',monospace;word-break:break-all}
+.flag{font-size:2em}
+.speed-badge{padding:2px 10px;border-radius:10px;font-size:.75em;background:#1a3a1a;color:#4ade80}
+.type-badge{padding:2px 10px;border-radius:10px;font-size:.75em;background:#1a1f4a;color:#8888cc}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.info-item{background:#0d1030;border-radius:10px;padding:14px 16px}
+.info-item .label{font-size:.75em;color:#667eea;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+.info-item .value{font-size:1.05em;word-break:break-all}
+.info-item.hl .value{color:#4ade80;font-weight:600}
+.source-line{margin-top:16px;font-size:.8em;color:#666}
+.error-card{background:#1a0a0a;border:1px solid #4a1a1a;border-radius:16px;padding:24px;text-align:center;color:#ff6b6b;display:none}
+.error-card.show{display:block}
+.log-section{margin-top:24px;background:#12163a;border:1px solid #2a2f5a;border-radius:16px;padding:24px}
+.log-section h3{color:#667eea;margin-bottom:12px;font-size:1em}
+.log-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.85em;min-width:340px}
+th{text-align:left;padding:8px 10px;border-bottom:2px solid #2a2f5a;color:#667eea;font-size:.75em;text-transform:uppercase;white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid #1a1f4a;font-family:'Courier New',monospace;white-space:nowrap}
+.clear-btn{background:none;border:1px solid #2a2f5a;color:#888;padding:4px 12px;border-radius:8px;cursor:pointer;font-size:.75em;float:right}
+@media(max-width:600px){.search-box{flex-direction:column}.container{padding:20px 14px 40px}h1{font-size:1.4em}.info-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🌐 IP 定位查询</h1>
+<p class="subtitle">打开页面自动显示访问者的 IP 与位置信息</p>
+<div class="search-box">
+<input type="text" id="ipInput" placeholder="或输入任意 IP 查询，如 8.8.8.8" onkeydown="if(event.key==='Enter')queryIp()">
+<button class="btn" onclick="queryIp()">查 询</button>
+</div>
+<div class="loading" id="loading"><div class="spinner"></div><div id="loadingText">正在检测你的 IP...</div></div>
+<div class="result-card" id="resultCard">
+<div class="ip-header">
+<span class="flag" id="flag"></span>
+<span class="ip" id="displayIp"></span>
+<span class="type-badge" id="typeBadge"></span>
+<span class="speed-badge" id="speedBadge"></span>
+</div>
+<div class="info-grid" id="infoGrid"></div>
+<div class="source-line" id="sourceLine"></div>
+</div>
+<div class="error-card" id="errorCard"></div>
+<div class="log-section" id="logSection" style="display:none">
+<h3>📋 检测记录 <button class="clear-btn" onclick="clearLog()">清空</button></h3>
+<div class="log-wrap">
+<table><thead><tr><th>IP</th><th>位置</th><th>运营商</th><th>时间</th></tr></thead><tbody id="logBody"></tbody></table>
+</div>
+</div>
+</div>
+<script>
+var done = false;
+var startTs = 0;
+
+function showLoading(on, text) {
+    var el = document.getElementById('loading');
+    if (on) { el.classList.add('show'); if (text) document.getElementById('loadingText').textContent = text; }
+    else el.classList.remove('show');
+}
+
+function withTimeout(promise, ms) {
+    return Promise.race([promise, new Promise(function(_, rej) {
+        setTimeout(function() { rej(new Error('timeout')); }, ms);
+    })]);
+}
+
+// ── 数据源: vore.top（国内库，城市级精度，支持CORS） ──
+function srcVore(ip) {
+    var url = 'https://api.vore.top/api/IPdata' + (ip ? '?ip=' + encodeURIComponent(ip) : '');
+    return fetch(url).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.code !== 200 || !d.ipdata) throw new Error('fail');
+        return {
+            ip: d.ipinfo.text, type: d.ipinfo.type, cnip: d.ipinfo.cnip,
+            country: d.ipinfo.cnip ? '中国' : d.ipdata.info1,
+            province: d.ipinfo.cnip ? d.ipdata.info1 : d.ipdata.info2,
+            city: d.ipinfo.cnip ? d.ipdata.info2 : d.ipdata.info3,
+            isp: d.ipdata.isp, full: d.adcode ? d.adcode.o : '',
+            hasCity: !!(d.ipinfo.cnip ? d.ipdata.info2 : d.ipdata.info3)
+        };
+    });
+}
+
+// ── 数据源: 搜狐 cityjson（拿访问者 IPv4，script方式无CORS问题） ──
+function srcSohuIpv4() {
+    return new Promise(function(resolve, reject) {
+        var s = document.createElement('script');
+        s.charset = 'utf-8';
+        s.src = 'https://pv.sohu.com/cityjson?ie=utf-8&v=' + Date.now();
+        s.onload = function() {
+            s.parentNode.removeChild(s);
+            var c = window.returnCitySN;
+            if (c && c.cip && c.cip !== '127.0.0.1' && c.cip.indexOf(':') === -1) resolve(c.cip);
+            else reject(new Error('no ipv4'));
+        };
+        s.onerror = function() { s.parentNode.removeChild(s); reject(new Error('fail')); };
+        document.head.appendChild(s);
+    });
+}
+
+// ── 数据源: ipwho.is（海外库，兜底，含经纬度） ──
+function srcIpwhois(ip) {
+    return fetch(ip ? 'https://ipwho.is/' + ip : 'https://ipwho.is/').then(function(r) { return r.json(); }).then(function(d) {
+        if (!d.success) throw new Error('fail');
+        return {
+            ip: d.ip, type: d.type ? d.type.toLowerCase() : '', cnip: d.country_code === 'CN',
+            country: d.country, province: d.region, city: d.city,
+            isp: d.connection && d.connection.isp, full: '',
+            lat: d.latitude, lng: d.longitude, hasCity: !!d.city,
+            countryCode: d.country_code
+        };
+    });
+}
+
+// ── 主流程 ──
+function detect(ip) {
+    done = false;
+    startTs = Date.now();
+    showLoading(true, ip ? '正在查询 ' + ip + '...' : '正在检测你的 IP...');
+    document.getElementById('resultCard').classList.remove('show');
+    document.getElementById('errorCard').classList.remove('show');
+
+    if (ip) {
+        // 手动查询: vore → ipwho.is
+        withTimeout(srcVore(ip), 6000)
+            .then(function(r) { showResult(r, 'vore.top'); })
+            .catch(function() {
+                return withTimeout(srcIpwhois(ip), 6000).then(function(r) { showResult(r, 'ipwho.is'); });
+            })
+            .catch(function() { showError('查询失败，请检查 IP 格式或网络'); });
+        return;
+    }
+
+    // 自动检测:
+    // 1) vore 直查（若拿到城市级就结束）
+    withTimeout(srcVore(''), 6000).then(function(r) {
+        if (r.hasCity) { showResult(r, 'vore.top'); return; }
+        // 2) 只到省级 → 用搜狐拿 IPv4 再查一次 vore（移动宽带 IPv6 出口定位粗，IPv4 更准）
+        document.getElementById('loadingText').textContent = '正在精确定位...';
+        return withTimeout(srcSohuIpv4(), 5000).then(function(ipv4) {
+            return withTimeout(srcVore(ipv4), 6000).then(function(r2) {
+                showResult(r2.hasCity ? r2 : r, 'vore.top + sohu');
+            });
+        }).catch(function() { showResult(r, 'vore.top'); });
+    }).catch(function() {
+        // 3) vore 挂了 → ipwho.is 兜底
+        return withTimeout(srcIpwhois(''), 6000)
+            .then(function(r) { showResult(r, 'ipwho.is'); })
+            .catch(function() { showError('所有数据源均无法访问，请检查网络后刷新重试'); });
+    });
+}
+
+function showResult(data, source) {
+    if (done) return;
+    done = true;
+    showLoading(false);
+    var ms = Date.now() - startTs;
+    document.getElementById('displayIp').textContent = data.ip;
+    document.getElementById('flag').textContent = data.country === '中国' || data.cnip ? '🇨🇳' : (data.countryCode ? flagEmoji(data.countryCode) : '🌍');
+    document.getElementById('typeBadge').textContent = (data.type || '').toUpperCase();
+    document.getElementById('speedBadge').textContent = ms + 'ms';
+    var fields = [
+        ['国家/地区', data.country, true], ['省份', data.province, true], ['城市', data.city, true],
+        ['运营商', data.isp, false], ['完整归属', data.full, false],
+        ['经纬度', data.lat && data.lng ? Number(data.lat).toFixed(4) + ', ' + Number(data.lng).toFixed(4) : '', false]
+    ];
+    document.getElementById('infoGrid').innerHTML = fields.map(function(f) {
+        return '<div class="info-item' + (f[2] ? ' hl' : '') + '"><div class="label">' + f[0] + '</div><div class="value">' + (f[1] || '<span style="color:#555">—</span>') + '</div></div>';
+    }).join('');
+    document.getElementById('sourceLine').textContent = '数据来源: ' + source;
+    document.getElementById('resultCard').classList.add('show');
+    addLog(data.ip, [data.province, data.city].filter(Boolean).join(' ') || data.country, data.isp);
+}
+
+function showError(msg) {
+    if (done) return;
+    done = true;
+    showLoading(false);
+    var el = document.getElementById('errorCard');
+    el.textContent = '❌ ' + msg;
+    el.classList.add('show');
+}
+
+function flagEmoji(code) {
+    var r = '';
+    for (var i = 0; i < code.length; i++) r += String.fromCharCode(127397 + code.toUpperCase().charCodeAt(i));
+    return r;
+}
+
+function queryIp() {
+    var ip = document.getElementById('ipInput').value.trim();
+    detect(ip);
+}
+
+// ── 本地记录 ──
+var logData = [];
+try { logData = JSON.parse(localStorage.getItem('iplog2') || '[]'); } catch(e) {}
+function addLog(ip, place, isp) {
+    if (logData.some(function(l) { return l.ip === ip; })) return;
+    logData.unshift({ ip: ip, place: place || '—', isp: isp || '—', time: new Date().toLocaleString('zh-CN') });
+    if (logData.length > 15) logData.pop();
+    try { localStorage.setItem('iplog2', JSON.stringify(logData)); } catch(e) {}
+    renderLog();
+}
+function renderLog() {
+    if (!logData.length) return;
+    document.getElementById('logSection').style.display = 'block';
+    document.getElementById('logBody').innerHTML = logData.map(function(l) {
+        return '<tr><td>' + l.ip + '</td><td>' + l.place + '</td><td>' + l.isp + '</td><td>' + l.time + '</td></tr>';
+    }).join('');
+}
+function clearLog() {
+    logData = [];
+    try { localStorage.removeItem('iplog2'); } catch(e) {}
+    document.getElementById('logSection').style.display = 'none';
+}
+
+// ── 启动 ──
+renderLog();
+detect('');
+setTimeout(function() { if (!done) showError('检测超时，请刷新页面重试'); }, 25000);
+</script>
+</body>
+</html>
