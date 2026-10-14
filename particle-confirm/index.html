@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07050e">
+<title>粒子 · 你的名字</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden;background:#07050e;color:#fff;
+    font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",system-ui,-apple-system,sans-serif}
+  canvas{display:block;position:fixed;inset:0;z-index:0}
+  .veil{position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(120% 80% at 50% 50%,transparent 40%,rgba(7,5,14,.55) 100%)}
+
+  .card{position:fixed;z-index:2;left:50%;bottom:max(24px,4.5vh);transform:translateX(-50%);
+    width:min(92vw,440px);padding:30px 28px 24px;border-radius:26px;
+    background:rgba(18,12,32,.5);border:1px solid rgba(255,255,255,.12);
+    backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);
+    box-shadow:0 30px 80px -30px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.18);
+    transition:opacity .7s ease,transform .7s cubic-bezier(.2,.8,.2,1),visibility .7s}
+  .card.gone{opacity:0;visibility:hidden;transform:translateX(-50%) translateY(26px)}
+
+  .tag{font-size:11px;letter-spacing:.32em;color:rgba(255,255,255,.45);margin-bottom:14px}
+  .card h1{font-size:30px;font-weight:800;line-height:1.25;letter-spacing:-.01em;
+    background:linear-gradient(100deg,#fff 10%,#ff8fb1 55%,#c77dff 95%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:8px}
+  .card p{font-size:14px;line-height:1.7;color:rgba(255,255,255,.6);margin-bottom:24px}
+
+  .row{display:flex;gap:10px}
+  input{flex:1;min-width:0;height:52px;padding:0 18px;border-radius:16px;border:1px solid rgba(255,255,255,.16);
+    background:rgba(255,255,255,.07);color:#fff;font-size:17px;font-family:inherit;outline:none;
+    transition:border-color .3s,background .3s,box-shadow .3s}
+  input::placeholder{color:rgba(255,255,255,.32)}
+  input:focus{border-color:rgba(255,140,180,.7);background:rgba(255,255,255,.1);
+    box-shadow:0 0 0 4px rgba(255,110,160,.14)}
+
+  button{cursor:pointer;font-family:inherit;border:0}
+  .go{height:52px;padding:0 26px;border-radius:16px;font-size:16px;font-weight:700;color:#1a0a18;
+    background:linear-gradient(135deg,#ffd0e0,#ff7aa8 45%,#c77dff);flex:none;
+    box-shadow:0 10px 30px -8px rgba(255,110,160,.7);transition:transform .18s,filter .18s,opacity .3s}
+  .go:hover{filter:brightness(1.08)}
+  .go:active{transform:scale(.95)}
+  .go:disabled{opacity:.4;filter:grayscale(.6);cursor:not-allowed;box-shadow:none}
+
+  .foot{display:flex;align-items:center;justify-content:space-between;margin-top:18px;gap:12px}
+  .ghost{padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.55);font-size:12px;transition:.25s}
+  .ghost:hover{color:#fff;background:rgba(255,255,255,.12)}
+  .hint{font-size:12px;color:rgba(255,255,255,.32)}
+
+  .done{position:fixed;z-index:2;left:50%;bottom:9vh;transform:translateX(-50%);
+    display:flex;align-items:center;gap:14px;padding:10px 10px 10px 22px;border-radius:999px;
+    background:rgba(18,12,32,.5);border:1px solid rgba(255,255,255,.12);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    opacity:0;visibility:hidden;transition:opacity .8s ease .3s,visibility .8s}
+  .done.show{opacity:1;visibility:visible}
+  .done span{font-size:15px;font-weight:600;color:rgba(255,255,255,.85)}
+  .done button{padding:10px 18px;border-radius:999px;font-size:14px;font-weight:600;color:#1a0a18;
+    background:linear-gradient(135deg,#ffd0e0,#ff7aa8 50%,#c77dff);transition:transform .18s}
+  .done button:active{transform:scale(.94)}
+
+  @media (max-width:420px){
+    .card{padding:28px 22px 22px}
+    .card h1{font-size:25px}
+    .row{flex-direction:column}
+    .go{width:100%}
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="veil"></div>
+
+<div class="card" id="card">
+  <div class="tag">P A R T I C L E</div>
+  <h1>把名字交给粒子</h1>
+  <p>输入一个名字，粒子会在你确认的那一刻炸开，然后重新聚合成它。</p>
+  <div class="row">
+    <input id="name" placeholder="输入名字…" maxlength="12" autocomplete="off" spellcheck="false">
+    <button class="go" id="go" disabled>确认</button>
+  </div>
+  <div class="foot">
+    <button class="ghost" id="mute">音效 · 开</button>
+    <span class="hint">也可以点一下画面</span>
+  </div>
+</div>
+
+<div class="done" id="done">
+  <span id="result"></span>
+  <button id="again">换个名字</button>
+</div>
+
+<script>
+(() => {
+  const cv = document.getElementById('c');
+  const ctx = cv.getContext('2d', { alpha: false });
+  const card = document.getElementById('card');
+  const input = document.getElementById('name');
+  const goBtn = document.getElementById('go');
+  const done = document.getElementById('done');
+  const result = document.getElementById('result');
+  const againBtn = document.getElementById('again');
+  const muteBtn = document.getElementById('mute');
+
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const coarse = matchMedia('(hover: none)').matches;
+  const N = reduced ? 700 : coarse ? 1000 : 1800;
+  const BG = '#07050e';
+
+  let W = 0, H = 0, DPR = 1;
+  let heartT = [], textT = [];
+  let mode = 'heart';
+  let bursting = 0, locked = false, t0 = performance.now(), prev = t0;
+
+  const mx = { x: -9999, y: -9999, on: false };
+  const P = [];
+
+  const PALETTE = ['#ff4f87', '#ff85b4', '#c77dff', '#ffc27a', '#ff6fa5'];
+
+  function makeSprite(color) {
+    const s = document.createElement('canvas');
+    s.width = s.height = 64;
+    const g = s.getContext('2d');
+    const rg = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    rg.addColorStop(0, 'rgba(255,255,255,1)');
+    rg.addColorStop(.12, 'rgba(255,255,255,.6)');
+    rg.addColorStop(.34, 'rgba(255,255,255,.12)');
+    rg.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = rg; g.fillRect(0, 0, 64, 64);
+    g.globalCompositeOperation = 'source-in';
+    g.fillStyle = color; g.fillRect(0, 0, 64, 64);
+    return s;
+  }
+  const sprites = PALETTE.map(makeSprite);
+
+  function safeTop() {
+    const r = card.getBoundingClientRect();
+    return Math.max(140, r.top - 18);
+  }
+
+  function buildHeart() {
+    const lim = safeTop();
+    const sc = Math.min(W / 64, (lim * .86) / 30);
+    const cy = lim * .5 + 2.5 * sc;
+    heartT = new Array(N);
+    for (let i = 0; i < N; i++) {
+      const a = (i / N) * Math.PI * 2 + Math.random() * .12;
+      const hx = 16 * Math.pow(Math.sin(a), 3);
+      const hy = -(13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a));
+      const r = i % 5 === 0 ? Math.sqrt(Math.random()) * .86 : 1;
+      const ox = (Math.random() - .5) * 1.6;
+      const oy = (Math.random() - .5) * 1.6;
+      heartT[i] = [W / 2 + (hx * r + ox) * sc, cy + (hy * r + oy) * sc];
+    }
+  }
+
+  function sampleText(text) {
+    const CW = 1500, CH = 560;
+    const c = document.createElement('canvas');
+    c.width = CW; c.height = CH;
+    const g = c.getContext('2d');
+    const stack = '"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei","Segoe UI",sans-serif';
+    let fs = 300;
+    g.font = '900 ' + fs + 'px ' + stack;
+    while (g.measureText(text).width > CW * .9 && fs > 60) {
+      fs -= 10;
+      g.font = '900 ' + fs + 'px ' + stack;
+    }
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.lineJoin = 'round';
+    g.strokeStyle = '#fff'; g.lineWidth = Math.max(3, fs * .023);
+    g.fillStyle = '#fff';
+    g.strokeText(text, CW / 2, CH / 2);
+    g.fillText(text, CW / 2, CH / 2);
+
+    const d = g.getImageData(0, 0, CW, CH).data;
+    const hits = [];
+    const step = 2;
+    for (let y = 0; y < CH; y += step)
+      for (let x = 0; x < CW; x += step)
+        if (d[(y * CW + x) * 4 + 3] > 110) hits.push([x - CW / 2, y - CH / 2]);
+    if (!hits.length) return null;
+
+    let a = 1e9, b = -1e9, e = 1e9, f = -1e9;
+    for (const p of hits) {
+      if (p[0] < a) a = p[0]; if (p[0] > b) b = p[0];
+      if (p[1] < e) e = p[1]; if (p[1] > f) f = p[1];
+    }
+    const bw = b - a || 1, bh = f - e || 1;
+    const lim = safeTop();
+    const sc = Math.min((W * .88) / bw, (lim * .85) / bh);
+    const cy = lim * .5;
+    const out = new Array(N);
+    for (let i = 0; i < N; i++) {
+      const p = hits[(Math.random() * hits.length) | 0];
+      out[i] = [W / 2 + (p[0] - (a + bw / 2)) * sc, cy + (p[1] - (e + bh / 2)) * sc];
+    }
+    return out;
+  }
+
+  function buildText(text) {
+    const r = sampleText(text);
+    textT = r || heartT;
+  }
+
+  for (let i = 0; i < N; i++) {
+    P.push({
+      x: Math.random() * innerWidth,
+      y: Math.random() * innerHeight,
+      vx: 0, vy: 0,
+      s: 1.8 + Math.random() * 3.2,
+      ci: (Math.random() * sprites.length) | 0,
+      z: .45 + Math.random() * .7,
+      seed: Math.random() * 6.28
+    });
+  }
+
+  function targets() {
+    return (mode === 'text' && textT.length) ? textT : heartT;
+  }
+
+  function seed() {
+    const tgt = targets();
+    const R = Math.min(W, H) * .45;
+    for (let i = 0; i < N; i++) {
+      const g = tgt[i], a = Math.random() * 6.283, r = Math.random() * R;
+      P[i].x = g[0] + Math.cos(a) * r;
+      P[i].y = g[1] + Math.sin(a) * r;
+    }
+  }
+
+  function fit() {
+    DPR = Math.min(devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    cv.width = W * DPR | 0; cv.height = H * DPR | 0;
+    cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
+    buildHeart();
+    if (mode === 'text' && current) buildText(current);
+    seed();
+  }
+
+  function fade() {
+    return bursting > 0 ? .12 : locked ? .26 : .45;
+  }
+
+  function step(dt, t) {
+    const tgt = targets();
+    const k = mode === 'heart' ? .05 : .038;
+    const drag = Math.pow(mode === 'heart' ? .9 : .88, dt);
+    for (let i = 0; i < N; i++) {
+      const p = P[i], g = tgt[i];
+      const drift = mode === 'heart' ? 9 : 2.2;
+      const nx = Math.sin(t * 1.1 + p.seed) * drift;
+      const ny = Math.cos(t * .9 + p.seed * 1.7) * drift;
+
+      p.vx += (g[0] + nx - p.x) * k * dt;
+      p.vy += (g[1] + ny - p.y) * k * dt;
+
+      if (mx.on) {
+        const dx = p.x - mx.x, dy = p.y - mx.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 > 1 && d2 < 15000) {
+          const d = Math.sqrt(d2), f = (1 - d / 122) * 1.5;
+          p.vx += dx / d * f * dt;
+          p.vy += dy / d * f * dt;
+        }
+      }
+
+      if (bursting > 0) {
+        const a = Math.random() * 6.283, sp = 3 + Math.random() * 13;
+        p.vx += Math.cos(a) * sp * dt;
+        p.vy += Math.sin(a) * sp * dt;
+      }
+
+      p.vx *= drag; p.vy *= drag;
+      p.x += p.vx * dt; p.y += p.vy * dt;
+    }
+
+    if (bursting > 0) {
+      bursting -= dt;
+      if (bursting <= 0) { bursting = 0; mode = 'text'; }
+    }
+  }
+
+  function draw() {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = 'rgba(7,5,14,' + fade() + ')';
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < N; i++) {
+      const p = P[i];
+      const sz = p.s * p.z * (2 + Math.min(2.6, Math.hypot(p.vx, p.vy) * .1));
+      ctx.drawImage(sprites[p.ci], p.x - sz / 2, p.y - sz / 2, sz, sz);
+    }
+  }
+
+  function loop(now) {
+    const dt = Math.min((now - prev) / 16.667, 3);
+    prev = now;
+    step(dt, (now - t0) / 1000);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  let AC = null, muted = false;
+  function sound() {
+    if (muted) return;
+    try {
+      AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+      if (AC.state === 'suspended') AC.resume();
+      const now = AC.currentTime, sr = AC.sampleRate;
+
+      const len = sr * 1.1;
+      const buf = AC.createBuffer(1, len, sr);
+      const ch = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.4);
+      const src = AC.createBufferSource(); src.buffer = buf;
+      const flt = AC.createBiquadFilter(); flt.type = 'lowpass'; flt.frequency.value = 2800;
+      const gn = AC.createGain(); gn.gain.value = .3;
+      src.connect(flt); flt.connect(gn); gn.connect(AC.destination);
+      src.start(now);
+
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+        const o = AC.createOscillator(), g2 = AC.createGain();
+        o.type = 'sine'; o.frequency.value = f;
+        g2.gain.setValueAtTime(0, now + .16 + i * .085);
+        g2.gain.linearRampToValueAtTime(.13, now + .2 + i * .085);
+        g2.gain.exponentialRampToValueAtTime(.0001, now + 1 + i * .085);
+        o.connect(g2); g2.connect(AC.destination);
+        o.start(now + .16 + i * .085); o.stop(now + 1.1 + i * .085);
+      });
+    } catch (e) {}
+  }
+
+  let current = '', timer = 0;
+  input.addEventListener('input', () => {
+    current = input.value.trim();
+    goBtn.disabled = !current;
+    if (locked) return;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (!current) { mode = 'heart'; return; }
+      mode = 'text';
+      buildText(current);
+    }, 130);
+  });
+
+  function fire() {
+    if (!current || locked) return;
+    locked = true;
+    mode = 'text';
+    buildText(current);
+    bursting = 22;
+    sound();
+    card.classList.add('gone');
+    result.textContent = current;
+    setTimeout(() => done.classList.add('show'), 900);
+    input.blur();
+  }
+
+  goBtn.addEventListener('click', fire);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') fire(); });
+
+  cv.addEventListener('pointerdown', e => { mx.x = e.clientX; mx.y = e.clientY; mx.on = true; });
+  addEventListener('pointermove', e => { mx.x = e.clientX; mx.y = e.clientY; mx.on = true; });
+  addEventListener('pointerout', () => { mx.on = false; });
+
+  muteBtn.addEventListener('click', () => {
+    muted = !muted;
+    muteBtn.textContent = '音效 · ' + (muted ? '关' : '开');
+  });
+
+  againBtn.addEventListener('click', () => {
+    locked = false; mode = 'heart'; current = '';
+    input.value = ''; goBtn.disabled = true;
+    done.classList.remove('show');
+    card.classList.remove('gone');
+    setTimeout(() => input.focus(), 400);
+  });
+
+  addEventListener('resize', fit);
+  fit();
+  requestAnimationFrame(loop);
+
+  const q = new URLSearchParams(location.search).get('name');
+  if (q) {
+    const nm = q.trim().slice(0, 12);
+    if (nm) {
+      input.value = nm;
+      current = nm;
+      goBtn.disabled = false;
+      setTimeout(fire, 700);
+    }
+  }
+})();
+</script>
+</body>
+</html>
