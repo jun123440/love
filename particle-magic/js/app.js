@@ -1,5 +1,5 @@
 import { createRenderer } from './renderer.js';
-import { SHAPES, GESTURE_MAP, buildShape } from './shapes.js';
+import { SHAPES, GESTURE_MAP, buildShape, FOLLOW_KIND } from './shapes.js';
 import { bootHands, LoadError } from './loader.js';
 import { clamp, lerp, easeOutBack, easeOutCubic, easeInOutCubic, frameLoop } from './util.js';
 
@@ -55,8 +55,8 @@ let hand = { x: 0, y: 0, s: .12 };
 
 function shapeRadius(kind) {
   const { w, h } = R.size;
-  const base = Math.min(w, h) * (kind === 'spiral' ? .40 : .34);
-  return kind === 'spiral' ? clamp(hand.s * w * 1.15, base * .35, base * 1.8) : base;
+  const base = Math.min(w, h) * (kind === FOLLOW_KIND ? .40 : .34);
+  return kind === FOLLOW_KIND ? clamp(hand.s * w * 1.15, base * .35, base * 1.8) : base;
 }
 
 /* ─────────────── 手势 ─────────────── */
@@ -121,7 +121,7 @@ function onResults(results) {
       currentGesture = +k;
       const kind = GESTURE_MAP[+k];
       if (kind !== currentKind) setShape(kind);
-      else if (kind === 'spiral') { /* 由 update 负责跟随 */ }
+      else if (kind === FOLLOW_KIND) { /* 由 update 负责跟随 */ }
       votes = {};
       break;
     }
@@ -135,8 +135,8 @@ function setShape(kind) {
   const { w, h } = R.size;
   const { rel, size, ct } = buildShape(kind, R.count);
   fromEnergy = S.energy;
-  const ctr = kind === 'spiral' ? [hand.x, hand.y] : [w * .5, h * .5];
-  R.setShape(rel, size, ct, meta.hue, ctr[0], ctr[1], shapeRadius(kind), kind === 'spiral' ? 1 : 0);
+  const ctr = kind === FOLLOW_KIND ? [hand.x, hand.y] : [w * .5, h * .5];
+  R.setShape(rel, size, ct, meta.hue, ctr[0], ctr[1], shapeRadius(kind), kind === FOLLOW_KIND ? 1 : 0);
   S.spin = 0;
   phase = 'forming';
   phaseT = 0;
@@ -176,9 +176,9 @@ function update(dt, time) {
     S.energy = .92 + Math.sin(time * .8) * .08;
     const meta = SHAPES[currentKind];
     if (meta && meta.spin) S.spin += dt * meta.spin;
-    if (currentKind === 'spiral' && handSeen) {
+    if (currentKind === FOLLOW_KIND && handSeen) {
       R.setFocus(hand.x, hand.y);
-      R.setRadius(shapeRadius('spiral') * (1 + Math.sin(time * 1.15) * .045));
+      R.setRadius(shapeRadius(FOLLOW_KIND) * (1 + Math.sin(time * 1.15) * .045));
     }
     if (!handSeen && handLostAt && performance.now() - handLostAt > HOLD_MS) release();
   } else if (phase === 'releasing') {
@@ -369,7 +369,7 @@ function cameraError(e) {
 
 /* ─────────────── 演示模式（无摄像头时） ─────────────── */
 
-const DEMO_ORDER = ['rosette', 'rings', 'star', 'spiral', 'vesica', 'axis'];
+const DEMO_ORDER = ['byakugan', 'moh1', 'moh5', 'moh4', 'moh2', 'moh3'];
 let demoTimer = 0;
 
 function startDemo(kind) {
@@ -399,7 +399,7 @@ let activeAbort = null;
 let loadInfo = null;
 
 el.enter.addEventListener('click', start);
-el.enterDemo.addEventListener('click', () => startDemo(GESTURE_MAP[Number(new URLSearchParams(location.search).get('demo'))] || 'rosette'));
+el.enterDemo.addEventListener('click', () => startDemo(GESTURE_MAP[Number(new URLSearchParams(location.search).get('demo'))] || 'byakugan'));
 
 el.btnDebug.addEventListener('click', () => {
   statsOpen = !statsOpen;
@@ -445,7 +445,7 @@ window.addEventListener('resize', () => {
   hand.x *= now.w / prev.w;
   hand.y *= now.h / prev.h;
   if (currentKind && phase !== 'idle' && phase !== 'releasing') {
-    if (currentKind === 'spiral') { R.setFocus(hand.x, hand.y); }
+    if (currentKind === FOLLOW_KIND) { R.setFocus(hand.x, hand.y); }
     else R.setFocus(now.w * .5, now.h * .5);
     R.setRadius(shapeRadius(currentKind));
   }

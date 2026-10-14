@@ -38,12 +38,12 @@ vec3 ramp(float t, float h){
   float w = (t-0.58)/0.42;
   // 标定自「Beneath The Seventh」实测均值：暗(66,6,7) 中(106,17,16) 亮(154,38,34)
   // 上限压到「亮」色附近：叠加混合会让密集区收敛到 ramp 顶端，直接用极亮值(182,94,67)会发橙
-  vec3 d0 = vec3(0.190, 0.022, 0.026);
-  vec3 d1 = vec3(0.420, 0.068, 0.063);
-  vec3 d2 = vec3(0.640, 0.180, 0.140);
-  vec3 w0 = vec3(0.150, 0.016, 0.020);
-  vec3 w1 = vec3(0.330, 0.048, 0.048);
-  vec3 w2 = vec3(0.560, 0.130, 0.110);
+  vec3 d0 = vec3(0.190, 0.022, 0.026);   // 红瞳·暗
+  vec3 d1 = vec3(0.420, 0.068, 0.063);   // 红瞳·中
+  vec3 d2 = vec3(0.640, 0.180, 0.140);   // 红瞳·亮
+  vec3 w0 = vec3(0.075, 0.095, 0.145);   // 白眼·暗（冷靛）
+  vec3 w1 = vec3(0.330, 0.420, 0.545);   // 白眼·中（青灰）
+  vec3 w2 = vec3(0.780, 0.880, 0.980);   // 白眼·亮（冷白）
   vec3 pd = t < 0.58 ? mix(d0, d1, u) : mix(d1, d2, w);
   vec3 pw = t < 0.58 ? mix(w0, w1, u) : mix(w1, w2, w);
   return mix(pd, pw, m);
@@ -75,7 +75,7 @@ void main(){
   float core = exp(-rad*1.7);
 
   vec3 col = ramp(aMeta.z, aMeta.w);
-  col += vec3(0.30, 0.11, 0.07) * core * 0.16;
+  col += mix(vec3(0.30,0.11,0.07), vec3(0.24,0.33,0.42), aMeta.w) * core * 0.16;
 
   float sz = aMeta.y * uDpr * (uRes.y/820.0);
   sz *= (1.0 + free*0.55) * (0.62 + 0.62*uEnergy);
@@ -111,6 +111,7 @@ varying vec2 vUv;
 uniform vec2  uRes;
 uniform float uTime;
 uniform vec2  uFocus;
+uniform float uHue;
 
 float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453); }
 float vnoise(vec2 p){
@@ -140,11 +141,12 @@ void main(){
   float fine  = pow(n, 5.5);
 
   // 逆向自「Beneath The Seventh」：92% 画面为纯黑，背景只留极淡的血色雾
+  // uHue=1 时（大筒木白眼）整片雾转冷靛，与红瞳形成冷暖对照
   vec3 deep = vec3(0.0000, 0.0000, 0.0000);
-  vec3 mid  = vec3(0.0110, 0.0016, 0.0018);
-  vec3 hi   = vec3(0.0330, 0.0062, 0.0060);
+  vec3 mid  = mix(vec3(0.0110,0.0016,0.0018), vec3(0.0026,0.0052,0.0100), uHue);
+  vec3 hi   = mix(vec3(0.0330,0.0062,0.0060), vec3(0.0084,0.0150,0.0270), uHue);
   vec3 col = deep + mid*ridge*0.70 + hi*fine*0.85;
-  col += vec3(0.0180, 0.0030, 0.0030)*glow*0.55;
+  col += mix(vec3(0.0180,0.0030,0.0030), vec3(0.0060,0.0110,0.0190), uHue)*glow*0.55;
   gl_FragColor = vec4(col, 1.0);
 }`;
 
@@ -283,6 +285,7 @@ export function createRenderer(canvas) {
     free: 1, energy: .22,
     cx: 0, cy: 0, r: 1, spin: 0,
     churn: 0, bound: false,
+    hue: 0,
   };
 
   let W = 1, H = 1, DPR = 1;
@@ -391,6 +394,7 @@ function bindParticles() {
       aMeta[i * 4 + 3] = newHue;
     }
     S.cx = cx; S.cy = cy; S.r = radius; S.spin = 0; S.churn = churn || 0; S.bound = true;
+    S.hue = newHue;
     S.morph = 0;
     uploadAll();
   }
@@ -411,6 +415,7 @@ function bindParticles() {
     gl.uniform2f(pB.u.uRes, W, H);
     gl.uniform1f(pB.u.uTime, time);
     gl.uniform2f(pB.u.uFocus, S.cx, S.cy);
+    gl.uniform1f(pB.u.uHue, S.hue);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, scene.fbo);
