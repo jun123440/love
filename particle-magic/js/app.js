@@ -1,12 +1,72 @@
-import { createRenderer } from './renderer.js';
-import { SHAPES, GESTURE_MAP, buildShape, FOLLOW_KIND } from './shapes.js';
-import { bootHands, LoadError } from './loader.js';
-import { clamp, lerp, easeOutBack, easeOutCubic, easeInOutCubic, frameLoop } from './util.js';
+import { createRenderer } from './renderer.js?v=3';
+import { SHAPES, GESTURE_MAP, buildShape, FOLLOW_KIND } from './shapes.js?v=3';
+import { bootHands, LoadError } from './loader.js?v=3';
+import { clamp, lerp, easeOutBack, easeOutCubic, easeInOutCubic, frameLoop } from './util.js?v=3';
 
 const FORM_MS = 1900;
 const RELEASE_MS = 1500;
 const HOLD_MS = 2800;
 const CONFIRM_FRAMES = 10;
+
+// 出场：引擎就绪后先放一次手印，配一段同步语音，随后完全恢复常态
+const INTRO_SHAPE = 'seal';
+const INTRO_AUDIO = 'audio/intro.m4a';
+const INTRO_HOLD_MS = 1420;      // 与音频时长一致（1.416s）
+const INTRO_FORM_MS = 820;       // 出场成型比手势快，抢住音频开头
+let introActive = false;
+let introTimer = 0;
+let introAudio = null;
+let formMs = FORM_MS;
+
+const SEAL_META = { glyph: '印', name: '手印', hue: .06, spin: 0 };
+
+// 首次用户手势时把音频解锁，否则 play() 可能被自动播放策略拦下
+function unlockIntroAudio() {
+  try {
+    if (!introAudio) {
+      const a = document.createElement('audio');
+      a.id = 'intro-audio';
+      a.preload = 'auto';
+      a.src = INTRO_AUDIO;
+      a.hidden = true;
+      document.body.appendChild(a);
+      introAudio = a;
+    }
+    const a = introAudio;
+    a.volume = 0;
+    const p = a.play();
+    if (p && p.then) p.then(() => { a.pause(); a.currentTime = 0; a.volume = 1; }).catch(() => { a.volume = 1; });
+    else a.volume = 1;
+  } catch { /* 无音频时静默降级，不影响出场动画 */ }
+}
+
+function playIntroAudio() {
+  try {
+    if (!introAudio) unlockIntroAudio();
+    if (!introAudio) return;
+    introAudio.currentTime = 0;
+    const p = introAudio.play();
+    if (p && p.catch) p.catch(() => {});
+  } catch { /* 同上 */ }
+}
+
+function startIntro() {
+  if (introActive) return;
+  introActive = true;
+  confirmed = -1;
+  setShape(INTRO_SHAPE);
+  clearTimeout(introTimer);
+  introTimer = setTimeout(stopIntro, INTRO_HOLD_MS);
+}
+
+function stopIntro() {
+  if (!introActive) return;
+  introActive = false;
+  clearTimeout(introTimer);
+  introTimer = 0;
+  try { if (introAudio) { introAudio.pause(); introAudio.currentTime = 0; } } catch {}
+  release();
+}
 const FAIL_LIMIT = 30;
 const STREAM_STALL_MS = 6000;
 
@@ -55,6 +115,7 @@ let hand = { x: 0, y: 0, s: .12 };
 
 function shapeRadius(kind) {
   const { w, h } = R.size;
+  if (kind === INTRO_SHAPE) return Math.min(w, h) * .52;   // 手印要撑满构图
   const base = Math.min(w, h) * (kind === FOLLOW_KIND ? .40 : .34);
   return kind === FOLLOW_KIND ? clamp(hand.s * w * 1.15, base * .35, base * 1.8) : base;
 }
@@ -120,6 +181,7 @@ function onResults(results) {
       confirmed = +k;
       currentGesture = +k;
       const kind = GESTURE_MAP[+k];
+      if (introActive) { votes = {}; break; }   // 出场期间不抢占
       if (kind !== currentKind) setShape(kind);
       else if (kind === FOLLOW_KIND) { /* 由 update 负责跟随 */ }
       votes = {};
@@ -131,19 +193,22 @@ function onResults(results) {
 }
 
 function setShape(kind) {
-  const meta = SHAPES[kind];
+  const meta = SHAPES[kind] || SEAL_META;
   const { w, h } = R.size;
-  const { rel, size, ct } = buildShape(kind, R.count);
+  const built = buildShape(kind, R.count);
   fromEnergy = S.energy;
   const ctr = kind === FOLLOW_KIND ? [hand.x, hand.y] : [w * .5, h * .5];
-  R.setShape(rel, size, ct, meta.hue, ctr[0], ctr[1], shapeRadius(kind), kind === FOLLOW_KIND ? 1 : 0);
+  const hue = built.hue != null ? built.hue : meta.hue;
+  R.setShape(built.rel, built.size, built.ct, hue, ctr[0], ctr[1], shapeRadius(kind), kind === FOLLOW_KIND ? 1 : 0);
   S.spin = 0;
   phase = 'forming';
   phaseT = 0;
+  formMs = kind === INTRO_SHAPE ? INTRO_FORM_MS : FORM_MS;
   el.roGlyph.textContent = meta.glyph;
   el.roName.textContent = meta.name;
   el.readout.classList.add('on');
   setStatus('成型', 'busy');
+  if (kind === INTRO_SHAPE) playIntroAudio();
 }
 
 function release() {
@@ -161,7 +226,7 @@ function update(dt, time) {
   phaseT += dt * 1000;
 
   if (phase === 'forming') {
-    const p = Math.min(1, phaseT / FORM_MS);
+    const p = Math.min(1, phaseT / formMs);
     S.morph = easeOutBack(p);
     S.free = lerp(1, .06, easeOutCubic(p));
     S.energy = lerp(fromEnergy, 1, easeOutCubic(p));
@@ -265,6 +330,9 @@ function pumpInference() {
 
 function shutdown() {
   running = false;
+  introActive = false;
+  clearTimeout(introTimer); introTimer = 0;
+  try { if (introAudio) { introAudio.pause(); introAudio.currentTime = 0; } } catch {}
   cancelAnimationFrame(inferLoopId);
   if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
   el.video.srcObject = null;
@@ -328,6 +396,7 @@ async function start() {
     loadInfo = result.stats;
     paintStats();
     pumpInference();
+    startIntro();          // 引擎就绪 → 出手印 + 同步语音，约 3 秒后自行恢复常态
   } catch (e) {
     running = false;
     stream?.getTracks().forEach(t => t.stop());
@@ -381,15 +450,23 @@ function startDemo(kind) {
   el.gate.classList.add('leaving');
   setTimeout(() => { el.gate.style.display = 'none'; }, 520);
 
-  let i = Math.max(0, DEMO_ORDER.indexOf(kind));
   const show = k => { currentKind = null; setShape(k); };
+
+  // 不在轮播表里的形态（例如出场手印）只展示一次，便于单独调试
+  const i = DEMO_ORDER.indexOf(kind);
+  if (i < 0) {
+    show(kind);
+    setStatus('演示中', 'busy');
+    return;
+  }
+
   show(DEMO_ORDER[i]);
   setStatus('演示中', 'busy');
 
   clearInterval(demoTimer);
   demoTimer = setInterval(() => {
-    i = (i + 1) % DEMO_ORDER.length;
-    show(DEMO_ORDER[i]);
+    const j = (DEMO_ORDER.indexOf(kind) + 1) % DEMO_ORDER.length;
+    show(DEMO_ORDER[j]);
   }, 5600);
 }
 
@@ -398,8 +475,12 @@ function startDemo(kind) {
 let activeAbort = null;
 let loadInfo = null;
 
-el.enter.addEventListener('click', start);
-el.enterDemo.addEventListener('click', () => startDemo(GESTURE_MAP[Number(new URLSearchParams(location.search).get('demo'))] || 'byakugan'));
+el.enter.addEventListener('click', () => { unlockIntroAudio(); start(); });
+el.enterDemo.addEventListener('click', () => {
+  const p = new URLSearchParams(location.search).get('demo');
+  const k = /^\d+$/.test(p || '') ? GESTURE_MAP[Number(p)] : (p || 'byakugan');
+  startDemo(k);
+});
 
 el.btnDebug.addEventListener('click', () => {
   statsOpen = !statsOpen;

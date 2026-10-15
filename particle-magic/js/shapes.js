@@ -1,4 +1,4 @@
-import { TAU, gauss } from './util.js';
+import { TAU, gauss, clamp } from './util.js?v=3';
 
 // 形态 0 = 大筒木白眼（冷白，跟随手部）
 // 形态 1~5 = 万花筒眼五态（红瞳，居中旋转）
@@ -149,6 +149,117 @@ const EYES = {
           hr:1.04, hj:.028, hSize:.88 },
 };
 
+// ─────────── 出场手印 ───────────
+// 掌心 + 四指 + 拇指的并集；用「点到线段的距离」判定内外，逐粒子色相做苍白手 + 深红眼
+function segDist(px, py, ax, ay, bx, by) {
+  const vx = bx - ax, vy = by - ay;
+  const wx = px - ax, wy = py - ay;
+  const L = vx * vx + vy * vy;
+  const t = L > 1e-9 ? clamp((wx * vx + wy * vy) / L, 0, 1) : 0;
+  const dx = wx - vx * t, dy = wy - vy * t;
+  return Math.hypot(dx, dy);
+}
+
+function inHand(x, y) {
+  const dx = (x - SEAL.px) / SEAL.pw, dy = (y - SEAL.py) / SEAL.ph;
+  const k = Math.pow(Math.abs(dx), SEAL.pk) + Math.pow(Math.abs(dy), SEAL.pk);
+  if (k < 1) return true;
+  for (let i = 0; i < SEAL.fingers.length; i++) {
+    const f = SEAL.fingers[i];
+    if (segDist(x, y, f[0], f[1], f[2], f[3]) < f[4]) return true;
+  }
+  const t = SEAL.thumb;
+  return segDist(x, y, t[0], t[1], t[2], t[3]) < t[4];
+}
+
+// 比例取自参考图（1920×1180）：四指占画面 x 0.19~0.62（归一 -0.62~0.24），
+// 拇指独立在左，红眼中心落在 (0.33, 0.15)。指缝刻意放大，粒子太细画不出原图的细缝。
+const SEAL = {
+  px: -.22, py: -.74, pw: .62, ph: .58, pk: 3.2,
+  fingers: [
+    [.135, -.34, .24, 1.06, .105],
+    [-.135, -.34, -.14, 1.20, .105],
+    [-.405, -.34, -.42, 1.10, .100],
+    [-.675, -.34, -.70, 0.94, .090],
+  ],
+  thumb: [-.68, -.60, -.98, .12, .095],
+  eye: [.50, .18, .190],
+};
+
+function handSeal(n, rel, size, ct, hue) {
+  const share = { hand: .66, eye: .12, flare: .03, strand: .04, dust: .15 };
+  let i = 0;
+  // 注意：渲染器里 gl_Position.y = 1.0 - p.y/H*2.0，即形状空间的 +y 落到屏幕下方。
+  // 所以这里统一按「数学朝向（y 向上）」书写，写入前取一次负，并整体倾斜一点。
+  const ROT = -0.105, CR = Math.cos(ROT), SR = Math.sin(ROT);
+  const put = (x, y, s, c, h) => {
+    if (i >= n) return;
+    emit(rel, size, ct, i, x * CR - y * SR, -(x * SR + y * CR), s, c);
+    hue[i] = h;
+    i++;
+  };
+
+  // 手：苍白偏暖（hue 拉高到接近冷白端），越靠指尖越亮
+  const nHand = Math.round(n * share.hand);
+  for (let k = 0; k < nHand; k++) {
+    let x = 0, y = 0, ok = false;
+    for (let g = 0; g < 32 && !ok; g++) {
+      x = (Math.random() * 2 - 1) * 1.10;
+      y = (Math.random() * 2 - 1) * 1.30;
+      ok = inHand(x, y);
+    }
+    if (!ok) { k--; continue; }
+    const up = clamp((y + 1.25) / 2.50, 0, 1);
+    put(x + gauss() * .008, y + gauss() * .008,
+        .92 + Math.random() * .30, .70 + up * .26 + Math.random() * .10,
+        .90 + Math.random() * .08);
+  }
+
+  // 红眼：苍白外环 → 虹膜 → 暗瞳心
+  const ex = SEAL.eye[0], ey = SEAL.eye[1], er = SEAL.eye[2];
+  const nEye = Math.round(n * share.eye);
+  for (let k = 0; k < nEye; k++) {
+    const t = Math.pow(Math.random(), .50);
+    const r = er * t;
+    const a = Math.random() * TAU;
+    const x = ex + Math.cos(a) * r, y = ey + Math.sin(a) * r;
+    let h, c, s;
+    if (t < .30)      { h = .02; c = .02 + Math.random() * .05; s = .34 + Math.random() * .26; }  // 瞳心
+    else if (t < .93) { h = .02; c = .90 + Math.random() * .10; s = .90 + Math.random() * .38; }  // 虹膜
+    else              { h = .90; c = .70 + Math.random() * .28; s = .46 + Math.random() * .24; }  // 外环
+    put(x, y, s, c, h);
+  }
+
+  // 横向炫光：以眼为心、中心最亮的短亮带（不是激光）
+  const nFl = Math.round(n * share.flare);
+  for (let k = 0; k < nFl; k++) {
+    const u = Math.pow(Math.random(), .70) * 2 - 1;
+    const x = ex + u * .46;
+    const y = ey + gauss() * (.022 + .050 * (1 - Math.abs(u)));
+    put(x, y, .74 + Math.random() * .34, .96 - Math.abs(u) * .56, .05 + Math.random() * .06);
+  }
+
+  // 画面两侧的暗色发丝，压住构图
+  const nSt = Math.round(n * share.strand);
+  for (let k = 0; k < nSt; k++) {
+    const side = Math.random() < .5 ? -1 : 1;
+    const x0 = side * (0.80 + Math.random() * .34);
+    const y0 = (Math.random() * 2 - 1) * 1.25;
+    const x1 = x0 - side * (.08 + Math.random() * .18);
+    const y1 = y0 + (Math.random() * 2 - 1) * .80;
+    const t = Math.random();
+    put(x0 + (x1 - x0) * t + gauss() * .014, y0 + (y1 - y0) * t,
+        .66 + Math.random() * .40, .05 + Math.random() * .11, .02 + Math.random() * .05);
+  }
+
+  // 周围弥散（贴着手的范围，不要糊满画布）
+  for (; i < n; i++) {
+    const a = Math.random() * TAU;
+    const r = Math.pow(Math.random(), .60) * 1.15;
+    put(Math.cos(a) * r, Math.sin(a) * r, .44 + Math.random() * .26, .06 + Math.random() * .12, .34 + Math.random() * .22);
+  }
+}
+
 const BUILDERS = {
   byakugan,
   moh1: (n, r, s, c) => eye(n, r, s, c, EYES.moh1),
@@ -179,6 +290,11 @@ export function buildShape(kind, n) {
   const rel = new Float32Array(n * 2);
   const size = new Float32Array(n);
   const ct = new Float32Array(n);
+  if (kind === 'seal') {
+    const hue = new Float32Array(n);
+    handSeal(n, rel, size, ct, hue);
+    return { rel, size, ct, hue };   // 逐粒子色相；自身管理弥散，不用 addHalo
+  }
   const meta = SHAPES[kind] || SHAPES.moh3;
   (BUILDERS[kind] || BUILDERS.moh3)(n, rel, size, ct);
   addHalo(rel, size, ct, n, meta.hf, meta.hs, 1.0);

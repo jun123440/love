@@ -1,4 +1,4 @@
-import { clamp } from './util.js';
+import { clamp } from './util.js?v=3';
 
 const VS_PARTICLE = `
 precision highp float;
@@ -379,6 +379,7 @@ function bindParticles() {
   function setShape(rel, size, ct, newHue, cx, cy, radius, churn) {
     if (!count) return;
     const n = count;
+    const perHue = Array.isArray(newHue) || ArrayBuffer.isView(newHue);
     const cos = Math.cos(S.spin), sin = Math.sin(S.spin);
     if (S.bound && S.morph > .5) {
       for (let i = 0; i < n; i++) {
@@ -391,10 +392,11 @@ function bindParticles() {
     for (let i = 0; i < n; i++) {
       aMeta[i * 4 + 1] = size[i];
       aMeta[i * 4 + 2] = ct[i];
-      aMeta[i * 4 + 3] = newHue;
+      aMeta[i * 4 + 3] = perHue ? newHue[i] : newHue;
     }
     S.cx = cx; S.cy = cy; S.r = radius; S.spin = 0; S.churn = churn || 0; S.bound = true;
-    S.hue = newHue;
+    // 背景雾跟随一个代表色相；逐粒子异色时取红瞳的值
+    S.hue = perHue ? 0.06 : newHue;
     S.morph = 0;
     uploadAll();
   }
