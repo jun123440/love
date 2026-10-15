@@ -1,4 +1,4 @@
-import { clamp } from './util.js?v=3';
+import { clamp } from './util.js?v=4';
 
 const VS_PARTICLE = `
 precision highp float;
@@ -33,20 +33,32 @@ vec2 drift(vec2 p, float sd, float t){
 
 vec3 ramp(float t, float h){
   t = clamp(t, 0.0, 1.0);
-  float m = clamp(h, 0.0, 1.0);
   float u = t/0.58;
   float w = (t-0.58)/0.42;
-  // 标定自「Beneath The Seventh」实测均值：暗(66,6,7) 中(106,17,16) 亮(154,38,34)
-  // 上限压到「亮」色附近：叠加混合会让密集区收敛到 ramp 顶端，直接用极亮值(182,94,67)会发橙
+
   vec3 d0 = vec3(0.190, 0.022, 0.026);   // 红瞳·暗
   vec3 d1 = vec3(0.420, 0.068, 0.063);   // 红瞳·中
   vec3 d2 = vec3(0.640, 0.180, 0.140);   // 红瞳·亮
-  vec3 w0 = vec3(0.075, 0.095, 0.145);   // 白眼·暗（冷靛）
-  vec3 w1 = vec3(0.330, 0.420, 0.545);   // 白眼·中（青灰）
-  vec3 w2 = vec3(0.780, 0.880, 0.980);   // 白眼·亮（冷白）
+  vec3 s0 = vec3(0.280, 0.175, 0.150);   // 肤色·暗（阴影）
+  vec3 s1 = vec3(0.883, 0.766, 0.731);   // 肤色·中（原图实测均值）
+  vec3 s2 = vec3(0.973, 0.882, 0.847);   // 肤色·亮（原图实测 p90）
+  vec3 c0 = vec3(0.075, 0.095, 0.145);   // 冷白·暗（大筒木白眼）
+  vec3 c1 = vec3(0.330, 0.420, 0.545);   // 冷白·中
+  vec3 c2 = vec3(0.780, 0.880, 0.980);   // 冷白·亮
+
   vec3 pd = t < 0.58 ? mix(d0, d1, u) : mix(d1, d2, w);
-  vec3 pw = t < 0.58 ? mix(w0, w1, u) : mix(w1, w2, w);
-  return mix(pd, pw, m);
+  vec3 ps = t < 0.58 ? mix(s0, s1, u) : mix(s1, s2, w);
+  vec3 pc = t < 0.58 ? mix(c0, c1, u) : mix(c1, c2, w);
+
+  // h 分段：0~1 红瞳→肤色，1~2 肤色→冷白
+  return h < 1.0 ? mix(pd, ps, h) : mix(ps, pc, h - 1.0);
+}
+
+vec3 coreTint(float h){
+  vec3 r = vec3(0.30, 0.11, 0.07);
+  vec3 s = vec3(0.36, 0.24, 0.17);
+  vec3 c = vec3(0.24, 0.33, 0.42);
+  return h < 1.0 ? mix(r, s, h) : mix(s, c, h - 1.0);
 }
 
 void main(){
@@ -75,7 +87,7 @@ void main(){
   float core = exp(-rad*1.7);
 
   vec3 col = ramp(aMeta.z, aMeta.w);
-  col += mix(vec3(0.30,0.11,0.07), vec3(0.24,0.33,0.42), aMeta.w) * core * 0.16;
+  col += coreTint(aMeta.w) * core * 0.16;
 
   float sz = aMeta.y * uDpr * (uRes.y/820.0);
   sz *= (1.0 + free*0.55) * (0.62 + 0.62*uEnergy);

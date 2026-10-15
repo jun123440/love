@@ -1,7 +1,7 @@
-import { createRenderer } from './renderer.js?v=3';
-import { SHAPES, GESTURE_MAP, buildShape, FOLLOW_KIND } from './shapes.js?v=3';
-import { bootHands, LoadError } from './loader.js?v=3';
-import { clamp, lerp, easeOutBack, easeOutCubic, easeInOutCubic, frameLoop } from './util.js?v=3';
+import { createRenderer } from './renderer.js?v=4';
+import { SHAPES, GESTURE_MAP, buildShape, FOLLOW_KIND } from './shapes.js?v=4';
+import { bootHands, LoadError } from './loader.js?v=4';
+import { clamp, lerp, easeOutBack, easeOutCubic, easeInOutCubic, frameLoop } from './util.js?v=4';
 
 const FORM_MS = 1900;
 const RELEASE_MS = 1500;
@@ -115,7 +115,7 @@ let hand = { x: 0, y: 0, s: .12 };
 
 function shapeRadius(kind) {
   const { w, h } = R.size;
-  if (kind === INTRO_SHAPE) return Math.min(w, h) * .52;   // 手印要撑满构图
+  if (kind === INTRO_SHAPE) return Math.min(w, h) * .62;   // 手印要撑满构图
   const base = Math.min(w, h) * (kind === FOLLOW_KIND ? .40 : .34);
   return kind === FOLLOW_KIND ? clamp(hand.s * w * 1.15, base * .35, base * 1.8) : base;
 }
