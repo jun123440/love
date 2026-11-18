@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#243d39">
+<meta name="description" content="Love Collection — 一座收藏好奇心的数字花园。探索宇宙、交互和创意作品。">
+<title>Love Collection · A garden of possibilities</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="style.css">
+<link rel="preload" href="garden.webp" as="image">
+<script src="projects.js" defer></script>
+<script src="app.js" defer></script>
+<script src="garden.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#works">跳到作品</a>
+<main>
+<section class="hero" id="home" aria-labelledby="hero-title">
+  <div class="painting"><img src="garden.webp" alt="印象派睡莲池塘与垂柳，金色阳光映在蓝绿色水面" fetchpriority="high"><canvas id="water" aria-hidden="true"></canvas></div>
+  <div class="veil"></div>
+  <header class="header">
+    <a href="#home" class="brand" aria-label="Love Collection 首页">lc.</a>
+    <nav class="glass-nav" aria-label="主导航"><a href="#home" class="active">花园</a><a href="#works">作品 <span class="total"></span></a><a href="#about">暮色</a></nav>
+    <a href="https://github.com/jun123440" target="_blank" rel="noopener noreferrer" class="github">GitHub <span>↗</span></a>
+  </header>
+  <div class="hero-content">
+    <div class="eyebrow"><span class="small-line"></span>A garden of possibilities</div>
+    <h1 id="hero-title">Love<br><em>Collection.</em></h1>
+    <p class="hero-description">让好奇心生长，让想象有迹可循。</p>
+    <a class="explore magnetic" href="#works"><span>漫游作品</span><span class="circle-arrow">↗</span></a>
+  </div>
+  <aside class="garden-note"><span class="note-line"></span><p>在光影之间，<br>收藏每一个灵感。</p><span class="micro">ART MEETS CODE</span></aside>
+  <div class="hero-floor">
+    <span class="water-hint"><i></i>划过水面，留下一圈涟漪</span>
+    <button id="motion" class="motion" aria-label="暂停水面动画" aria-pressed="false"><span>静止画面</span> Ⅱ</button>
+    <a href="#about" class="scroll">向下探索 <span>↓</span></a>
+  </div>
+</section>
+<section class="light-study" id="about" aria-labelledby="light-title">
+  <div class="light-field">
+    <div class="daylight" aria-hidden="true"></div>
+    <div class="moonlight" aria-hidden="true"></div>
+    <div class="study-copy"><h2 id="light-title">L’heure <em>bleue.</em></h2><p>池畔，入暮时分。</p></div>
+    <div class="light-console"><label for="light-level">调节池畔光线</label>
+    <input id="light-level" type="range" min="0" max="100" value="58" aria-valuetext="暮色">
+    <div class="light-ends"><span>日光</span><span>月色</span></div></div>
+  </div>
+</section>
+<section class="works section" id="works" aria-labelledby="works-title">
+  <div class="section-heading"><div><span class="eyebrow">作品索引</span><h2 id="works-title">The <em>collection</em></h2></div></div>
+  <div class="toolbar">
+    <div class="filters" role="group" aria-label="作品分类"><button data-filter="all" aria-pressed="true">全部 <span class="total"></span></button><button data-filter="cosmos" aria-pressed="false">宇宙</button><button data-filter="interactive" aria-pressed="false">交互</button><button data-filter="play" aria-pressed="false">趣味</button><button data-filter="tools" aria-pressed="false">工具</button></div>
+    <label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="寻找一个灵感" aria-label="查找作品"></label>
+  </div>
+  <p id="result-status" class="sr-only" role="status"></p>
+  <div id="project-list"></div>
+  <button id="load-more" class="load-more" type="button"></button>
+  <p id="empty" hidden>没有找到匹配的作品，试试其他关键词。</p>
+  <div class="collection-end"><span id="count"></span></div>
+</section>
+
+</main>
+<footer><a class="footer-brand" href="#home">love collection.</a><span>© <span id="year"></span></span><a href="https://jun123440.dpdns.org/" target="_blank" rel="noopener noreferrer">原版作品集 ↗</a><a href="#home">回到顶部 ↑</a></footer>
+<dialog id="detail" aria-labelledby="detail-title"><button class="close" aria-label="关闭作品详情">×</button><span class="eyebrow" id="detail-category"></span><h2 id="detail-title"></h2><p id="detail-description"></p><a class="launch" id="launch" target="_blank" rel="noopener noreferrer">打开作品 ↗</a><p class="detail-note">将在新标签页打开作品</p></dialog>
+</body>
+</html>
+
