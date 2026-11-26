@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html{scroll-snap-type:y mandatory;overflow-y:scroll}
+html{scroll-snap-type:y proximity;overflow-y:scroll}
 body{font-family:'Outfit',sans-serif;background:#08080f;color:#e8e8f0;overflow-x:hidden}
 
 canvas#bg{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0}
@@ -34,7 +34,10 @@ section{scroll-snap-align:start;width:100vw;height:100vh;position:relative;z-ind
 @keyframes scrollPulse{0%,100%{opacity:1;transform:scaleY(1)}50%{opacity:0.3;transform:scaleY(0.6)}}
 
 /* ==== Works ==== */
-#works{justify-content:center;gap:2.5rem;padding-top:4rem;padding-bottom:4rem}
+#works{justify-content:center;gap:1.5rem;height:auto;min-height:100svh;padding:clamp(1.25rem,5vw,4rem) 1rem}
+.versions{display:flex;flex-wrap:wrap;justify-content:center;gap:.6rem 1.1rem}
+.versions a{color:#9acefa;text-underline-offset:.2em}
+.versions a:focus-visible,.card:focus-visible{outline:2px solid #9acefa;outline-offset:4px}
 .section-label{font-family:'DM Mono',monospace;font-weight:400;font-size:clamp(0.55rem,0.7vw,0.65rem);letter-spacing:0.5em;text-transform:uppercase;color:rgba(232,232,240,0.12);position:relative;z-index:2}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;max-width:780px;width:88%;position:relative;z-index:2}
 
@@ -58,27 +61,30 @@ transition:all 0.5s cubic-bezier(0.23,1,0.32,1);transform-style:preserve-3d;pers
 /* ==== Responsive ==== */
 @media(max-width:640px){.grid{grid-template-columns:repeat(2,1fr);gap:0.5rem;width:92%}.card{padding:1rem 1.2rem}.card-name{font-size:0.8rem}}
 @media(min-width:1200px){.grid{max-width:900px;gap:1rem}.card{padding:1.5rem 1.75rem}.card-name{font-size:1rem}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
 
-<canvas id="bg"></canvas>
+<canvas id="bg" aria-hidden="true"></canvas>
 
 <section id="hero">
   <div class="hero-label">Portfolio</div>
-  <div class="hero-title">
+  <h1 class="hero-title" aria-label="Love Collection">
     <span class="line line1"><span class="hero-char" style="animation-delay:0s">l</span><span class="hero-char" style="animation-delay:0.08s">o</span><span class="hero-char" style="animation-delay:0.16s">v</span><span class="hero-char" style="animation-delay:0.24s">e</span></span>
     <span class="line line2"><span class="hero-char" style="animation-delay:0.4s">c</span><span class="hero-char" style="animation-delay:0.48s">o</span><span class="hero-char" style="animation-delay:0.56s">l</span><span class="hero-char" style="animation-delay:0.64s">l</span><span class="hero-char" style="animation-delay:0.72s">e</span><span class="hero-char" style="animation-delay:0.8s">c</span><span class="hero-char" style="animation-delay:0.88s">t</span><span class="hero-char" style="animation-delay:0.96s">i</span><span class="hero-char" style="animation-delay:1.04s">o</span><span class="hero-char" style="animation-delay:1.12s">n</span></span>
-  </div>
+  </h1>
   <div class="hero-sub">A Collection of Experiments</div>
-  <div class="scroll-indicator">
+  <a class="scroll-indicator" href="#works" aria-label="Browse projects">
     <div class="scroll-line"></div>
     <div class="scroll-text">Scroll</div>
-  </div>
+  </a>
 </section>
 
-<section id="works">
-  <div class="section-label">Projects</div>
+<section id="works" aria-labelledby="works-title">
+  <h2 class="section-label" id="works-title">Projects</h2>
+  <nav class="versions" aria-label="作品集版本" lang="zh-CN"><a href="garden/">花园版 ↗</a><a href="lab/">实验版 ↗</a></nav>
+  <noscript><p lang="zh-CN">作品列表需要 JavaScript。</p></noscript>
   <div class="grid" id="projectGrid"></div>
 </section>
 
@@ -87,46 +93,28 @@ transition:all 0.5s cubic-bezier(0.23,1,0.32,1);transform-style:preserve-3d;pers
   <a href="https://github.com/jun123440" target="_blank" rel="noopener">GitHub ↗</a>
 </section>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="garden/projects.js"></script>
 <script>
-const FALLBACK = [
-  {name:'3D Earth',path:'3d-earth/'},
-  {name:'Black Hole',path:'blackhole/'},
-  {name:'Earth Plus',path:'earth-plus/'},
-  {name:'EVA Wallpaper',path:'eva-wallpaper/'},
-  {name:'Particle Confirm',path:'particle-confirm/'},
-  {name:'Particle Magic',path:'particle-magic/'},
-  {name:'Rose',path:'rose/'},
-  {name:'Solar System',path:'solar-system/'},
-  {name:'Black Hole+',path:'black-hole.html'},
-  {name:'Snake',path:'snake/'},
-  {name:'Name Decomposer',path:'name-decomposer/'},
-  {name:'IP Lookup',path:'ip-lookup/'},
-  {name:'Pelican Bike',path:'pelican-bike.html'},
-  {name:'GPS Share',path:'https://gps.jun123440.dpdns.org'},
-];
-const HIDDEN = new Set(['index.html','CNAME','.nojekyll','README.md','previews','fonts','vendor','lab','home','confession']);
-
-const grid = document.getElementById('projectGrid');
-
-function prettyName(s){
-  return s.replace(/\.html$/,'').split(/[-_]/).filter(Boolean)
-    .map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
-}
-function glowFor(i){
-  const c = new THREE.Color().setHSL((i*0.137+0.02)%1, 0.6, 0.55);
-  return '#'+c.getHexString()+'44';
-}
+const grid = document.getElementById("projectGrid");
+const motion = matchMedia("(prefers-reduced-motion: reduce)");
+const fine = matchMedia("(hover: hover) and (pointer: fine)");
 function renderCards(list){
   grid.innerHTML='';
   list.forEach((p,i)=>{
     const a = document.createElement('a');
     a.className = 'card';
-    a.href = p.path;
-    a.style.setProperty('--glow', glowFor(i));
-    a.innerHTML = '<div class="card-num">'+(i+1).toString().padStart(2,'0')+'</div><div class="card-name">'+p.name+'</div>';
+    a.href = p.url.startsWith('../') ? p.url.slice(3) : p.url;
+    a.style.setProperty('--glow', 'hsla(' + ((i * 49 + 7) % 360) + ', 60%, 55%, .25)');
+    const number = document.createElement('div');
+    number.className = 'card-num';
+    number.textContent = String(i + 1).padStart(2, '0');
+    const name = document.createElement('div');
+    name.className = 'card-name';
+    name.textContent = p.title;
+    a.append(number, name);
     grid.appendChild(a);
     a.addEventListener('mousemove',function(e){
+      if (motion.matches || !fine.matches) return;
       const r=this.getBoundingClientRect();
       const x=(e.clientX-r.left)/r.width-0.5;
       const y=(e.clientY-r.top)/r.height-0.5;
@@ -136,28 +124,18 @@ function renderCards(list){
   });
 }
 
-renderCards(FALLBACK);
-
-function loadProjects(tries){
-  fetch('https://api.github.com/repos/jun123440/love/contents/')
-    .then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); })
-    .then(items=>{
-      if(!Array.isArray(items)) return;
-      const list = items
-        .filter(x=>!HIDDEN.has(x.name) && !/\.(jpg|jpeg|png|gif|webp|ico)$/i.test(x.name))
-        .filter(x=>x.type==='dir' || /\.html$/i.test(x.name))
-        .sort((a,b)=>a.name.localeCompare(b.name))
-        .map(x=>({name:prettyName(x.name), path:x.type==='dir' ? x.name+'/' : x.name}));
-      const external = FALLBACK.filter(f => f.path.startsWith('http') && !list.some(l => l.path === f.path));
-      list.push(...external);
-      if(list.length) renderCards(list);
-    })
-    .catch(()=>{ if(tries>0) setTimeout(()=>loadProjects(tries-1),3000); });
-}
-loadProjects(2);
+renderCards(window.COLLECTION);
 </script>
 
 <script>
+// Optional scene: the project index remains usable without Three.js or WebGL.
+if (!motion.matches) {
+  const engine = document.createElement('script');
+  engine.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+  engine.onload = () => { try { startBackdrop(); } catch (error) { console.warn('Background unavailable', error); } };
+  document.head.append(engine);
+}
+function startBackdrop() {
 // ==== Three.js Scene ====
 const canvas = document.getElementById('bg');
 const renderer = new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
@@ -399,6 +377,7 @@ window.addEventListener('resize', () => {
   camera.aspect = w/h;
   camera.updateProjectionMatrix();
 });
+}
 </script>
 </body>
 </html>

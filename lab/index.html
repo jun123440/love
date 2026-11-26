@@ -7,11 +7,11 @@
 <meta name="description" content="实验版本页：编辑式排版 + 横向滚动精选 + 自定义光标。十五个能跑起来的小作品，全部纯前端。">
 <meta name="theme-color" content="#08090b">
 <meta name="color-scheme" content="dark">
-<link rel="canonical" href="https://jun123440.dpdns.org/">
+<link rel="canonical" href="https://jun123440.dpdns.org/lab/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="无言 · 一个人的技术游乐场">
 <meta property="og:description" content="十五个能跑起来的小作品：WebGL 地球、相对论黑洞、粒子告白、手势魔法、像素贪吃蛇。">
-<meta property="og:url" content="https://jun123440.dpdns.org/">
+<meta property="og:url" content="https://jun123440.dpdns.org/lab/">
 <meta property="og:image" content="https://jun123440.dpdns.org/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -569,7 +569,7 @@ html:not(.js) .ticker-track{animation:none}
     { id:'particle-confirm', name:'粒子 · 你的名字', en:'Particle Confession', path:'particle-confirm/', cat:'Interactive',
       desc:'输入一个名字，让它从粒子海里浮出来。', tags:['粒子系统','点阵文字'] },
     { id:'beauty', name:'颜·值', en:'Beauty Score', path:'app/', cat:'Interactive',
-      desc:'对着镜头拍张照，随机给你打个分。', tags:['摄像头','人像分析'] },
+      desc:'抽一张随机风格卡，不拍照，也不分析长相。', tags:['随机抽卡','本地运行'] },
     { id:'snake', name:'贪吃蛇 90s', en:'Snake · 90s', path:'snake/', cat:'Game',
       desc:'荧光绿、格子墙、三种模式的老游戏。', tags:['Canvas','像素风'] },
     { id:'pelican', name:'鹈鹕骑车', en:'Pelican on a Bike', path:'pelican-bike.html', cat:'Animation',
@@ -583,7 +583,7 @@ html:not(.js) .ticker-track{animation:none}
   ];
   const ALL = [...FEATURED, ...INDEX];
   const byId = id => ALL.find(p => p.id === id);
-  const IGNORE = new Set(['index.html','CNAME','.nojekyll','README.md','previews','fonts','vendor','lab','.git','home','confession']);
+  const projectHref = p => p.path.startsWith('https://') ? p.path : '../' + p.path;
 
   const tickerWords = ['WebGL','Particles','Gesture','Canvas','SVG','Ray Tracing','Post FX','Shaders','Pixels','Physics','Motion','Pure Frontend'];
 
@@ -604,7 +604,7 @@ html:not(.js) .ticker-track{animation:none}
         <span class="panel-cat">${esc(p.cat)}</span>
       </div>
       <div class="panel-text">
-        <h3><a class="panel-link" href="${esc(p.path)}" target="_blank" rel="noopener"
+        <h3><a class="panel-link" href="${esc(projectHref(p))}" target="_blank" rel="noopener"
                aria-label="${esc(p.name)}，在新标签页打开" data-cursor="打开">${esc(p.name)}<span>${esc(p.en)}</span></a></h3>
         <p>${esc(p.desc)}</p>
         <ul class="panel-tags">${p.tags.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
@@ -617,7 +617,7 @@ html:not(.js) .ticker-track{animation:none}
     </article>`).join('');
 
   $('#idxList').innerHTML = INDEX.map((p, i) => `
-    <a class="idx-row reveal" href="${esc(p.path)}" target="_blank" rel="noopener"
+    <a class="idx-row reveal" href="${esc(projectHref(p))}" target="_blank" rel="noopener"
        data-id="${esc(p.id)}" data-cursor="打开"
        aria-label="${esc(p.name)}，在新标签页打开">
       <span class="idx-n">${p2(i + 7)}</span>
@@ -896,36 +896,6 @@ html:not(.js) .ticker-track{animation:none}
 
   initSky();
 
-  /* ================= GitHub 同步 ================= */
-  const pretty = s => s.replace(/\.html$/, '').split(/[-_]/).filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-  function sync(tries) {
-    fetch('https://api.github.com/repos/jun123440/love/contents/')
-      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(items => {
-        if (!Array.isArray(items)) return;
-        const known = new Set(ALL.map(p => p.path));
-        const found = items
-          .filter(x => !IGNORE.has(x.name) && !/\.(jpg|jpeg|png|gif|webp|ico|svg|json|css|js|woff2?)$/i.test(x.name))
-          .filter(x => x.type === 'dir' || /\.html$/i.test(x.name))
-          .filter(x => !known.has(x.type === 'dir' ? x.name + '/' : x.name));
-        if (!found.length) return;
-        found.forEach(x => {
-          const p = { id: x.name.replace(/\.html$/, ''), name: pretty(x.name), en: '', path: x.type === 'dir' ? x.name + '/' : x.name,
-            cat: 'New', desc: '刚放上来的新作品，还没写简介。', tags: ['New'] };
-          ALL.push(p); INDEX.push(p);
-          $('#idxList').insertAdjacentHTML('beforeend',
-            `<a class="idx-row" href="${esc(p.path)}" target="_blank" rel="noopener" data-id="${esc(p.id)}" data-cursor="打开">
-               <span class="idx-n">${p2(INDEX.length + 5)}</span>
-               <span class="idx-name">${esc(p.name)}</span>
-               <span class="idx-desc">${esc(p.desc)}</span>
-               <span class="idx-go">${esc(p.cat)} ${arrow}</span>
-             </a>`);
-        });
-        if (window.ScrollTrigger) ScrollTrigger.refresh();
-      })
-      .catch(() => { if (tries > 0) setTimeout(() => sync(tries - 1), 5000); });
-  }
-  setTimeout(() => sync(1), 2500);
 })();
 </script>
 </body>

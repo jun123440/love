@@ -1,5 +1,6 @@
 const categories = {cosmos:'宇宙探索', interactive:'交互实验', play:'趣味作品', tools:'实用工具'};
 const projects = window.COLLECTION;
+const normalize = text => text.normalize('NFKC').toLocaleLowerCase();
 const list = document.querySelector('#project-list');
 const dialog = document.querySelector('#detail');
 let filter = 'all';
@@ -24,8 +25,8 @@ dialog.addEventListener('click', event => {
   if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close();
 });
 function render() {
-  const term = document.querySelector('#search').value.trim().toLowerCase();
-  const selected = projects.filter(p => (filter === 'all' || p.category === filter) && `${p.title} ${p.subtitle} ${p.description}`.toLowerCase().includes(term));
+  const term = normalize(document.querySelector('#search').value.trim()).split(/\s+/).filter(Boolean);
+  const selected = projects.filter(p => (filter === 'all' || p.category === filter) && term.every(word => normalize([p.title,p.subtitle,p.description,p.id,categories[p.category]].join(' ')).includes(word)));
   const displayed = expanded ? selected : selected.slice(0, 6);
   list.replaceChildren();
   for (const project of displayed) {

@@ -274,7 +274,7 @@ scene.add(fillLight2);
 scene.add(new THREE.AmbientLight(0x222244, 0.3));
 
 const SUN_DIST = 4.5;
-const baseSpeed = 0.05 / 60;
+const baseSpeed = 0.05; // radians per second
 let sunAngle = Math.PI * -0.3;
 let speedMult = 1;
 
@@ -283,41 +283,48 @@ speedSlider.addEventListener('input', () => {
   speedLabel.textContent = speedMult.toFixed(1) + '\u00D7';
 });
 
+const sunPosition = new THREE.Vector3();
 function updateSun(angle) {
   const x = SUN_DIST * Math.cos(angle);
   const z = SUN_DIST * Math.sin(angle);
   const y = 0.4 * Math.sin(angle * 2);
-  const pos = new THREE.Vector3(x, y, z);
+  const pos = sunPosition.set(x, y, z);
 
   sunGroup.position.copy(pos);
   sunLight2.position.copy(pos);
 
-  sunDir = pos.clone().negate().normalize();
+  sunDir.copy(pos).negate().normalize();
   nightMat.uniforms.uSunDir.value.copy(sunDir);
   atmoMat.uniforms.uSunDir.value.copy(sunDir);
 
   const hours = ((angle / (Math.PI * 2)) * 24 + 24) % 24;
   const h = Math.floor(hours);
   const m = Math.floor((hours - h) * 60);
-  timeDisplay.textContent = '\u5F53\u5730\u65F6\u95F4 ' + h.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0');
+  const hourText = '\u5F53\u5730\u65F6\u95F4 ' + h.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0');
+
+  if (timeDisplay.textContent !== hourText) timeDisplay.textContent = hourText;
 
   const altDeg = Math.round(Math.asin(Math.min(1, Math.max(-1, y / SUN_DIST))) * 180 / Math.PI);
-  sunAltDisplay.textContent = '\u592A\u9633 ' + altDeg + '\u00B0';
+  const altitudeText = '\u592A\u9633 ' + altDeg + '\u00B0';
+  if (sunAltDisplay.textContent !== altitudeText) sunAltDisplay.textContent = altitudeText;
 }
 
 updateSun(sunAngle);
 setTimeout(() => loading.classList.add('hidden'), 15000);
 
-function animate() {
+let previousFrame;
+function animate(now) {
   requestAnimationFrame(animate);
+  const delta = previousFrame == null ? 0 : Math.min((now - previousFrame) / 1000, 0.05);
+  previousFrame = now;
   controls.update();
-  sunAngle += baseSpeed * speedMult;
+  sunAngle = (sunAngle + baseSpeed * speedMult * delta) % (Math.PI * 2);
   updateSun(sunAngle);
   const c2 = earthGroup.getObjectByName('clouds');
-  if (c2) c2.rotation.y += 0.00015;
+  if (c2) c2.rotation.y += 0.009 * delta;
   renderer.render(scene, camera);
 }
-animate();
+requestAnimationFrame(animate);
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;

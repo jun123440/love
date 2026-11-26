@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>黑洞模型</title>
@@ -146,7 +146,8 @@ if (copyBtn) copyBtn.addEventListener('click', copyAndOpen);
 
 const container = document.body;
 const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false, powerPreference:'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const renderScale = () => Math.min(devicePixelRatio || 1, 1.5, Math.sqrt(2200000 / (innerWidth * innerHeight)));
+renderer.setPixelRatio(renderScale());
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.2;
@@ -711,6 +712,7 @@ renderer.domElement.addEventListener('wheel', (e) => {
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
+  renderer.setPixelRatio(renderScale());
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 

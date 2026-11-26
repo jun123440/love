@@ -307,6 +307,8 @@ function startCamera() {
 }
 
 function pumpInference() {
+  inferLoopId = 0;
+  if (!running || !hands || document.hidden) return;
   inferLoopId = requestAnimationFrame(pumpInference);
   const v = el.video;
   if (!v.videoWidth || v.readyState < 2) return;
@@ -333,7 +335,7 @@ function shutdown() {
   introActive = false;
   clearTimeout(introTimer); introTimer = 0;
   try { if (introAudio) { introAudio.pause(); introAudio.currentTime = 0; } } catch {}
-  cancelAnimationFrame(inferLoopId);
+  cancelAnimationFrame(inferLoopId); inferLoopId = 0;
   if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
   el.video.srcObject = null;
   if (hands) { try { hands.close(); } catch {} hands = null; }
@@ -453,7 +455,7 @@ function startDemo(kind) {
   const show = k => { currentKind = null; setShape(k); };
 
   // 不在轮播表里的形态（例如出场手印）只展示一次，便于单独调试
-  const i = DEMO_ORDER.indexOf(kind);
+  let i = DEMO_ORDER.indexOf(kind);
   if (i < 0) {
     show(kind);
     setStatus('演示中', 'busy');
@@ -465,8 +467,9 @@ function startDemo(kind) {
 
   clearInterval(demoTimer);
   demoTimer = setInterval(() => {
-    const j = (DEMO_ORDER.indexOf(kind) + 1) % DEMO_ORDER.length;
-    show(DEMO_ORDER[j]);
+    if (document.hidden) return;
+    i = (i + 1) % DEMO_ORDER.length;
+    show(DEMO_ORDER[i]);
   }, 5600);
 }
 
@@ -534,8 +537,14 @@ window.addEventListener('resize', () => {
 window.addEventListener('beforeunload', shutdown);
 
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && running) setStatus('已暂停', '');
-  else if (!document.hidden && running) setStatus(handSeen ? '追踪中' : '等待手入镜', handSeen ? '' : 'busy');
+  if (!running || !hands) return;
+  if (document.hidden) {
+    cancelAnimationFrame(inferLoopId); inferLoopId = 0;
+    setStatus('已暂停', '');
+  } else {
+    if (!inferLoopId) inferLoopId = requestAnimationFrame(pumpInference);
+    setStatus(handSeen ? '追踪中' : '等待手入镜', handSeen ? '' : 'busy');
+  }
 });
 
 /* ─────────────── 自适应画质 ─────────────── */

@@ -297,12 +297,15 @@
     }
   }
 
+  let lastDraw = 0;
   function loop(now) {
+    requestAnimationFrame(loop);
+    if (now - lastDraw < (reduced ? 45 : 1000/75)) return;
+    lastDraw = now;
     const dt = Math.min((now - prev) / 16.667, 3);
     prev = now;
     step(dt, (now - t0) / 1000);
     draw();
-    requestAnimationFrame(loop);
   }
 
   let AC = null, muted = false;

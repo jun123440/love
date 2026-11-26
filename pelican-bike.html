@@ -44,6 +44,10 @@
     20%{opacity:.8}
     100%{transform:translate(-46px,-26px) scale(1.3);opacity:0}
   }
+  .motion-toggle{display:flex;align-items:center;gap:.6rem;color:#554535;min-height:44px;cursor:pointer}
+  body:has(#motion:checked) #bike *{animation-play-state:paused!important}
+  #motion{width:18px;height:18px;accent-color:#554535}
+  @media (max-height:520px){svg{max-height:68vh}}
   @media (prefers-reduced-motion:reduce){
     #bike *{animation:none!important}
   }
@@ -51,6 +55,7 @@
 </head>
 <body>
 
+<label class="motion-toggle"><input id="motion" type="checkbox">暂停骑行动画</label>
 <svg id="bike" viewBox="0 0 880 470" role="img" aria-label="一只鹈鹕跨坐在自行车上蹬车前进">
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">

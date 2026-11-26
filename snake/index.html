@@ -31,7 +31,11 @@
             box-shadow: 0 0 40px rgba(62, 234, 138, 0.25);
             border-radius: 4px;
         }
-        .info { color: #d6ffd6; min-width: 250px; }
+        canvas#gameCanvas { width:min(100%,400px);height:auto;touch-action:none; }
+        .info { color: #d6ffd6; width:min(100%,400px); }
+        .dpad {display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+        .dpad button{min-height:44px}
+        @media (pointer:fine) and (min-width:720px){.dpad{display:none}}
         .stat-box {
             background: rgba(62, 234, 138, 0.08);
             border: 2px solid #3eea8a;
@@ -98,6 +102,13 @@
             <button onclick="game.start()">START GAME</button>
             <button onclick="game.restart()">NEW GAME</button>
             <button onclick="location.href='../'">BACK</button>
+            <div class="dpad" role="group" aria-label="Game controls">
+                <button type="button" data-dir="left" aria-label="Left">←</button>
+                <button type="button" data-dir="up" aria-label="Up">↑</button>
+                <button type="button" data-dir="right" aria-label="Right">→</button>
+                <button type="button" id="pause">Pause</button>
+                <button type="button" data-dir="down" aria-label="Down">↓</button>
+            </div>
             <div class="instructions">
                 <p><strong>ARROW KEYS</strong> Move snake</p>
                 <p><strong>SPACE</strong> Pause / Resume</p>
@@ -192,6 +203,7 @@
                 this.gameRunning = false;
                 this.gamePaused = false;
                 this.gameOver = false;
+                this.won = false;
                 this.direction = { x: 1, y: 0 };
                 this.nextDirection = { x: 1, y: 0 };
                 this.lastMoveTime = 0;
@@ -235,32 +247,32 @@
                 this.applyDifficulty();
             },
 
+            freeCells(body) {
+                const occupied = new Set([...body, ...this.obstacles].map(({x,y}) => y * GRID_SIZE + x));
+                const cells = [];
+                for (let id = 0; id < GRID_SIZE * GRID_SIZE; id++) {
+                    if (!occupied.has(id)) cells.push({x:id % GRID_SIZE,y:Math.floor(id / GRID_SIZE)});
+                }
+                return cells;
+            },
+
             generateObstacles() {
-                const count = Math.floor(GRID_SIZE * GRID_SIZE * 0.15);
                 this.obstacles = [];
+                const head = this.snake[0];
+                const candidates = this.freeCells(this.snake).filter(({x,y}) => Math.abs(x-head.x)>=3 || Math.abs(y-head.y)>=3);
+                const count = Math.min(candidates.length, Math.floor(GRID_SIZE * GRID_SIZE * .15));
                 for (let i = 0; i < count; i++) {
-                    let x, y;
-                    do {
-                        x = Math.floor(Math.random() * GRID_SIZE);
-                        y = Math.floor(Math.random() * GRID_SIZE);
-                    } while (
-                        (x < 3 && y < 3) ||
-                        (Math.abs(x - this.snake[0].x) < 3 && Math.abs(y - this.snake[0].y) < 3)
-                    );
-                    this.obstacles.push({x, y});
+                    const j = Math.floor(Math.random() * candidates.length);
+                    this.obstacles.push(candidates[j]);
+                    const last = candidates.pop();
+                    if (j < candidates.length) candidates[j] = last;
                 }
             },
 
             spawnFood() {
-                let x, y;
-                do {
-                    x = Math.floor(Math.random() * GRID_SIZE);
-                    y = Math.floor(Math.random() * GRID_SIZE);
-                } while (
-                    this.snake.some(seg => seg.x === x && seg.y === y) ||
-                    this.obstacles.some(obs => obs.x === x && obs.y === y)
-                );
-                this.food = {x, y};
+                const cells = this.freeCells(this.snake);
+                this.food = cells.length ? cells[Math.floor(Math.random() * cells.length)] : null;
+                if (!this.food) { this.won = true; this.endGame(); }
             },
 
             shake(amount, dur) {
@@ -336,13 +348,15 @@
                     }
                 }
 
-                if (this.snake.some(seg => seg.x === newHead.x && seg.y === newHead.y)) { this.endGame(); return; }
+                const eating = this.food && newHead.x === this.food.x && newHead.y === this.food.y;
+                const body = eating ? this.snake : this.snake.slice(0,-1);
+                if (body.some(seg => seg.x === newHead.x && seg.y === newHead.y)) { this.endGame(); return; }
                 if (this.obstacles.some(obs => obs.x === newHead.x && obs.y === newHead.y)) { this.endGame(); return; }
 
                 this.snake.unshift(newHead);
                 this.renderSnake.unshift({ x: newHead.x, y: newHead.y });
 
-                if (newHead.x === this.food.x && newHead.y === this.food.y) {
+                if (eating) {
                     const gain = 10 * this.level;
                     this.score += gain;
                     this.foodEaten++;
@@ -400,6 +414,7 @@
                     this.ctx.fillRect(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2);
                 }
 
+                if (this.food) {
                 this.ctx.save();
                 const fx = this.food.x * CELL_SIZE + CELL_SIZE / 2;
                 const fy = this.food.y * CELL_SIZE + CELL_SIZE / 2;
@@ -414,6 +429,7 @@
                 this.ctx.arc(fx, fy, (CELL_SIZE / 2 - 2) * pulse, 0, Math.PI * 2);
                 this.ctx.fill();
                 this.ctx.restore();
+                }
 
                 for (let i = this.renderSnake.length - 1; i >= 0; i--) {
                     const seg = this.renderSnake[i];
@@ -542,7 +558,7 @@
                 this.ctx.shadowColor = PAL.danger;
                 this.ctx.shadowBlur = 16;
                 this.ctx.font = 'bold 36px ui-monospace, "SF Mono", Menlo, Consolas, monospace';
-                this.ctx.fillText('GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 40);
+                this.ctx.fillText((this.won ? 'YOU WIN' : 'GAME OVER'), this.canvas.width / 2, this.canvas.height / 2 - 40);
                 this.ctx.shadowBlur = 0;
                 this.ctx.fillStyle = PAL.white;
                 this.ctx.font = 'bold 18px ui-monospace, "SF Mono", Menlo, Consolas, monospace';
@@ -561,7 +577,7 @@
                 this.gameOver = true;
                 this.shake(10, 24);
                 this.createParticles(this.snake[0].x, this.snake[0].y, 24, PAL.danger);
-                audio.die();
+                if (this.won) audio.level(); else audio.die();
                 if (this.score > this.highScore) {
                     this.highScore = this.score;
                     localStorage.setItem('snake-highscore', String(this.highScore));
@@ -570,7 +586,27 @@
             },
 
             setupInput() {
+                const keys={left:"ArrowLeft",right:"ArrowRight",up:"ArrowUp",down:"ArrowDown"};
+                document.querySelectorAll("[data-dir]").forEach(button => button.addEventListener("click", () => steer(keys[button.dataset.dir])));
+                document.getElementById("pause").onclick = () => { if (this.gameRunning) this.gamePaused = !this.gamePaused; };
+                document.addEventListener("visibilitychange", () => { if (document.hidden && this.gameRunning) this.gamePaused = true; });
+                let start;
+                this.canvas.addEventListener("pointerdown", e => { start = [e.clientX,e.clientY]; this.canvas.setPointerCapture(e.pointerId); });
+                this.canvas.addEventListener("pointercancel", () => { start = null; });
+                this.canvas.addEventListener("pointerup", e => {
+                    if (!start || e.pointerType === "mouse") return;
+                    const x=e.clientX-start[0], y=e.clientY-start[1]; start=null;
+                    if (Math.max(Math.abs(x),Math.abs(y))<18) return;
+                    steer(Math.abs(x)>Math.abs(y) ? keys[x>0?"right":"left"] : keys[y>0?"down":"up"]);
+                });
+                const steer = key => {
+                    if (!this.gameRunning || this.gamePaused) return;
+                    const moves = {ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0}};
+                    const move = moves[key];
+                    if (move && move.x*this.direction.x + move.y*this.direction.y === 0) this.nextDirection = move;
+                };
                 document.addEventListener('keydown', (e) => {
+                    if (e.target instanceof HTMLButtonElement || e.repeat) return;
                     if (this.screen === 'title') {
                         if (e.key === '1') this.setDifficulty(0);
                         if (e.key === '2') this.setDifficulty(1);
@@ -579,24 +615,8 @@
                     }
                     if (this.gameOver && e.key === 'Enter') { this.restart(true); return; }
                     if (e.key.toLowerCase() === 'm') audio.toggleMute();
-                    switch(e.key) {
-                        case 'ArrowUp':
-                            if (this.direction.y === 0) this.nextDirection = {x: 0, y: -1};
-                            break;
-                        case 'ArrowDown':
-                            if (this.direction.y === 0) this.nextDirection = {x: 0, y: 1};
-                            break;
-                        case 'ArrowLeft':
-                            if (this.direction.x === 0) this.nextDirection = {x: -1, y: 0};
-                            break;
-                        case 'ArrowRight':
-                            if (this.direction.x === 0) this.nextDirection = {x: 1, y: 0};
-                            break;
-                        case ' ':
-                            if (this.gameRunning) this.gamePaused = !this.gamePaused;
-                            e.preventDefault();
-                            break;
-                    }
+                    if (Object.values(keys).includes(e.key) && this.gameRunning) { steer(e.key); e.preventDefault(); }
+                    if (e.key === " " && this.gameRunning) { this.gamePaused = !this.gamePaused; e.preventDefault(); }
                 });
             },
 

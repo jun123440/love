@@ -42,18 +42,19 @@ table{width:100%;border-collapse:collapse;font-size:.85em;min-width:340px}
 th{text-align:left;padding:8px 10px;border-bottom:2px solid #2a2f5a;color:#667eea;font-size:.75em;text-transform:uppercase;white-space:nowrap}
 td{padding:8px 10px;border-bottom:1px solid #1a1f4a;font-family:'Courier New',monospace;white-space:nowrap}
 .clear-btn{background:none;border:1px solid #2a2f5a;color:#888;padding:4px 12px;border-radius:8px;cursor:pointer;font-size:.75em;float:right}
+@media(prefers-reduced-motion:reduce){.spinner,.result-card.show{animation:none}}
 @media(max-width:600px){.search-box{flex-direction:column}.container{padding:20px 14px 40px}h1{font-size:1.4em}.info-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="container">
 <h1>🌐 IP 定位查询</h1>
-<p class="subtitle">打开页面自动显示访问者的 IP 与位置信息</p>
-<div class="search-box">
-<input type="text" id="ipInput" placeholder="或输入任意 IP 查询，如 8.8.8.8" onkeydown="if(event.key==='Enter')queryIp()">
-<button class="btn" onclick="queryIp()">查 询</button>
-</div>
-<div class="loading" id="loading"><div class="spinner"></div><div id="loadingText">正在检测你的 IP...</div></div>
+<p class="subtitle">输入 IPv4 或 IPv6；留空即可查询本机公网 IP。结果为近似归属地，提交时会访问第三方查询服务。</p>
+<form class="search-box" id="query-form">
+<input type="text" id="ipInput" aria-label="IP 地址" maxlength="45" autocomplete="off" spellcheck="false" placeholder="例如 8.8.8.8，或留空查询本机">
+<button class="btn" type="submit">查 询</button>
+</form>
+<div class="loading" id="loading" role="status"><div class="spinner" aria-hidden="true"></div><div id="loadingText">正在检测你的 IP...</div></div>
 <div class="result-card" id="resultCard">
 <div class="ip-header">
 <span class="flag" id="flag"></span>
@@ -64,184 +65,124 @@ td{padding:8px 10px;border-bottom:1px solid #1a1f4a;font-family:'Courier New',mo
 <div class="info-grid" id="infoGrid"></div>
 <div class="source-line" id="sourceLine"></div>
 </div>
-<div class="error-card" id="errorCard"></div>
+<div class="error-card" id="errorCard" role="alert"></div>
 <div class="log-section" id="logSection" style="display:none">
-<h3>📋 检测记录 <button class="clear-btn" onclick="clearLog()">清空</button></h3>
+<h3>📋 检测记录 <button class="clear-btn" type="button" id="clearLog">清空</button></h3>
 <div class="log-wrap">
 <table><thead><tr><th>IP</th><th>位置</th><th>运营商</th><th>时间</th></tr></thead><tbody id="logBody"></tbody></table>
 </div>
 </div>
 </div>
 <script>
-var done = false;
-var startTs = 0;
-
-function showLoading(on, text) {
-    var el = document.getElementById('loading');
-    if (on) { el.classList.add('show'); if (text) document.getElementById('loadingText').textContent = text; }
-    else el.classList.remove('show');
+const $ = id => document.getElementById(id);
+const historyKey = 'iplog2';
+let active, history = [];
+try {
+  const stored = JSON.parse(localStorage.getItem(historyKey));
+  if (Array.isArray(stored)) history = stored.filter(row => row && typeof row.ip === 'string').slice(0,15);
+} catch {}
+const ipv4 = text => {
+  const parts = text.split('.');
+  return parts.length === 4 && parts.every(p => /^(0|[1-9][0-9]{0,2})$/.test(p) && Number(p) <= 255);
+};
+function validIp(text) {
+  if (!text.includes(':')) return ipv4(text);
+  if (!/^[0-9a-f:.]+$/i.test(text)) return false;
+  if (text.includes('.')) {
+    const split = text.lastIndexOf(':');
+    if (!ipv4(text.slice(split + 1))) return false;
+    text = text.slice(0, split + 1) + '0:0';
+  }
+  try { return new URL('http://[' + text + ']/').hostname.startsWith('['); }
+  catch { return false; }
 }
-
-function withTimeout(promise, ms) {
-    return Promise.race([promise, new Promise(function(_, rej) {
-        setTimeout(function() { rej(new Error('timeout')); }, ms);
-    })]);
+async function getJson(url, request) {
+  const response = await fetch(url, {
+    signal: AbortSignal.any([request.signal, AbortSignal.timeout(5500)]),
+    credentials: 'omit', referrerPolicy: 'no-referrer'
+  });
+  if (!response.ok) throw new Error('HTTP ' + response.status);
+  return response.json();
 }
-
-// ── 数据源: vore.top（国内库，城市级精度，支持CORS） ──
-function srcVore(ip) {
-    var url = 'https://api.vore.top/api/IPdata' + (ip ? '?ip=' + encodeURIComponent(ip) : '');
-    return fetch(url).then(function(r) { return r.json(); }).then(function(d) {
-        if (d.code !== 200 || !d.ipdata) throw new Error('fail');
-        return {
-            ip: d.ipinfo.text, type: d.ipinfo.type, cnip: d.ipinfo.cnip,
-            country: d.ipinfo.cnip ? '中国' : d.ipdata.info1,
-            province: d.ipinfo.cnip ? d.ipdata.info1 : d.ipdata.info2,
-            city: d.ipinfo.cnip ? d.ipdata.info2 : d.ipdata.info3,
-            isp: d.ipdata.isp, full: d.adcode ? d.adcode.o : '',
-            hasCity: !!(d.ipinfo.cnip ? d.ipdata.info2 : d.ipdata.info3)
-        };
-    });
+const providers = [
+  ['vore.top', async (ip, request) => {
+    const raw = await getJson('https://api.vore.top/api/IPdata' + (ip ? '?ip=' + encodeURIComponent(ip) : ''), request);
+    if (raw.code !== 200 || !raw.ipdata || !raw.ipinfo?.text) throw new Error('空响应');
+    const { ipinfo: info, ipdata: data } = raw;
+    return {ip:info.text,type:info.type,country:info.cnip?'中国':data.info1,code:info.cnip?'CN':'',region:info.cnip?data.info1:data.info2,city:info.cnip?data.info2:data.info3,isp:data.isp,full:raw.adcode?.o};
+  }],
+  ['ipwho.is', async (ip, request) => {
+    const data = await getJson('https://ipwho.is/' + encodeURIComponent(ip), request);
+    if (!data.success || !data.ip) throw new Error('空响应');
+    return {ip:data.ip,type:data.type,country:data.country,code:data.country_code,region:data.region,city:data.city,isp:data.connection?.isp,lat:data.latitude,lng:data.longitude};
+  }]
+];
+function showError(text) {
+  $('errorCard').textContent = text;
+  $('errorCard').classList.add('show');
 }
-
-// ── 数据源: 搜狐 cityjson（拿访问者 IPv4，script方式无CORS问题） ──
-function srcSohuIpv4() {
-    return new Promise(function(resolve, reject) {
-        var s = document.createElement('script');
-        s.charset = 'utf-8';
-        s.src = 'https://pv.sohu.com/cityjson?ie=utf-8&v=' + Date.now();
-        s.onload = function() {
-            s.parentNode.removeChild(s);
-            var c = window.returnCitySN;
-            if (c && c.cip && c.cip !== '127.0.0.1' && c.cip.indexOf(':') === -1) resolve(c.cip);
-            else reject(new Error('no ipv4'));
-        };
-        s.onerror = function() { s.parentNode.removeChild(s); reject(new Error('fail')); };
-        document.head.appendChild(s);
-    });
+function renderHistory() {
+  $('logSection').style.display = history.length ? '' : 'none';
+  $('logBody').replaceChildren(...history.map(row => {
+    const el = document.createElement('tr');
+    for (const key of ['ip','place','isp','time']) el.insertCell().textContent = row[key] ?? '—';
+    return el;
+  }));
 }
-
-// ── 数据源: ipwho.is（海外库，兜底，含经纬度） ──
-function srcIpwhois(ip) {
-    return fetch(ip ? 'https://ipwho.is/' + ip : 'https://ipwho.is/').then(function(r) { return r.json(); }).then(function(d) {
-        if (!d.success) throw new Error('fail');
-        return {
-            ip: d.ip, type: d.type ? d.type.toLowerCase() : '', cnip: d.country_code === 'CN',
-            country: d.country, province: d.region, city: d.city,
-            isp: d.connection && d.connection.isp, full: '',
-            lat: d.latitude, lng: d.longitude, hasCity: !!d.city,
-            countryCode: d.country_code
-        };
-    });
+function showResult(data, source, ms) {
+  $('displayIp').textContent = data.ip;
+  const code = String(data.code).toUpperCase();
+  $('flag').textContent = /^[A-Z]{2}$/.test(code) ? String.fromCodePoint(...Array.from(code, c => c.charCodeAt(0) + 127397)) : '🌍';
+  $('typeBadge').textContent = String(data.type || '').toUpperCase();
+  $('speedBadge').textContent = ms + ' ms';
+  const coords = Number.isFinite(data.lat) && Number.isFinite(data.lng) ? [data.lat,data.lng].map(v => v.toFixed(4)).join(', ') : '';
+  const fields = [['国家/地区',data.country],['省份',data.region],['城市',data.city],['运营商',data.isp],['完整归属',data.full],['经纬度',coords]];
+  $('infoGrid').replaceChildren(...fields.map(([label,value], i) => {
+    const item = document.createElement('div');
+    item.className = i < 3 ? 'info-item hl' : 'info-item';
+    const name = document.createElement('div'), result = document.createElement('div');
+    name.className = 'label'; name.textContent = label;
+    result.className = 'value'; result.textContent = value || '—';
+    item.append(name,result);
+    return item;
+  }));
+  $('sourceLine').textContent = '数据来源：' + source;
+  $('resultCard').classList.add('show');
+  history = [{ip:data.ip,place:[data.region,data.city].filter(Boolean).join(' ')||data.country,isp:data.isp,time:new Date().toLocaleString('zh-CN')}, ...history.filter(row => row.ip !== data.ip)].slice(0,15);
+  try { localStorage.setItem(historyKey, JSON.stringify(history)); } catch {}
+  renderHistory();
 }
-
-// ── 主流程 ──
-function detect(ip) {
-    done = false;
-    startTs = Date.now();
-    showLoading(true, ip ? '正在查询 ' + ip + '...' : '正在检测你的 IP...');
-    document.getElementById('resultCard').classList.remove('show');
-    document.getElementById('errorCard').classList.remove('show');
-
-    if (ip) {
-        // 手动查询: vore → ipwho.is
-        withTimeout(srcVore(ip), 6000)
-            .then(function(r) { showResult(r, 'vore.top'); })
-            .catch(function() {
-                return withTimeout(srcIpwhois(ip), 6000).then(function(r) { showResult(r, 'ipwho.is'); });
-            })
-            .catch(function() { showError('查询失败，请检查 IP 格式或网络'); });
+$('query-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  active?.abort();
+  $('loading').classList.remove('show');
+  $('resultCard').classList.remove('show');
+  $('errorCard').classList.remove('show');
+  const ip = $('ipInput').value.trim();
+  if (ip && !validIp(ip)) { showError('请输入有效的 IPv4 或 IPv6 地址。'); return; }
+  const request = active = new AbortController();
+  const start = performance.now();
+  $('loadingText').textContent = ip ? '正在查询 ' + ip + '…' : '正在查询公网 IP…';
+  $('loading').classList.add('show');
+  try {
+    for (const [name, lookup] of providers) {
+      try {
+        const data = await lookup(ip, request);
+        if (!request.signal.aborted) showResult(data, name, Math.round(performance.now() - start));
         return;
+      } catch { if (request.signal.aborted) return; }
     }
-
-    // 自动检测:
-    // 1) vore 直查（若拿到城市级就结束）
-    withTimeout(srcVore(''), 6000).then(function(r) {
-        if (r.hasCity) { showResult(r, 'vore.top'); return; }
-        // 2) 只到省级 → 用搜狐拿 IPv4 再查一次 vore（移动宽带 IPv6 出口定位粗，IPv4 更准）
-        document.getElementById('loadingText').textContent = '正在精确定位...';
-        return withTimeout(srcSohuIpv4(), 5000).then(function(ipv4) {
-            return withTimeout(srcVore(ipv4), 6000).then(function(r2) {
-                showResult(r2.hasCity ? r2 : r, 'vore.top + sohu');
-            });
-        }).catch(function() { showResult(r, 'vore.top'); });
-    }).catch(function() {
-        // 3) vore 挂了 → ipwho.is 兜底
-        return withTimeout(srcIpwhois(''), 6000)
-            .then(function(r) { showResult(r, 'ipwho.is'); })
-            .catch(function() { showError('所有数据源均无法访问，请检查网络后刷新重试'); });
-    });
-}
-
-function showResult(data, source) {
-    if (done) return;
-    done = true;
-    showLoading(false);
-    var ms = Date.now() - startTs;
-    document.getElementById('displayIp').textContent = data.ip;
-    document.getElementById('flag').textContent = data.country === '中国' || data.cnip ? '🇨🇳' : (data.countryCode ? flagEmoji(data.countryCode) : '🌍');
-    document.getElementById('typeBadge').textContent = (data.type || '').toUpperCase();
-    document.getElementById('speedBadge').textContent = ms + 'ms';
-    var fields = [
-        ['国家/地区', data.country, true], ['省份', data.province, true], ['城市', data.city, true],
-        ['运营商', data.isp, false], ['完整归属', data.full, false],
-        ['经纬度', data.lat && data.lng ? Number(data.lat).toFixed(4) + ', ' + Number(data.lng).toFixed(4) : '', false]
-    ];
-    document.getElementById('infoGrid').innerHTML = fields.map(function(f) {
-        return '<div class="info-item' + (f[2] ? ' hl' : '') + '"><div class="label">' + f[0] + '</div><div class="value">' + (f[1] || '<span style="color:#555">—</span>') + '</div></div>';
-    }).join('');
-    document.getElementById('sourceLine').textContent = '数据来源: ' + source;
-    document.getElementById('resultCard').classList.add('show');
-    addLog(data.ip, [data.province, data.city].filter(Boolean).join(' ') || data.country, data.isp);
-}
-
-function showError(msg) {
-    if (done) return;
-    done = true;
-    showLoading(false);
-    var el = document.getElementById('errorCard');
-    el.textContent = '❌ ' + msg;
-    el.classList.add('show');
-}
-
-function flagEmoji(code) {
-    var r = '';
-    for (var i = 0; i < code.length; i++) r += String.fromCharCode(127397 + code.toUpperCase().charCodeAt(i));
-    return r;
-}
-
-function queryIp() {
-    var ip = document.getElementById('ipInput').value.trim();
-    detect(ip);
-}
-
-// ── 本地记录 ──
-var logData = [];
-try { logData = JSON.parse(localStorage.getItem('iplog2') || '[]'); } catch(e) {}
-function addLog(ip, place, isp) {
-    if (logData.some(function(l) { return l.ip === ip; })) return;
-    logData.unshift({ ip: ip, place: place || '—', isp: isp || '—', time: new Date().toLocaleString('zh-CN') });
-    if (logData.length > 15) logData.pop();
-    try { localStorage.setItem('iplog2', JSON.stringify(logData)); } catch(e) {}
-    renderLog();
-}
-function renderLog() {
-    if (!logData.length) return;
-    document.getElementById('logSection').style.display = 'block';
-    document.getElementById('logBody').innerHTML = logData.map(function(l) {
-        return '<tr><td>' + l.ip + '</td><td>' + l.place + '</td><td>' + l.isp + '</td><td>' + l.time + '</td></tr>';
-    }).join('');
-}
-function clearLog() {
-    logData = [];
-    try { localStorage.removeItem('iplog2'); } catch(e) {}
-    document.getElementById('logSection').style.display = 'none';
-}
-
-// ── 启动 ──
-renderLog();
-detect('');
-setTimeout(function() { if (!done) showError('检测超时，请刷新页面重试'); }, 25000);
+    showError('查询服务暂不可用，请稍后重试。');
+  } finally {
+    if (active === request) $('loading').classList.remove('show');
+  }
+});
+$('clearLog').addEventListener('click', () => {
+  history = [];
+  try { localStorage.removeItem(historyKey); } catch {}
+  renderHistory();
+});
+renderHistory();
 </script>
 </body>
 </html>
