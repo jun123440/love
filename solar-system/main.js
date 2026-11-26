@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Planets } from './src/Planets.js?v=4';
-import { HandInput } from './src/HandInput.js?v=4';
+import { HandInput } from './src/HandInput.js?v=5';
 
 let renderer, is3D = true, planetsSystem, handInput = null;
 const raycaster = new THREE.Raycaster();
@@ -11,7 +11,7 @@ let targetPosition = new THREE.Vector3(0,0,0);
 let currentSystemName = '\u592A\u9633\u7CFB';
 let isDragging = false, prevMouse = {x:0, y:0}, mouseNdc = new THREE.Vector2(-99,-99);
 const clock = new THREE.Clock();
-let frameCount = 0;
+let frameCount = 0, lastRender = -Infinity;
 let isTableView = false;
 
 const scene = new THREE.Scene();
@@ -20,6 +20,7 @@ const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHei
 
 const canvas = document.createElement('canvas');
 canvas.id = 'glCanvas';
+canvas.style.touchAction = 'none';
 document.body.appendChild(canvas);
 try {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'default' });
@@ -99,14 +100,30 @@ if (is3D) {
         scene.add(camera);
     } catch(e) { console.error(e); }
 
-    animate();
+    requestAnimationFrame(animate);
 }
 
-document.getElementById('chkCamera').addEventListener('change', (e) => {
-    if (e.target.checked && !handInput) {
-        handInput = new HandInput(document.getElementById('input_video'), document.getElementById('output_canvas'));
-        handInput.init();
+const cameraToggle = document.getElementById('chkCamera');
+cameraToggle.addEventListener('change', async () => {
+    if (!cameraToggle.checked) {
+        handInput?.stop(); handInput = null;
+        statusDiv.textContent = '手势追踪已关闭';
+        return;
     }
+    const input = handInput = new HandInput(document.getElementById('input_video'), document.getElementById('output_canvas'));
+    statusDiv.textContent = '正在开启手势追踪…';
+    try {
+        await input.init();
+        if (handInput === input) statusDiv.textContent = '手势追踪已开启';
+    } catch {
+        if (handInput === input) {
+            input.stop(); handInput = null; cameraToggle.checked = false;
+            statusDiv.textContent = '相机或手势模型暂不可用';
+        }
+    }
+});
+window.addEventListener('pagehide', () => {
+    handInput?.stop(); handInput = null; cameraToggle.checked = false;
 });
 
 document.getElementById('chkAudio').addEventListener('change', (e) => {
@@ -123,33 +140,50 @@ if (is3D) {
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    renderer.domElement.addEventListener('mousedown', e => { isDragging = true; prevMouse = {x:e.clientX, y:e.clientY}; });
-    renderer.domElement.addEventListener('mouseup', () => isDragging = false);
-    renderer.domElement.addEventListener('mousemove', e => {
-        if (isDragging) {
-            const dx = e.clientX - prevMouse.x;
-            const dy = e.clientY - prevMouse.y;
-            targetPhi -= dx * 0.005;
-            targetTheta = Math.max(0.1, Math.min(Math.PI-0.1, targetTheta - dy * 0.005));
-            prevMouse = {x:e.clientX, y:e.clientY};
+    const zoom = factor => {
+        const minR = currentTarget ? (currentTarget.radius || 1) * 2 : 5;
+        targetRadius = Math.max(minR, Math.min(800, targetRadius * factor));
+    };
+    const zoomIn = document.createElement('button'), zoomOut = document.createElement('button');
+    zoomIn.textContent = '＋'; zoomOut.textContent = '−';
+    zoomIn.setAttribute('aria-label','放大'); zoomOut.setAttribute('aria-label','缩小');
+    zoomIn.style.cssText = zoomOut.style.cssText = 'min-width:38px;min-height:38px;margin-top:8px';
+    zoomIn.onclick = () => zoom(.82); zoomOut.onclick = () => zoom(1.22);
+    settingsPanel.append(zoomIn, zoomOut);
+    let pointerId = null;
+    canvas.addEventListener('pointerdown', e => {
+        if (!e.isPrimary || e.button !== 0) return;
+        pointerId = e.pointerId;
+        isDragging = true; prevMouse = {x:e.clientX,y:e.clientY};
+        canvas.setPointerCapture(e.pointerId);
+    });
+    canvas.addEventListener('lostpointercapture', e => { if (pointerId === e.pointerId) { pointerId = null; isDragging = false; } });
+    canvas.addEventListener('pointermove', e => {
+        if (!e.isPrimary) return;
+        if (isDragging && pointerId === e.pointerId) {
+            const dx = e.clientX - prevMouse.x, dy = e.clientY - prevMouse.y;
+            targetPhi -= dx * .005;
+            targetTheta = Math.max(.1,Math.min(Math.PI-.1,targetTheta - dy * .005));
+            prevMouse = {x:e.clientX,y:e.clientY};
         }
-        const rect = renderer.domElement.getBoundingClientRect();
+        const rect = canvas.getBoundingClientRect();
         mouseNdc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
         mouseNdc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
     });
-    renderer.domElement.addEventListener('wheel', e => {
-        const minR = currentTarget ? (currentTarget.radius || 1) * 2.0 : 5;
-        targetRadius = Math.max(minR, Math.min(800, targetRadius + e.deltaY * 0.1));
-    });
+    canvas.addEventListener('pointerleave', () => mouseNdc.set(-99,-99));
+    canvas.addEventListener('wheel', e => zoom(Math.exp(Math.max(-1000,Math.min(1000,e.deltaY)) * .001)), {passive:true});
     renderer.domElement.addEventListener('dblclick', handleDoubleClick);
 }
 
-function animate() {
+function animate(now) {
     requestAnimationFrame(animate);
+    const elapsed = now - lastRender;
+    const interval = 1000/30;
+    if (elapsed < interval - 1) return;
+    lastRender = elapsed < interval*2 ? lastRender + interval : now;
     frameCount++;
-    if (frameCount % 2 !== 0) return;
 
-    const delta = clock.getDelta();
+    const delta = Math.min(clock.getDelta(), .1);
     if (planetsSystem) planetsSystem.animate(delta);
 
     let hasHand = false;
@@ -160,7 +194,7 @@ function animate() {
         }
     }
 
-    if (frameCount % 10 === 0) {
+    if (frameCount % 5 === 0) {
         raycaster.setFromCamera(mouseNdc, camera);
         let hits = [];
         if (planetsSystem) {

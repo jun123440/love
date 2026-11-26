@@ -1,23 +1,19 @@
-const CACHE_NAME = 'solar-system-v1';
-const urlsToCache = [
-    './',
-    './index.html',
-    './main.js',
-    './src/Planets.js',
-    './src/BlackHole.js',
-    './src/HandInput.js'
-];
-self.addEventListener('install', e => {
-    e.waitUntil(
-        caches.open(CACHE_NAME).then(cache => {
-            return cache.addAll(urlsToCache);
-        })
-    );
+const CACHE = 'solar-system-v2';
+const URLS = ['./','./index.html','./main.js?v=2','./src/Planets.js?v=4','./src/BlackHole.js','./src/HandInput.js?v=5'];
+self.addEventListener('install', event => {
+    event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(URLS)).then(() => self.skipWaiting()));
 });
-self.addEventListener('fetch', e => {
-    e.respondWith(
-        caches.match(e.request).then(response => {
-            return response || fetch(e.request);
-        })
-    );
+self.addEventListener('activate', event => {
+    event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('solar-system-') && key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()));
+});
+self.addEventListener('fetch', event => {
+    if (event.request.method !== 'GET' || !event.request.url.startsWith(self.registration.scope)) return;
+    event.respondWith((async () => {
+        const cache = await caches.open(CACHE);
+        if (event.request.mode === 'navigate') {
+            try { return await fetch(event.request); }
+            catch { return await cache.match('./index.html') || Response.error(); }
+        }
+        return await cache.match(event.request) || fetch(event.request);
+    })());
 });

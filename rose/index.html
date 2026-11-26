@@ -750,7 +750,7 @@ function start(){
   libReady=true;
   goBtn.disabled=!nameInput.value.trim();
   libnote.classList.remove('show','err');
-  renderer=new THREE.WebGLRenderer({canvas:canvas,alpha:true,antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:auto});
+  renderer=new THREE.WebGLRenderer({canvas:canvas,alpha:true,antialias:!lowres,powerPreference:lowres?'low-power':'default',preserveDrawingBuffer:auto});
   renderer.setPixelRatio(dpr);
   renderer.setSize(innerWidth,innerHeight);
   renderer.setClearColor(0x000000,0);
@@ -786,7 +786,7 @@ function start(){
     snapCam();
     setMode('word');
     dbg.style.cssText='position:fixed;left:8px;bottom:8px;font-size:11px;color:#333;background:rgba(255,255,255,.85);padding:3px 8px;z-index:99;opacity:1';
-    setInterval(function(){loop(performance.now())},33);
+    requestAnimationFrame(loop);
     var shotAt=parseInt(q.get('shot')||'0',10);
     if(shotAt>0){
       setTimeout(function(){

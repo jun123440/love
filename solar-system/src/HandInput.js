@@ -1,4 +1,16 @@
-import * as THREE from 'three';
+const base = 'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/';
+let engine;
+function loadEngine() {
+  if (window.Hands) return Promise.resolve();
+  return engine ||= new Promise((resolve,reject) => {
+    const script = document.createElement('script');
+    script.src = base + 'hands.js';
+    script.crossOrigin = 'anonymous';
+    script.onload = () => window.Hands ? resolve() : reject(new Error('Hands export missing'));
+    script.onerror = () => reject(new Error('Hands download failed'));
+    document.head.append(script);
+  }).catch(error => { engine = null; throw error; });
+}
 
 export class HandInput {
   constructor(videoElement, canvasElement) {
@@ -9,52 +21,62 @@ export class HandInput {
     this.smoothedRight = null;
     this.smoothedLeft = null;
     this.smoothingFactor = 0.15;
-    this.frameCount = 0;
+    this.stopped = false;
+    this.frame = 0;
+    this.lastVideo = -1;
     this.isReady = false;
     this.status = "Initializing Hand Tracking...";
   }
 
   async init() {
-    if (!window.Hands) {
-        console.error("MediaPipe Hands not loaded.");
-        this.status = "Error: MediaPipe Hands not loaded";
-        return;
-    }
-    const hands = new window.Hands({locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
-    hands.setOptions({
-      maxNumHands: 1,
-      modelComplexity: 0,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5
-    });
-    hands.onResults(this.onResults.bind(this));
-    const camera = new window.Camera(this.videoElement, {
-      onFrame: async () => {
-        this.frameCount++;
-        if (this.frameCount % 4 !== 0) return;
-        if (this.videoElement.videoWidth) {
-             this.canvasElement.width = this.videoElement.videoWidth;
-             this.canvasElement.height = this.videoElement.videoHeight;
+    await loadEngine();
+    if (this.stopped) return;
+    const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:320},height:{ideal:240}},audio:false});
+    if (this.stopped) { stream.getTracks().forEach(t => t.stop()); return; }
+    this.videoElement.srcObject = stream;
+    await this.videoElement.play();
+    if (this.stopped) return;
+    this.hands = new window.Hands({locateFile: f => base + f});
+    this.hands.setOptions({maxNumHands:1,modelComplexity:0,minDetectionConfidence:.5,minTrackingConfidence:.5});
+    this.hands.onResults(results => { if (!this.stopped) this.onResults(results); });
+    const tick = async () => {
+      if (this.stopped) return;
+      const video = this.videoElement;
+      if (video.readyState >= 2 && video.currentTime !== this.lastVideo) {
+        this.lastVideo = video.currentTime;
+        try {
+          this.pending = this.hands.send({image:video});
+          await this.pending;
         }
-        await hands.send({image: this.videoElement});
-      },
-      width: 320,
-      height: 240
-    });
-    await camera.start();
+        catch { this.handsData = {left:null,right:null}; }
+        finally { this.pending = null; }
+      }
+      if (!this.stopped) this.frame = setTimeout(tick,50);
+    };
+    this.frame = setTimeout(tick,0);
     this.isReady = true;
-    this.status = "Hand Tracking Active";
+    this.status = 'Hand Tracking Active';
+  }
+
+  stop() {
+    this.stopped = true;
+    this.isReady = false;
+    clearTimeout(this.frame);
+    const stream = this.videoElement.srcObject;
+    stream?.getTracks().forEach(t => t.stop());
+    this.videoElement.srcObject = null;
+    this.handsData = {left:null,right:null};
+    const hands = this.hands;
+    this.hands = null;
+    if (hands) Promise.resolve(this.pending).catch(() => {}).then(() => hands.close()).catch(() => {});
   }
 
   onResults(results) {
-    this.canvasCtx.save();
-    this.canvasCtx.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
     this.handsData.left = null;
     this.handsData.right = null;
     if (results.multiHandLandmarks) {
       for (const [index, landmarks] of results.multiHandLandmarks.entries()) {
         const label = results.multiHandedness[index].label;
-        window.drawConnectors(this.canvasCtx, landmarks, window.HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 2});
         const gesture = this.detectGesture(landmarks);
         const x = (landmarks[0].x + landmarks[9].x) / 2;
         const y = (landmarks[0].y + landmarks[9].y) / 2;
@@ -83,7 +105,6 @@ export class HandInput {
         this.smoothedLeft = null;
         this.smoothedRight = null;
     }
-    this.canvasCtx.restore();
   }
 
   lerp(start, end, amt) {

@@ -34,7 +34,7 @@ const renderer = new THREE.WebGLRenderer({
   powerPreference: 'high-performance',
 });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
 document.body.prepend(renderer.domElement);
@@ -236,18 +236,21 @@ scene.add(rimLight);
 const ambient = new THREE.AmbientLight(0x222244, 0.8);
 scene.add(ambient);
 
-function animate() {
+let previousFrame;
+function animate(now) {
   requestAnimationFrame(animate);
-  controls.update();
+  const delta = previousFrame == null ? 0 : Math.min((now - previousFrame) / 1000, 0.05);
+  previousFrame = now;
+  controls.update(delta);
 
   const clouds = earthGroup.getObjectByName('clouds');
-  if (clouds) clouds.rotation.y += 0.0003;
+  if (clouds) clouds.rotation.y += 0.018 * delta;
 
-  starMat.uniforms.uTime.value += 0.005;
+  starMat.uniforms.uTime.value += 0.3 * delta;
 
   renderer.render(scene, camera);
 }
-animate();
+requestAnimationFrame(animate);
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;

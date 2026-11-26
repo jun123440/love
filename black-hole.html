@@ -32,9 +32,13 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-const pixelRatio = Math.min(window.devicePixelRatio, 2);
-const W = window.innerWidth;
-const H = window.innerHeight;
+function renderScale(w, h) {
+  return Math.min(window.devicePixelRatio || 1, 1.5, Math.sqrt(1600000 / (w * h)));
+}
+
+let W = window.innerWidth;
+let H = window.innerHeight;
+let pixelRatio = renderScale(W, H);
 
 const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
 renderer.setSize(W, H);
@@ -418,7 +422,6 @@ bloomPass.strength = 1.2;
 bloomPass.radius = 0.6;
 composer.addPass(bloomPass);
 
-const clock = new THREE.Clock();
 let frames = 0;
 let lastFPS = 0;
 const fpsEl = document.getElementById('fps');
@@ -426,7 +429,6 @@ const fpsEl = document.getElementById('fps');
 function animate() {
   requestAnimationFrame(animate);
 
-  const dt = clock.getDelta();
   const elapsed = performance.now() * 0.001;
   frames++;
 
@@ -448,8 +450,11 @@ function animate() {
 animate();
 
 window.addEventListener('resize', () => {
-  const w = window.innerWidth;
-  const h = window.innerHeight;
+  const w = W = window.innerWidth;
+  const h = H = window.innerHeight;
+  pixelRatio = renderScale(w, h);
+  renderer.setPixelRatio(pixelRatio);
+  composer.setPixelRatio(pixelRatio);
   renderer.setSize(w, h);
   composer.setSize(w, h);
   vCam.aspect = w / h;
