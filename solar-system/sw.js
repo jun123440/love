@@ -1,4 +1,4 @@
-const CACHE = 'solar-system-v2';
+const CACHE = 'solar-system-v3';
 const URLS = ['./','./index.html','./main.js?v=2','./src/Planets.js?v=4','./src/BlackHole.js','./src/HandInput.js?v=5'];
 self.addEventListener('install', event => {
     event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(URLS)).then(() => self.skipWaiting()));
@@ -17,3 +17,4 @@ self.addEventListener('fetch', event => {
         return await cache.match(event.request) || fetch(event.request);
     })());
 });
+
